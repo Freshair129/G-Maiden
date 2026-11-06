@@ -26,11 +26,64 @@ function msg(e: unknown): string {
  *  the Steam link fields it is granted — never id/email/generation/gid_code. */
 async function linkProfile(userId: string): Promise<void> {
   const identity = await loadIdentity();
-  if (!identity) return; // nothing to link yet
+  if (!identity || localAuthBlocked()) return; // nothing to link yet
+  const { data } = await supabase.auth.getSession();
+  if (localAuthBlocked() || data.session?.user.id !== userId) return;
   await supabase
     .from("profiles")
     .update({ steamid64: identity.steamid64, account_id: identity.accountId })
     .eq("id", userId);
+}
+
+type OAuthStatus = { busy: boolean; error: string | null };
+const oauthConsumers = new Set<(status: OAuthStatus) => void>();
+let oauthStatus: OAuthStatus = { busy: false, error: null };
+let oauthStop: (() => void) | null = null;
+let oauthRequest = 0;
+let lastOAuthCode: string | null = null;
+function publishOAuth(status: OAuthStatus) {
+  oauthStatus = status;
+  oauthConsumers.forEach((consumer) => consumer(status));
+}
+function subscribeOAuth(consumer: (status: OAuthStatus) => void) {
+  oauthConsumers.add(consumer);
+  consumer(oauthStatus);
+  if (!oauthStop) {
+    let stopped = false;
+    const unsubs: Array<() => void> = [];
+    const register = async (name: string, callback: (event: { payload: string }) => void) => {
+      try {
+        const unsub = await listen<string>(name, callback);
+        if (stopped) unsub(); else unsubs.push(unsub);
+      } catch { /* plain browser: Google callback unavailable */ }
+    };
+    oauthStop = () => { stopped = true; unsubs.forEach((unsub) => unsub()); };
+    void register("oauth-callback", async ({ payload }) => {
+      if (stopped || localAuthBlocked() || getCurrentSignOut().phase !== "idle" || payload === lastOAuthCode) return;
+      lastOAuthCode = payload;
+      const request = ++oauthRequest;
+      const current = () => request === oauthRequest && !localAuthBlocked();
+      publishOAuth({ busy: true, error: null });
+      try {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(payload);
+        if (!current()) return;
+        if (error) throw error;
+        if (data.user) await linkProfile(data.user.id).catch(() => {});
+        if (current()) publishOAuth({ busy: false, error: null });
+      } catch (error) {
+        if (current()) publishOAuth({ busy: false, error: msg(error) });
+      }
+    });
+    void register("oauth-error", ({ payload }) => {
+      if (stopped || localAuthBlocked()) return;
+      oauthRequest++;
+      publishOAuth({ busy: false, error: payload || "sign-in was cancelled" });
+    });
+  }
+  return () => {
+    oauthConsumers.delete(consumer);
+    if (oauthConsumers.size === 0) { oauthStop?.(); oauthStop = null; }
+  };
 }
 
 export function useAuth() {
@@ -39,70 +92,51 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [oauth, setOAuth] = useState(oauthStatus);
   // Keep the provider event so account surfaces can distinguish a real sign-in
   // from routine token rotation without making local-core rendering depend on it.
   const [lastAuthEvent, setLastAuthEvent] = useState<AuthChangeEvent | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    const unsubs: Array<() => void> = [];
+    let providerChanged = false;
 
     supabase.auth.getSession().then(({ data }) => {
       if (!cancelled) {
-        setSession(localAuthBlocked() ? null : data.session);
+        if (!providerChanged) setSession(localAuthBlocked() ? null : data.session);
         setLoading(false);
       }
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      providerChanged = true;
       setSession(localAuthBlocked() ? null : s);
       setLastAuthEvent(localAuthBlocked() ? "SIGNED_OUT" : event);
     });
 
-    // Google OAuth: the browser lands on the GSI /auth/callback route which
-    // emits `oauth-callback` with the PKCE code; complete the exchange here.
-    (async () => {
-      try {
-        const u1 = await listen<string>("oauth-callback", async (e) => {
-          if (getCurrentSignOut().phase !== "idle") return;
-          setBusy(true);
-          setError(null);
-          try {
-            const { data, error } = await supabase.auth.exchangeCodeForSession(e.payload);
-            if (error) throw error;
-            if (data.user) await linkProfile(data.user.id).catch(() => {});
-          } catch (err) {
-            setError(msg(err));
-          } finally {
-            setBusy(false);
-          }
-        });
-        const u2 = await listen<string>("oauth-error", (e) => {
-          setBusy(false);
-          setError(e.payload || "sign-in was cancelled");
-        });
-        if (cancelled) { u1(); u2(); } else { unsubs.push(u1, u2); }
-      } catch {
-        /* not under Tauri — Google sign-in unavailable */
-      }
-    })();
+    const unsubscribeOAuth = subscribeOAuth((status) => { setOAuth(status); setBusy(false); });
 
     return () => {
       cancelled = true;
       sub.subscription.unsubscribe();
-      unsubs.forEach((f) => f());
+      unsubscribeOAuth();
     };
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
     if (!prepareGoogleSignIn()) return;
-    await supabase.auth.startAutoRefresh();
+    const request = ++oauthRequest;
+    const current = () => request === oauthRequest && !localAuthBlocked();
+    publishOAuth({ busy: false, error: null });
     setBusy(true);
     setError(null);
     try {
+      await supabase.auth.startAutoRefresh();
+      if (!current()) return;
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo: OAUTH_REDIRECT, skipBrowserRedirect: true },
       });
+      if (!current()) return;
       if (error) throw error;
       if (data?.url) {
         const state = oauthStateFromAuthorizationUrl(data.url);
@@ -110,16 +144,19 @@ export function useAuth() {
         // CR-008 WP-3: arm the callback gate so :3000/auth/callback only accepts
         // a code and state for this app-initiated sign-in, then open the system browser.
         await invoke("oauth_begin", { state });
+        if (!current()) return;
         await invoke("open_url", { url: data.url });
       }
       // The session arrives asynchronously via the oauth-callback listener.
     } catch (e) {
-      setError(msg(e));
-      setBusy(false);
+      if (current()) { setError(msg(e)); setBusy(false); }
     }
   }, []);
 
   const signOut = useCallback(async () => {
+    oauthRequest++;
+    publishOAuth({ busy: false, error: null });
+    setBusy(false);
     setError(null);
     const accessToken = session?.access_token;
     await signOutCurrent(
@@ -133,6 +170,6 @@ export function useAuth() {
   }, [session]);
 
   return { session: localAuthBlocked() ? null : session, user: localAuthBlocked() ? null : session?.user ?? null, loading,
-    busy: busy || signOutState.phase === "cleaning", error: signOutState.error ?? error,
+    busy: busy || oauth.busy || signOutState.phase === "cleaning", error: signOutState.error ?? oauth.error ?? error,
     signOutPhase: signOutState.phase, signOutWarning: signOutState.warning, lastAuthEvent, signInWithGoogle, signOut };
 }

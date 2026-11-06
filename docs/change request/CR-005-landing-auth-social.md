@@ -1,7 +1,7 @@
 ---
 id: CR-005
 title: "Landing page + Full-screen Auth + G-Social community"
-status: "DRAFT — awaiting approval"
+status: "draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
 author: "Opus (design lead), Boss (approver)"
 depends_on: ["ADR-14 (GID/account)", "CR-003 (account phase-1)", "SEC-001 (identity hardening, merged 00f2fc11)"]
@@ -9,8 +9,8 @@ requires_adr: "ADR-14 amendment (auth providers) — email/OTP was cut, re-openi
 scope: "additive — existing Command Deck layout MUST NOT change"
 language: "th/en"
 doc_id: "CR-005-landing-auth-social"
-version: "0.1.0"
-updated: "2026-07-20"
+version: "0.1.1"
+updated: "2026-11-06"
 owner: "Boss"
 ---
 
@@ -186,3 +186,4 @@ W1–W3 เริ่มได้เร็ว/เสี่ยงต่ำ; W4–W
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.1.0 | 2026-07-20 | changelog table added per Step-5 SOP (G2.5) — baseline row matching frontmatter version |
+| 0.1.1 | 2026-11-06 | status normalized to enum `draft` (was "DRAFT — awaiting approval"): awaiting-approval note dropped; still a draft |

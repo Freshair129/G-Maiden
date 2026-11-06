@@ -16,6 +16,7 @@ function makeDetection(overrides: Partial<CvDetection> = {}): CvDetection {
 
 function makeCv(overrides: Partial<MinimapCv> = {}): MinimapCv {
   return {
+    geometry_generation: "1", display_index: 0, display_fingerprint: "3", desktop_origin: [0, 0],
     region: { x: 0, y: 0, side: 200 },
     icon: 0,
     candidates: [],

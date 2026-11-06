@@ -24,6 +24,23 @@ const PERSONA_PROMPT: &str = r#"คุณคือ "Maiden" — ที่ปร�
 สไตล์: สุภาพ ฉลาด มี humor เกี่ยวกับ Nerf CM. ตอบเป็นไทย สั้นกระชับ (1-2 ประโยค) เน้นคำแนะนำเชิงปฏิบัติทันที
 สำหรับสถานการณ์ที่ให้. ห้ามทักทาย ห้ามสรุป — ตอบคำแนะนำตรง ๆ."#;
 
+/// Tone line appended to [`PERSONA_PROMPT`] per G-Persona preset
+/// (`runtime::persona_preset()`: 0=Coach, 1=Silent, 2=Caster, 3=Meme).
+/// Static text only — no game data — so it never widens what leaves the machine.
+/// `Silent` suppresses proactive advice upstream (Overlay); an explicit Ask
+/// under `Silent` uses the Coach tone. Unknown codes fall back to Coach.
+fn persona_tone(preset: u8) -> &'static str {
+    match preset {
+        2 => "โทนเสริม: แคสเตอร์สบาย ๆ พากย์สถานการณ์เป็นประโยคสั้นกระชับ",
+        3 => "โทนเสริม: แทรกมุกเบา ๆ เรื่อง Nerf CM ได้หนึ่งประโยค แต่ยังสุภาพไม่ก้าวร้าว",
+        _ => "โทนเสริม: จริงจังแบบโค้ช เน้นตัวเลขและเหตุผล ลดมุกตลก",
+    }
+}
+
+fn persona_prompt(preset: u8) -> String {
+    format!("{PERSONA_PROMPT}\n{}", persona_tone(preset))
+}
+
 const THROTTLE: Duration = Duration::from_secs(30);
 
 struct CachedAdvice {
@@ -41,17 +58,66 @@ struct CachedAdvice {
 struct AdviceCache {
     current_session_epoch: Option<u64>,
     response: Option<CachedAdvice>,
+    next_request: u64,
+    in_flight: Option<u64>,
+    last_admission: Option<(u64, Option<u64>, Instant)>,
+    observed_session: Option<(u64, bool)>,
 }
 
 static ADVICE_CACHE: Mutex<AdviceCache> = Mutex::new(AdviceCache {
     current_session_epoch: None,
     response: None,
+    next_request: 0,
+    in_flight: None,
+    last_admission: None,
+    observed_session: None,
 });
+
+struct AdviceFlight(u64);
+
+impl Drop for AdviceFlight {
+    fn drop(&mut self) {
+        if let Ok(mut cache) = ADVICE_CACHE.lock() {
+            if cache.in_flight == Some(self.0) {
+                cache.in_flight = None;
+            }
+        }
+    }
+}
 /// Which backend resolved the most recent *fresh* (non-cached) `advise()`
 /// call — "claude" or "ollama". Recorded purely for the CR-011 §B utterance
 /// ledger's `meta` field (main.rs::request_advice); `Advice` also exposes the
 /// source and elapsed time to the control card.
 static LAST_BACKEND: Mutex<Option<&'static str>> = Mutex::new(None);
+
+#[cfg(test)]
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum RequestStage {
+    SnapshotCaptured,
+    BeforeCloudDispatch,
+    ProviderFinished,
+    BeforeReturn,
+}
+
+#[cfg(test)]
+type RequestHook = Box<dyn FnMut(RequestStage)>;
+#[cfg(test)]
+type CloudProvider = Box<dyn FnOnce() -> Result<String, String>>;
+
+#[cfg(test)]
+thread_local! {
+    static REQUEST_HOOK: std::cell::RefCell<Option<RequestHook>> = const { std::cell::RefCell::new(None) };
+    static CLOUD_PROVIDER: std::cell::RefCell<Option<CloudProvider>> = const { std::cell::RefCell::new(None) };
+}
+
+#[cfg(test)]
+fn request_hook(stage: RequestStage) {
+    REQUEST_HOOK.with(|hook| {
+        if let Some(hook) = hook.borrow_mut().as_mut() {
+            hook(stage);
+        }
+    });
+}
 
 #[derive(serde::Serialize, Clone)]
 pub struct Advice {
@@ -60,6 +126,17 @@ pub struct Advice {
     pub backend: String,
     pub elapsed_ms: u64,
     pub cached_age_ms: Option<u64>,
+    pub context_generation: u64,
+}
+
+/// Async callers must repeat this bounded publication admission after awaiting
+/// the worker and before emitting/voicing its result. No provider I/O belongs
+/// in this closure; revocation remains able to complete during network waits.
+pub(crate) fn with_advice_publication<T>(
+    advice: &Advice,
+    publish: impl FnOnce() -> Result<T, String>,
+) -> Result<T, String> {
+    crate::runtime::with_master_generation_admission(advice.context_generation, false, publish)
 }
 
 #[allow(dead_code)] // Constructed by backend_readiness before the lib.rs command is registered.
@@ -109,10 +186,32 @@ pub fn last_backend() -> Option<&'static str> {
 pub(crate) fn invalidate_advice_cache() {
     if let Ok(mut cache) = ADVICE_CACHE.lock() {
         cache.response = None;
+        cache.last_admission = None;
     }
     if let Ok(mut backend) = LAST_BACKEND.lock() {
         *backend = None;
     }
+}
+
+pub(crate) fn observe_advice_session(epoch: u64, live: bool) {
+    if let Ok(mut cache) = ADVICE_CACHE.lock() {
+        if cache.observed_session != Some((epoch, live)) {
+            cache.observed_session = Some((epoch, live));
+            cache.current_session_epoch = Some(epoch);
+            cache.response = None;
+            cache.last_admission = None;
+        }
+    }
+}
+
+fn session_admission(cache: &AdviceCache, requested: Option<u64>) -> Result<(), String> {
+    if cache
+        .observed_session
+        .is_some_and(|(epoch, live)| !live || requested != Some(epoch))
+    {
+        return Err("Advice request does not belong to the current live session.".into());
+    }
+    Ok(())
 }
 
 /// Snapshot backend configuration and check whether the selected Ollama model
@@ -188,6 +287,10 @@ fn hero_thai(raw: &str) -> String {
 }
 
 fn build_prompt(tick: &GameTick, enemies: &[String]) -> String {
+    build_prompt_with(tick, enemies, &persona_prompt(crate::runtime::persona_preset()))
+}
+
+fn build_prompt_with(tick: &GameTick, enemies: &[String], persona: &str) -> String {
     let phase = if tick.clock_time < 0 {
         "ก่อนเข้าเลน"
     } else if tick.clock_time < 600 {
@@ -208,15 +311,18 @@ fn build_prompt(tick: &GameTick, enemies: &[String]) -> String {
     // + items; skill build estimated). Empty when the hero isn't in the damage DB.
     // Own-data only — enemy defenses aren't observable, so this is "combo hits ~X
     // on a soft target", not a kill call.
-    let burst_line =
-        crate::damage::self_burst(&tick.hero, tick.level.max(1) as u32, &tick.item_names)
-            .map(|b| {
-                format!(
-                "พลังคอมโบโดยประมาณ ~{:.0} dmg (คิดกับเป้าเปลือย เกราะ 0 / ต้านเวท 25%, สกิลบิลด์มาตรฐาน).",
-                b.total_burst
-            )
-            })
-            .unwrap_or_default();
+    let burst_line = crate::damage::self_burst_with_loadout(
+        &tick.hero,
+        tick.level.max(1) as u32,
+        &tick.combat_items,
+    )
+    .map(|b| {
+        format!(
+            "พลังคอมโบโดยประมาณ ~{:.0} dmg (คิดกับเป้าเปลือย เกราะ 0 / ต้านเวท 25%, สกิลบิลด์มาตรฐาน).",
+            b.total_burst
+        )
+    })
+    .unwrap_or_default();
 
     format!(
         "{persona}\n\nสถานการณ์ ({phase} · clock {clock}s): \
@@ -225,7 +331,7 @@ fn build_prompt(tick: &GameTick, enemies: &[String]) -> String {
          คำแนะนำ: {advice}\n\
          {burst}\n\
          แนะนำสั้น ๆ ว่าควรทำอะไรต่อ (ซื้อของ/ขึ้นสกิล/positioning).",
-        persona = PERSONA_PROMPT,
+        persona = persona,
         phase = phase,
         clock = tick.clock_time,
         hero = hero_thai(&tick.hero),
@@ -303,10 +409,14 @@ fn cloud_advice_context(tick: &GameTick) -> CloudAdviceContext {
 }
 
 fn build_cloud_prompt(tick: &GameTick) -> String {
+    build_cloud_prompt_with(tick, &persona_prompt(crate::runtime::persona_preset()))
+}
+
+fn build_cloud_prompt_with(tick: &GameTick, persona: &str) -> String {
     let context = cloud_advice_context(tick);
     format!(
         "{persona}\n\nสถานการณ์โดยสรุป ({phase}): ฮีโร่ของผู้เล่น {hero} เลเวล {level}, KDA {kills}/{deaths}/{assists}, net worth {net_worth}, gold {gold}, HP {hp}%, mana {mana}%, score {radiant}:{dire}.\nแนะนำสั้น ๆ ว่าควรทำอะไรต่อ โดยอ้างอิงเฉพาะข้อมูลที่ให้มา.",
-        persona = PERSONA_PROMPT,
+        persona = persona,
         phase = context.phase,
         hero = context.own_hero,
         level = context.own_level,
@@ -390,18 +500,21 @@ pub fn advise_with_epoch(
     session_epoch: Option<u64>,
 ) -> Result<Advice, String> {
     let request_started = Instant::now();
-    let backend = crate::runtime::master_backend();
-    let cloud_context_opt_in = crate::runtime::master_cloud_context_opt_in();
-    let route = advice_route(backend, cloud_context_opt_in).map_err(str::to_string)?;
-    let context_generation = crate::runtime::master_cloud_context_generation();
-    let ollama_model = crate::runtime::master_ollama_model();
+    let context = crate::runtime::master_request_context()?;
+    let route =
+        advice_route(context.backend, context.cloud_context_opt_in).map_err(str::to_string)?;
+    #[cfg(test)]
+    request_hook(RequestStage::SnapshotCaptured);
+    let context_generation = context.generation;
+    let ollama_model = context.ollama_model.clone();
 
     // Record a new epoch before doing provider work. This prevents an older
     // in-flight request from writing after the next match has started.
-    {
+    let (cached, flight) = crate::runtime::with_master_request_admission(&context, false, || {
         let mut cache = ADVICE_CACHE
             .lock()
             .map_err(|_| "G-Master advice cache is unavailable".to_string())?;
+        session_admission(&cache, session_epoch)?;
         observe_session_epoch(&mut cache.current_session_epoch, session_epoch)?;
         if let Some(cached) = cache.response.as_ref() {
             if cached.session_epoch == session_epoch
@@ -409,18 +522,47 @@ pub fn advise_with_epoch(
                 && cached.ollama_model == ollama_model
                 && cached.created_at.elapsed() < THROTTLE
                 && cache_origin_allowed(route, cached.from_slm)
-                && crate::runtime::master_cloud_context_generation() == context_generation
             {
-                return Ok(Advice {
-                    text: cached.text.clone(),
-                    cached: true,
-                    backend: cached.backend.into(),
-                    elapsed_ms: cached.elapsed_ms,
-                    cached_age_ms: Some(cached.created_at.elapsed().as_millis() as u64),
-                });
+                return Ok((
+                    Some(Advice {
+                        text: cached.text.clone(),
+                        cached: true,
+                        backend: cached.backend.into(),
+                        elapsed_ms: cached.elapsed_ms,
+                        cached_age_ms: Some(cached.created_at.elapsed().as_millis() as u64),
+                        context_generation,
+                    }),
+                    None,
+                ));
             }
         }
+        let same_namespace = cache
+            .last_admission
+            .as_ref()
+            .is_some_and(|(generation, epoch, _)| {
+                *generation == context_generation && *epoch == session_epoch
+            });
+        if cache.in_flight.is_some()
+            || (same_namespace
+                && cache
+                    .last_admission
+                    .as_ref()
+                    .is_some_and(|(_, _, at)| at.elapsed() < THROTTLE))
+        {
+            return Err(
+                "G-Master advice is already in flight or throttled; try again later.".into(),
+            );
+        }
+        cache.next_request = cache.next_request.wrapping_add(1);
+        let id = cache.next_request;
+        cache.in_flight = Some(id);
+        cache.last_admission = Some((context_generation, session_epoch, Instant::now()));
+        Ok((None, Some(AdviceFlight(id))))
+    })?;
+    if let Some(cached) = cached {
+        return Ok(cached);
     }
+    let _flight = flight;
 
     let local_prompt = build_prompt(tick, enemies);
 
@@ -431,11 +573,18 @@ pub fn advise_with_epoch(
         request_started,
         MAX_ADVICE_REQUEST_TIMEOUT_MS,
         AUTO_CLOUD_ATTEMPT_TIMEOUT_MS,
-        |timeout_ms| try_claude(&build_cloud_prompt(tick), timeout_ms),
         |timeout_ms| {
+            #[cfg(test)]
+            request_hook(RequestStage::BeforeCloudDispatch);
+            try_claude(&build_cloud_prompt(tick), timeout_ms, &context)
+        },
+        |timeout_ms| {
+            crate::runtime::with_master_request_admission(&context, false, || Ok(()))?;
             crate::slm::advise_offline_with_timeout(&local_prompt, &ollama_model, timeout_ms)
         },
     )?;
+    #[cfg(test)]
+    request_hook(RequestStage::ProviderFinished);
 
     if request_started.elapsed() > Duration::from_millis(MAX_ADVICE_REQUEST_TIMEOUT_MS) {
         return Err(format!(
@@ -443,23 +592,17 @@ pub fn advise_with_epoch(
             MAX_ADVICE_REQUEST_TIMEOUT_MS
         ));
     }
-    if crate::runtime::master_cloud_context_generation() != context_generation {
-        return Err("Cloud-context preference changed; advice response discarded.".into());
-    }
-
     let elapsed_ms = request_started.elapsed().as_millis() as u64;
     let resolved_backend = if from_slm { "ollama" } else { "claude" };
-    {
+    crate::runtime::with_master_request_admission(&context, false, || {
         let mut cache = ADVICE_CACHE
             .lock()
             .map_err(|_| "G-Master advice cache is unavailable".to_string())?;
+        session_admission(&cache, session_epoch)?;
         if !request_epoch_is_current(cache.current_session_epoch, session_epoch) {
             return Err(
                 "Advice response belongs to an earlier match session and was discarded.".into(),
             );
-        }
-        if crate::runtime::master_cloud_context_generation() != context_generation {
-            return Err("Cloud-context preference changed; advice response discarded.".into());
         }
         cache.response = Some(CachedAdvice {
             text: text.clone(),
@@ -474,22 +617,29 @@ pub fn advise_with_epoch(
         if let Ok(mut g) = LAST_BACKEND.lock() {
             *g = Some(resolved_backend);
         }
-    }
+        Ok(())
+    })?;
     // Quota monitor — only Claude-served responses burn Plan/API quota.
     // Ollama answers are free, and cached hits returned before this point.
+    // Unit-test providers must not append to the installed user's usage ledger.
+    #[cfg(not(test))]
     if !from_slm {
         crate::usage::record_advice(
             build_cloud_prompt(tick).chars().count(),
             text.chars().count(),
         );
     }
-    Ok(Advice {
+    #[cfg(test)]
+    request_hook(RequestStage::BeforeReturn);
+    let advice = Advice {
         text,
         cached: false,
         backend: resolved_backend.into(),
         elapsed_ms,
         cached_age_ms: None,
-    })
+        context_generation,
+    };
+    with_advice_publication(&advice, || Ok(advice.clone()))
 }
 
 fn observe_session_epoch(current: &mut Option<u64>, requested: Option<u64>) -> Result<(), String> {
@@ -610,11 +760,21 @@ where
 /// Claude advice path. When the user has chosen API-key auth and entered a key,
 /// call the Anthropic Messages API directly; otherwise shell out to the signed-in
 /// `claude` CLI (Plan quota, no key).
-fn try_claude(prompt: &str, timeout_ms: u64) -> Result<String, String> {
-    if let Some(key) = crate::runtime::master_api_key() {
-        return try_anthropic_api_with_timeout(prompt, &key, timeout_ms);
+fn try_claude(
+    prompt: &str,
+    timeout_ms: u64,
+    context: &crate::runtime::MasterRequestContext,
+) -> Result<String, String> {
+    #[cfg(test)]
+    if let Some(provider) = CLOUD_PROVIDER.with(|provider| provider.borrow_mut().take()) {
+        let provider =
+            crate::runtime::with_master_request_admission(context, true, || Ok(provider))?;
+        return provider();
     }
-    try_claude_cli(prompt, timeout_ms)
+    if let Some(key) = context.api_key.as_deref() {
+        return try_anthropic_api_with_timeout(prompt, key, timeout_ms, context);
+    }
+    try_claude_cli(prompt, timeout_ms, context)
 }
 
 /// POST the prompt to the Anthropic Messages API via curl (same shell-out pattern
@@ -623,6 +783,7 @@ fn try_anthropic_api_with_timeout(
     prompt: &str,
     key: &str,
     timeout_ms: u64,
+    context: &crate::runtime::MasterRequestContext,
 ) -> Result<String, String> {
     if timeout_ms == 0 {
         return Err("Anthropic API request timed out before it started".into());
@@ -658,7 +819,12 @@ fn try_anthropic_api_with_timeout(
         use std::os::windows::process::CommandExt;
         cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW — no console flash
     }
-    let out = cmd.output().map_err(|e| format!("เรียก curl ไม่ได้: {e}"))?;
+    let child = crate::runtime::with_master_request_admission(context, true, || {
+        cmd.spawn().map_err(|e| format!("เรียก curl ไม่ได้: {e}"))
+    })?;
+    let out = child
+        .wait_with_output()
+        .map_err(|e| format!("รอ curl ไม่ได้: {e}"))?;
     if !out.status.success() {
         if out.status.code() == Some(28) {
             return Err(format!("Anthropic API timed out after {timeout_ms} ms"));
@@ -701,7 +867,11 @@ fn claude_cli_args(prompt: &str) -> [&str; 2] {
     ["-p", prompt]
 }
 
-fn try_claude_cli(prompt: &str, timeout_ms: u64) -> Result<String, String> {
+fn try_claude_cli(
+    prompt: &str,
+    timeout_ms: u64,
+    context: &crate::runtime::MasterRequestContext,
+) -> Result<String, String> {
     let mut cmd = Command::new("claude");
     cmd.args(claude_cli_args(prompt))
         .stdin(Stdio::null())
@@ -712,7 +882,7 @@ fn try_claude_cli(prompt: &str, timeout_ms: u64) -> Result<String, String> {
         use std::os::windows::process::CommandExt;
         cmd.creation_flags(0x0800_0000);
     }
-    let out = run_command_with_timeout(cmd, timeout_ms, "claude CLI")?;
+    let out = run_command_with_timeout(cmd, timeout_ms, "claude CLI", context)?;
     if !out.status.success() {
         let stderr = String::from_utf8_lossy(&out.stderr);
         return Err(format!("claude คืน error: {}", stderr.trim()));
@@ -728,13 +898,16 @@ fn run_command_with_timeout(
     mut command: Command,
     timeout_ms: u64,
     label: &str,
+    context: &crate::runtime::MasterRequestContext,
 ) -> Result<std::process::Output, String> {
     if timeout_ms == 0 {
         return Err(format!("{label} timed out before it started"));
     }
-    let mut child = command
-        .spawn()
-        .map_err(|error| format!("could not start {label}: {error}"))?;
+    let mut child = crate::runtime::with_master_request_admission(context, true, || {
+        command
+            .spawn()
+            .map_err(|error| format!("could not start {label}: {error}"))
+    })?;
     let stdout = child
         .stdout
         .take()
@@ -791,8 +964,331 @@ fn read_pipe<R: Read + Send + 'static>(mut pipe: R) -> std::io::Result<Vec<u8>> 
 mod tests {
     use super::*;
 
+    static MASTER_TEST_LOCK: Mutex<()> = Mutex::new(());
+
+    fn consent_race_at(stage: RequestStage, epoch: u64) {
+        let _serial = MASTER_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        crate::runtime::set_master_backend(crate::runtime::MasterBackend::Claude);
+        crate::runtime::set_master_cloud_context_opt_in(true);
+        *ADVICE_CACHE.lock().unwrap() = AdviceCache::default();
+        let calls = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let provider_calls = calls.clone();
+        CLOUD_PROVIDER.with(|provider| {
+            *provider.borrow_mut() = Some(Box::new(move || {
+                provider_calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                Ok("private cloud answer".into())
+            }));
+        });
+        REQUEST_HOOK.with(|hook| {
+            *hook.borrow_mut() = Some(Box::new(move |reached| {
+                if reached == stage {
+                    crate::runtime::set_master_cloud_context_opt_in(false);
+                }
+            }));
+        });
+        let result = advise_with_epoch(&fake_tick(), &[], Some(epoch));
+        REQUEST_HOOK.with(|hook| *hook.borrow_mut() = None);
+        CLOUD_PROVIDER.with(|provider| *provider.borrow_mut() = None);
+        let calls = calls.load(std::sync::atomic::Ordering::SeqCst);
+        let cached = ADVICE_CACHE.lock().unwrap().response.is_some();
+        crate::runtime::set_master_backend(crate::runtime::MasterBackend::Auto);
+        assert!(
+            result.is_err(),
+            "revoked request must not publish an answer"
+        );
+        assert!(!cached, "revoked request must not repopulate the cache");
+        assert_eq!(
+            calls,
+            usize::from(matches!(
+                stage,
+                RequestStage::ProviderFinished | RequestStage::BeforeReturn
+            ))
+        );
+    }
+
+    #[test]
+    fn consent_revoked_between_route_and_generation_cannot_launch_cloud() {
+        consent_race_at(RequestStage::SnapshotCaptured, 10_001);
+    }
+
+    #[test]
+    fn consent_revoked_before_dispatch_cannot_launch_cloud() {
+        consent_race_at(RequestStage::BeforeCloudDispatch, 10_002);
+    }
+
+    #[test]
+    fn consent_revoked_after_provider_discards_output_and_cache() {
+        consent_race_at(RequestStage::ProviderFinished, 10_003);
+    }
+
+    #[test]
+    fn consent_revoked_after_cache_publication_cannot_return_stale_output() {
+        consent_race_at(RequestStage::BeforeReturn, 10_007);
+    }
+
+    #[test]
+    fn consent_revoke_and_regrant_before_dispatch_does_not_restore_old_authority() {
+        let _serial = MASTER_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        crate::runtime::set_master_backend(crate::runtime::MasterBackend::Claude);
+        crate::runtime::set_master_cloud_context_opt_in(true);
+        *ADVICE_CACHE.lock().unwrap() = AdviceCache::default();
+        CLOUD_PROVIDER.with(|provider| {
+            *provider.borrow_mut() = Some(Box::new(|| panic!("stale request launched cloud")));
+        });
+        REQUEST_HOOK.with(|hook| {
+            *hook.borrow_mut() = Some(Box::new(|stage| {
+                if stage == RequestStage::BeforeCloudDispatch {
+                    crate::runtime::set_master_cloud_context_opt_in(false);
+                    crate::runtime::set_master_cloud_context_opt_in(true);
+                }
+            }));
+        });
+        let result = advise_with_epoch(&fake_tick(), &[], Some(10_004));
+        REQUEST_HOOK.with(|hook| *hook.borrow_mut() = None);
+        CLOUD_PROVIDER.with(|provider| *provider.borrow_mut() = None);
+        crate::runtime::set_master_cloud_context_opt_in(false);
+        crate::runtime::set_master_backend(crate::runtime::MasterBackend::Auto);
+        assert!(result.is_err());
+        assert!(ADVICE_CACHE.lock().unwrap().response.is_none());
+    }
+
+    #[test]
+    fn configuration_changes_before_dispatch_invalidate_old_requests() {
+        let _serial = MASTER_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let changes: [fn(); 4] = [
+            || crate::runtime::set_master_backend(crate::runtime::MasterBackend::Ollama),
+            || crate::runtime::set_master_ollama_model("changed-local-model".into()),
+            || crate::runtime::set_master_mode(true),
+            || crate::runtime::set_master_api_key(Some("test-key-never-sent".into())),
+        ];
+        for change in changes {
+            crate::runtime::set_master_backend(crate::runtime::MasterBackend::Claude);
+            crate::runtime::set_master_cloud_context_opt_in(true);
+            crate::runtime::set_master_ollama_model(String::new());
+            crate::runtime::set_master_mode(false);
+            crate::runtime::set_master_api_key(None);
+            *ADVICE_CACHE.lock().unwrap() = AdviceCache::default();
+            CLOUD_PROVIDER.with(|provider| {
+                *provider.borrow_mut() =
+                    Some(Box::new(|| panic!("stale configuration launched cloud")));
+            });
+            REQUEST_HOOK.with(|hook| {
+                *hook.borrow_mut() = Some(Box::new(move |stage| {
+                    if stage == RequestStage::BeforeCloudDispatch {
+                        change();
+                    }
+                }));
+            });
+            let result = advise_with_epoch(&fake_tick(), &[], Some(10_006));
+            REQUEST_HOOK.with(|hook| *hook.borrow_mut() = None);
+            CLOUD_PROVIDER.with(|provider| *provider.borrow_mut() = None);
+            assert!(result.is_err());
+            assert!(ADVICE_CACHE.lock().unwrap().response.is_none());
+        }
+        crate::runtime::set_master_cloud_context_opt_in(false);
+        crate::runtime::set_master_backend(crate::runtime::MasterBackend::Auto);
+        crate::runtime::set_master_api_key(None);
+    }
+
+    #[test]
+    fn consent_revocation_rejects_delayed_publication_and_cached_output() {
+        let _serial = MASTER_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        crate::runtime::set_master_backend(crate::runtime::MasterBackend::Claude);
+        crate::runtime::set_master_cloud_context_opt_in(true);
+        *ADVICE_CACHE.lock().unwrap() = AdviceCache::default();
+        CLOUD_PROVIDER.with(|provider| {
+            *provider.borrow_mut() = Some(Box::new(|| Ok("authorized answer".into())));
+        });
+        let fresh = advise_with_epoch(&fake_tick(), &[], Some(10_008)).unwrap();
+        CLOUD_PROVIDER.with(|provider| {
+            *provider.borrow_mut() = Some(Box::new(|| panic!("cache hit launched a provider")));
+        });
+        let cached = advise_with_epoch(&fake_tick(), &[], Some(10_008)).unwrap();
+        CLOUD_PROVIDER.with(|provider| *provider.borrow_mut() = None);
+        assert!(cached.cached);
+        crate::runtime::set_master_cloud_context_opt_in(false);
+        let mut published = 0;
+        for answer in [&fresh, &cached] {
+            assert!(with_advice_publication(answer, || {
+                published += 1;
+                Ok(())
+            })
+            .is_err());
+        }
+        assert!(advise_with_epoch(&fake_tick(), &[], Some(10_008)).is_err());
+        crate::runtime::set_master_backend(crate::runtime::MasterBackend::Auto);
+        assert_eq!(published, 0);
+        assert!(ADVICE_CACHE.lock().unwrap().response.is_none());
+    }
+
+    #[test]
+    fn consent_opt_out_does_not_wait_for_in_flight_provider_io() {
+        use std::sync::mpsc;
+        let _serial = MASTER_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        crate::runtime::set_master_backend(crate::runtime::MasterBackend::Claude);
+        crate::runtime::set_master_cloud_context_opt_in(true);
+        *ADVICE_CACHE.lock().unwrap() = AdviceCache::default();
+        let (launched_tx, launched_rx) = mpsc::channel();
+        let (finish_tx, finish_rx) = mpsc::channel();
+        let request = thread::spawn(move || {
+            CLOUD_PROVIDER.with(|provider| {
+                *provider.borrow_mut() = Some(Box::new(move || {
+                    launched_tx.send(()).unwrap();
+                    finish_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+                    Ok("already admitted cloud answer".into())
+                }));
+            });
+            advise_with_epoch(&fake_tick(), &[], Some(10_005))
+        });
+        launched_rx.recv_timeout(Duration::from_secs(2)).unwrap();
+        let (revoked_tx, revoked_rx) = mpsc::channel();
+        let revoke = thread::spawn(move || {
+            crate::runtime::set_master_cloud_context_opt_in(false);
+            revoked_tx.send(()).unwrap();
+        });
+        let opt_out_completed = revoked_rx.recv_timeout(Duration::from_secs(2));
+        // Release the fake provider even on failure, so a misplaced I/O lock
+        // fails an assertion instead of leaving test threads permanently stuck.
+        finish_tx.send(()).unwrap();
+        revoke.join().unwrap();
+        let result = request.join().unwrap();
+        crate::runtime::set_master_backend(crate::runtime::MasterBackend::Auto);
+        assert!(
+            opt_out_completed.is_ok(),
+            "opt-out was blocked on provider I/O"
+        );
+        assert!(result.is_err(), "an in-flight revoked answer was published");
+        assert!(ADVICE_CACHE.lock().unwrap().response.is_none());
+        assert_eq!(last_backend(), None);
+    }
+
+    #[test]
+    fn concurrent_manual_and_auto_advice_admit_only_one_provider() {
+        use std::sync::mpsc;
+        let _serial = MASTER_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        crate::runtime::set_master_backend(crate::runtime::MasterBackend::Claude);
+        crate::runtime::set_master_cloud_context_opt_in(true);
+        *ADVICE_CACHE.lock().unwrap() = AdviceCache::default();
+        let (entered_tx, entered_rx) = mpsc::channel();
+        let (finish_tx, finish_rx) = mpsc::channel();
+        let first = thread::spawn(move || {
+            CLOUD_PROVIDER.with(|provider| {
+                *provider.borrow_mut() = Some(Box::new(move || {
+                    entered_tx.send(()).unwrap();
+                    finish_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+                    Ok("first admitted".into())
+                }))
+            });
+            advise_with_epoch(&fake_tick(), &[], Some(11_001))
+        });
+        entered_rx.recv_timeout(Duration::from_secs(2)).unwrap();
+        CLOUD_PROVIDER
+            .with(|provider| *provider.borrow_mut() = Some(Box::new(|| Ok("duplicate".into()))));
+        let duplicate = advise_with_epoch(&fake_tick(), &[], Some(11_001));
+        CLOUD_PROVIDER.with(|provider| *provider.borrow_mut() = None);
+        finish_tx.send(()).unwrap();
+        let accepted = first.join().unwrap().unwrap();
+        assert!(
+            duplicate.is_err(),
+            "a concurrent caller launched another provider"
+        );
+        assert_eq!(accepted.text, "first admitted");
+        let cached = advise_with_epoch(&fake_tick(), &[], Some(11_001)).unwrap();
+        assert!(cached.cached);
+        assert_eq!(cached.text, "first admitted");
+        crate::runtime::set_master_cloud_context_opt_in(false);
+        crate::runtime::set_master_backend(crate::runtime::MasterBackend::Auto);
+    }
+
+    #[test]
+    fn failed_provider_releases_flight_but_admission_still_throttles() {
+        let _serial = MASTER_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        crate::runtime::set_master_backend(crate::runtime::MasterBackend::Claude);
+        crate::runtime::set_master_cloud_context_opt_in(true);
+        *ADVICE_CACHE.lock().unwrap() = AdviceCache::default();
+        CLOUD_PROVIDER
+            .with(|provider| *provider.borrow_mut() = Some(Box::new(|| Err("offline".into()))));
+        assert!(advise_with_epoch(&fake_tick(), &[], Some(11_002)).is_err());
+        CLOUD_PROVIDER
+            .with(|provider| *provider.borrow_mut() = Some(Box::new(|| Ok("too soon".into()))));
+        let too_soon = advise_with_epoch(&fake_tick(), &[], Some(11_002));
+        CLOUD_PROVIDER.with(|provider| *provider.borrow_mut() = None);
+        assert!(ADVICE_CACHE.lock().unwrap().in_flight.is_none());
+        ADVICE_CACHE
+            .lock()
+            .unwrap()
+            .last_admission
+            .as_mut()
+            .unwrap()
+            .2 = Instant::now() - THROTTLE;
+        CLOUD_PROVIDER.with(|provider| {
+            *provider.borrow_mut() = Some(Box::new(|| Ok("after throttle".into())))
+        });
+        assert_eq!(
+            advise_with_epoch(&fake_tick(), &[], Some(11_002))
+                .unwrap()
+                .text,
+            "after throttle"
+        );
+        crate::runtime::set_master_cloud_context_opt_in(false);
+        crate::runtime::set_master_backend(crate::runtime::MasterBackend::Auto);
+        assert!(
+            too_soon.is_err(),
+            "a failed provider bypassed the 30-second admission throttle"
+        );
+    }
+
+    #[test]
+    fn obsolete_flight_keeps_global_single_flight_without_consuming_new_namespace_throttle() {
+        use std::sync::mpsc;
+        let _serial = MASTER_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        crate::runtime::set_master_backend(crate::runtime::MasterBackend::Claude);
+        crate::runtime::set_master_cloud_context_opt_in(true);
+        *ADVICE_CACHE.lock().unwrap() = AdviceCache::default();
+        let (entered_tx, entered_rx) = mpsc::channel();
+        let (finish_tx, finish_rx) = mpsc::channel();
+        let old = thread::spawn(move || {
+            CLOUD_PROVIDER.with(|provider| {
+                *provider.borrow_mut() = Some(Box::new(move || {
+                    entered_tx.send(()).unwrap();
+                    finish_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+                    Ok("obsolete".into())
+                }))
+            });
+            advise_with_epoch(&fake_tick(), &[], Some(11_003))
+        });
+        entered_rx.recv_timeout(Duration::from_secs(2)).unwrap();
+        crate::runtime::set_master_ollama_model("changed while cloud waits".into());
+        observe_advice_session(11_004, true);
+        CLOUD_PROVIDER.with(|provider| {
+            *provider.borrow_mut() = Some(Box::new(|| {
+                panic!("new provider overlapped obsolete flight")
+            }))
+        });
+        assert!(advise_with_epoch(&fake_tick(), &[], Some(11_004)).is_err());
+        CLOUD_PROVIDER.with(|provider| *provider.borrow_mut() = None);
+        finish_tx.send(()).unwrap();
+        assert!(old.join().unwrap().is_err());
+        assert!(ADVICE_CACHE.lock().unwrap().response.is_none());
+        assert!(ADVICE_CACHE.lock().unwrap().last_admission.is_none());
+        CLOUD_PROVIDER
+            .with(|provider| *provider.borrow_mut() = Some(Box::new(|| Ok("current".into()))));
+        assert_eq!(
+            advise_with_epoch(&fake_tick(), &[], Some(11_004))
+                .unwrap()
+                .text,
+            "current"
+        );
+        observe_advice_session(11_004, false);
+        assert!(advise_with_epoch(&fake_tick(), &[], Some(11_004)).is_err());
+        assert!(ADVICE_CACHE.lock().unwrap().response.is_none());
+        crate::runtime::set_master_cloud_context_opt_in(false);
+        crate::runtime::set_master_backend(crate::runtime::MasterBackend::Auto);
+    }
+
     fn fake_tick() -> GameTick {
         GameTick {
+            local_player_verified: true,
             in_game: true,
             clock_time: 720,
             game_state: "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS".into(),
@@ -822,6 +1318,71 @@ mod tests {
             kill_list_len: 4,
             last_victim_slot: 7,
             item_names: vec!["item_dagon".into()],
+            combat_items: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn persona_tone_differs_per_preset_and_keeps_core_persona() {
+        let coach = persona_prompt(0);
+        let caster = persona_prompt(2);
+        let meme = persona_prompt(3);
+        assert_ne!(coach, caster);
+        assert_ne!(coach, meme);
+        assert_ne!(caster, meme);
+        for p in [&coach, &caster, &meme] {
+            assert!(p.contains("Maiden"), "core persona missing: {p}");
+            assert!(p.contains("สุภาพ"), "gentle core tone missing: {p}");
+        }
+        // Silent's explicit Ask and unknown codes use the Coach tone.
+        assert_eq!(persona_prompt(1), coach);
+        assert_eq!(persona_prompt(200), coach);
+    }
+
+    #[test]
+    fn persona_tone_reaches_local_and_cloud_prompts_without_new_data() {
+        let tick = fake_tick();
+        let coach_local = build_prompt_with(&tick, &[], &persona_prompt(0));
+        let meme_local = build_prompt_with(&tick, &[], &persona_prompt(3));
+        assert_ne!(coach_local, meme_local);
+        let coach_cloud = build_cloud_prompt_with(&tick, &persona_prompt(0));
+        let meme_cloud = build_cloud_prompt_with(&tick, &persona_prompt(3));
+        assert_ne!(coach_cloud, meme_cloud);
+        // Only the static tone line differs: same game context either way.
+        let strip = |p: &str, preset: u8| p.replace(persona_tone(preset), "");
+        assert_eq!(strip(&coach_cloud, 0), strip(&meme_cloud, 3));
+    }
+
+    #[test]
+    fn changing_persona_preset_invalidates_advice_generation() {
+        let _serial = MASTER_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        crate::runtime::set_persona_preset(0);
+        let before = crate::runtime::master_cloud_context_generation();
+        crate::runtime::set_persona_preset(0);
+        assert_eq!(
+            before,
+            crate::runtime::master_cloud_context_generation(),
+            "re-selecting the same preset must not invalidate advice"
+        );
+        crate::runtime::set_persona_preset(3);
+        assert_ne!(
+            before,
+            crate::runtime::master_cloud_context_generation(),
+            "a preset change must invalidate cached/in-flight advice"
+        );
+        crate::runtime::set_persona_preset(0);
+    }
+
+    #[test]
+    fn g_signal_sources_do_not_read_persona_preset() {
+        for (name, src) in [
+            ("signal.rs", include_str!("signal.rs")),
+            ("capture.rs", include_str!("capture.rs")),
+        ] {
+            assert!(
+                !src.contains("persona_preset"),
+                "{name} must not read the G-Persona preset (G-Signal is immutable)"
+            );
         }
     }
 
@@ -1117,9 +1678,8 @@ mod tests {
 
     #[test]
     fn last_backend_reports_the_most_recent_write() {
-        // Direct static access — no test in this module calls the real
-        // (network/process) `advise()`, so this is the only writer and the
-        // read-back is deterministic without spinning up claude/ollama.
+        let _serial = MASTER_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        // Consent regressions also invalidate this process-global marker.
         if let Ok(mut g) = LAST_BACKEND.lock() {
             *g = Some("ollama");
         }

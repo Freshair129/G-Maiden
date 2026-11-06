@@ -8,10 +8,11 @@
 //! เลย estimate ค่า in/out tokens จากความยาวข้อความและคูณราคา model ที่ใช้.
 //! ตัวเลขที่แสดง = "เครื่องนี้ใช้ไปเท่าไหร่" ไม่ใช่ % คงเหลือ.
 
-use std::fs::{self, OpenOptions};
-use std::io::Write;
+use std::fs;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
+#[cfg(not(test))]
+use std::{fs::OpenOptions, io::Write};
 
 const SESSION_WINDOW_MS: u64 = 5 * 60 * 60 * 1000;
 const WEEKLY_WINDOW_MS: u64 = 7 * 24 * 60 * 60 * 1000;
@@ -62,6 +63,7 @@ pub fn plan_mode() -> &'static str {
     }
 }
 
+#[cfg(not(test))]
 fn append_event(line: &str) {
     let dir = usage_dir();
     if let Err(e) = fs::create_dir_all(&dir) {
@@ -81,6 +83,7 @@ fn append_event(line: &str) {
 
 /// Record a Claude-served G-Master advice call. `prompt_chars`/`out_chars` are
 /// character counts (not bytes — Thai is 3 bytes/char in UTF-8).
+#[cfg(not(test))]
 pub fn record_advice(prompt_chars: usize, out_chars: usize) {
     let in_tok = estimate_tokens(prompt_chars);
     let out_tok = estimate_tokens(out_chars);

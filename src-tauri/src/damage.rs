@@ -5,8 +5,8 @@
 //! resistance. When the player's current HP falls below the calculated
 //! lethal threshold, G-Signal fires a voice warning.
 
-// `self_burst` (own-hero burst estimate) IS wired live into G-Master
-// (`master::advise` -> `damage::self_burst`, July 2026). The offensive-lethality
+// `self_burst_with_loadout` (own-hero burst estimate) IS wired live into G-Master
+// (`master::advise` -> `damage::self_burst_with_loadout`). The offensive-lethality
 // direction below it — `is_lethal`/`can_i_kill(_with)`/`kill_confidence`/
 // `KillWindow`/`all_heroes`/`HeroData::{burst_damage,armor_at_level}` — is still
 // unwired scaffold: it answers "can MY combo kill THAT enemy", which needs a
@@ -691,20 +691,27 @@ pub fn loadout_from_names<I: AsRef<str>>(names: &[I]) -> Vec<LoadoutItem> {
 const BASELINE_TARGET_ARMOR: f64 = 0.0;
 const BASELINE_TARGET_MAGIC_RES: f64 = 25.0;
 
-/// Estimate the LOCAL player's single-combo burst from their real hero + level +
-/// items. The skill build is estimated (`ability_levels = None`) on purpose: GSI's
-/// ability-slot ordering can't be aligned to the curated `HeroData.abilities`
-/// without live verification, and a misaligned level would silently produce a
-/// wrong number — worse than the built-in standard-build estimate. Items and
-/// level are exact. `None` when the hero isn't in the DB. Grounds G-Master advice
-/// on real kill potential instead of an LLM guess. Own-hero only.
-pub fn self_burst(hero_internal: &str, level: u32, item_names: &[String]) -> Option<BurstResult> {
-    let hero = lookup_hero(hero_internal)?;
+#[cfg(test)]
+fn self_burst(hero_internal: &str, level: u32, item_names: &[String]) -> Option<BurstResult> {
     let items = loadout_from_names(item_names);
+    self_burst_with_loadout(hero_internal, level, &items)
+}
+
+/// Estimate own burst from equipped contributions whose active readiness was
+/// checked by the GSI inventory adapter. Abilities use the standard skill build:
+/// GSI slot ordering has no verified mapping to curated ability names. Target
+/// defenses use the declared baseline, so this is combo potential, not a kill
+/// verdict against a currently observed enemy. Unknown heroes return `None`.
+pub fn self_burst_with_loadout(
+    hero_internal: &str,
+    level: u32,
+    items: &[LoadoutItem],
+) -> Option<BurstResult> {
+    let hero = lookup_hero(hero_internal)?;
     Some(hero.burst_damage_with(
         level,
         None,
-        &items,
+        items,
         BASELINE_TARGET_ARMOR,
         BASELINE_TARGET_MAGIC_RES,
     ))
@@ -732,8 +739,12 @@ mod tests {
         assert!(self_burst("npc_dota_hero_not_a_hero", 10, &[]).is_none());
         // Known hero → positive burst from real level; a burst item raises it.
         let bare = self_burst("npc_dota_hero_antimage", 16, &[]).expect("known hero in DB");
-        let armed = self_burst("npc_dota_hero_antimage", 16, &["item_desolator".to_string()])
-            .expect("known hero in DB");
+        let armed = self_burst(
+            "npc_dota_hero_antimage",
+            16,
+            &["item_desolator".to_string()],
+        )
+        .expect("known hero in DB");
         assert!(bare.total_burst > 0.0, "level alone yields attack burst");
         assert!(
             armed.total_burst >= bare.total_burst,
@@ -745,8 +756,7 @@ mod tests {
 
     #[test]
     fn self_burst_applies_baseline_magic_resistance_as_percentage() {
-        let bare = self_burst("npc_dota_hero_crystal_maiden", 6, &[])
-            .expect("known hero in DB");
+        let bare = self_burst("npc_dota_hero_crystal_maiden", 6, &[]).expect("known hero in DB");
         let dagon = self_burst(
             "npc_dota_hero_crystal_maiden",
             6,

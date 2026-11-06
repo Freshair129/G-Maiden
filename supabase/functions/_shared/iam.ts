@@ -3,6 +3,7 @@ import { isGoogleIdentity } from "./identity.ts";
 export type IamRole = "user" | "creator" | "admin" | "owner";
 export type IamAal = "aal1" | "aal2";
 export type IamCapability =
+  | "social.use"
   | "iam.role.delegate"
   | "iam.audit.read"
   | "iam.security.read"
@@ -54,6 +55,7 @@ export type IamDecision =
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const CAPABILITIES: Record<IamCapability, readonly IamRole[]> = {
+  "social.use": ["user", "creator", "admin", "owner"],
   "iam.role.delegate": ["owner"],
   "iam.audit.read": ["admin", "owner"],
   "iam.security.read": ["user", "creator", "admin", "owner"],

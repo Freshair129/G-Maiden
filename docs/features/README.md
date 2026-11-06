@@ -2,10 +2,10 @@
 title: "G-Series Feature Specifications"
 doc_id: "features/README"
 status: "active"
-version: "0.2.2"
-updated: "2026-10-12"
+version: "0.4.0"
+updated: "2026-11-01"
 owner: "Boss"
-related_docs: ["mvp-decisions", "G-SERIES-DATA-LINEAGE", "software-requirements-specification"]
+related_docs: ["mvp-decisions", "G-SERIES-DATA-LINEAGE", "software-requirements-specification", "FEAT-G-PARTY", "CR-037-party-gsi-own-stat-sharing", "FEAT-G-FRIENDS", "ADR-20", "CR-038-party-friends-presence-invitations"]
 ---
 
 # G-Series Feature Specifications
@@ -31,7 +31,7 @@ related_docs: ["mvp-decisions", "G-SERIES-DATA-LINEAGE", "software-requirements-
 | **G-Signal** — Real-time Gank Warning | 3 | **p50 ≤250ms; every sample ≤300ms** | [[FEAT-G-SIGNAL]] |
 | **G-Damage** — Real-time Lethality Engine | 3 | <1ms calc (feeds G-Signal) | [[FEAT-G-DAMAGE]] |
 | **G-Master** — Strategic Advisor | 5 | — | [[FEAT-G-MASTER]] |
-| **G-Sensory** — Overlay & Hardware | 0–1, 7 | FPS ≤3%, whole-app CPU ≤10%, aggregate RAM ≤400,000,000 bytes | [[FEAT-G-SENSORY]] |
+| **G-Sensory** — Overlay & Hardware | 0–1, 7 | FPS ≤3%, whole-app CPU ≤10%, aggregate RAM ≤900,000,000 bytes | [[FEAT-G-SENSORY]] |
 | **G-Log** — Feedback Loop | 6 | **no-egress** | [[FEAT-G-LOG]] |
 
 ## Companion Experience Extensions
@@ -45,6 +45,15 @@ related_docs: ["mvp-decisions", "G-SERIES-DATA-LINEAGE", "software-requirements-
 | **G-Mind** — Cognitive Router | P1; outside MVP | 4 | [[FEAT-G-MIND]] |
 | **G-Persona** — Tone Presets | P2 | 7–8 | [[FEAT-G-PERSONA]] |
 | **G-Stream** — Streamer Co-host | P2 | 8 | [[FEAT-G-STREAM]] |
+
+## Owner-directed extensions
+
+| Module | Scope / status | Phase | Doc |
+| --- | --- | --- | --- |
+| **G-Friends** — Friends, presence and targeted party invitations | Owner authorized CR-038 through protected source merge; optional account social actions, guest route retained; operational/live acceptance pending. | 3 (extension integration) | [[FEAT-G-FRIENDS]] · [[ADR-20]] · [[CR-038-party-friends-presence-invitations]] |
+| **G-Party** — Cooperative own-GSI status sharing | Owner authorized 2026-11-01; implementation in progress, native/live acceptance pending. Separate checked consent; no reprioritization of the existing MVP tasks. | 3 (extension integration) | [[FEAT-G-PARTY]] · [[CR-037-party-gsi-own-stat-sharing]] |
+
+G-Party own stats use a distinct peer relay route under MVP-005A. It does not grant AI/cloud consent, does not send raw GSI/raw match ID/SteamID, and does not forward received peer data into Memory/G-Log/AI. Execution/evidence: [[2026-11-01-g-party-gsi-sharing]].
 
 ## Future / Proposed (post-v1.0)
 
@@ -76,9 +85,10 @@ G-Coach (post-match) ◄── G-Memory
 | --- | --- | --- |
 | Latency (G-Signal ≤300ms) | Cached audio, no cloud/SLM in pure Rust path; p50 ≤250ms and every sample ≤300ms | MVP-006 |
 | CPU ≤10% | Whole-app process group, normalized by logical CPU capacity, every 1-second sample | MVP-006 |
-| RAM ≤400,000,000 bytes | Aggregate peak Working Set for whole app/process group, including host/WebView2/feeder/STT/SLM/model processes | MVP-006 |
+| RAM ≤900,000,000 bytes | Aggregate peak Working Set for whole app/process group, including host/WebView2/feeder/STT/SLM/model processes | MVP-006 |
 | FPS drop ≤3% | Governor throttle | P7 |
 | Privacy | G-Log/G-Memory/CV/Voice audio+transcript local-only; own-stat cloud context is separately opted in and allowlisted | MVP-005 / P6 |
+| Party sharing | Checked consent+activation, narrow own stats, same room/match/team, TTL/null states, memory-only; no AI consent or raw match/Steam ID egress | MVP-005A / PARTY-AC-001–010 |
 | Belief Revision | G-Signal (immutable behavior) | P3 |
 | Persona consistency | G-Persona (immutable core) | P4, P8 |
 
@@ -88,3 +98,5 @@ G-Coach (post-match) ◄── G-Memory
 | 0.2.1 | 2026-10-10 | Corrected `doc_id` to the canonical `features/README` path slug required by the strict doc-graph gate |
 | 0.2.2 | 2026-10-12 | Aligned the module and cross-cutting CPU gates with the approved 10% whole-app budget. |
 | 0.2.0 | 2026-10-10 | Reconciled module index, G-Signal hard-max label, local Voice/Memory routing, G-Motion heuristic scope, and MVP decision precedence |
+| 0.3.0 | 2026-11-01 | Register owner-directed G-Party extension and separate consent/lineage boundaries; align the touched RAM summary with the accepted 900MB ceiling without claiming acceptance. |
+| 0.4.0 | 2026-11-01 | Register G-Friends optional account social extension, private projection and consent boundaries alongside guest G-Party; preserve independent live/operational acceptance. |

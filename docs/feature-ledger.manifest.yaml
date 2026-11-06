@@ -73,6 +73,22 @@
 # existence, so a path+anchor would falsely resolve as "missing").
 
 entries:
+  # G-Party is an owner-directed extension. Portable integration and UI tests
+  # plus independent review are recorded; Windows/live/NFR acceptance is pending.
+  - id: 3-g-party
+    title: "G-Party — cooperative own-GSI status sharing with separate consent"
+    kind: feature
+    phase_target: P3
+    phase_source: doc
+    claimed_status: code+needs-test-or-review
+    source: owner-directed extension, 2026-11-01; tested implementation candidate, Windows/live/NFR acceptance pending
+    refs:
+      docs: [docs/features/FEAT-G-PARTY.md, docs/change request/CR-037-party-gsi-own-stat-sharing.md, docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md]
+      srs: []
+      code: [services/g-party-relay/server.mjs, src-tauri/g-party/src/client.rs, src-tauri/g-party/src/lib.rs, src-tauri/src/party.rs, src/src/party/GPartyPage.tsx, src/src/party/useParty.ts]
+      tests: [services/g-party-relay/server.test.mjs, src-tauri/g-party/src/tests.rs, src-tauri/g-party/src/transport_tests.rs, src/src/party/__tests__/partyModel.test.ts, src/src/party/__tests__/GPartyPage.test.tsx]
+      review: [docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md]
+
   # --- 1.1 The six canonical G-series modules ---
   - id: 1.1-g-sentry
     title: "G-Sentry — fog-of-war monitor (enemies missing from vision)"

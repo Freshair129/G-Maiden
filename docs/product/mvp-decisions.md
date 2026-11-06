@@ -2,13 +2,13 @@
 title: "G-Maiden MVP — Scope, Access, Data and Quality Decisions"
 doc_id: "mvp-decisions"
 status: "accepted"
-version: "0.3.3"
-updated: 2026-10-18
+version: "0.7.0"
+updated: "2026-11-01"
 owner: "Boss"
 approved_by: "Boss — explicit owner instruction in conversation"
-approved_date: "2026-10-13"
-approval_basis: "Owner instructions: ปรับ cpu ไม่เกิน 10%; หยุดเปิดแอปหากตั้ง CPU Job Object ไม่สำเร็จ"
-related_docs: ["roadmap", "mvp-backlog", "mvp-execution-dag", "software-requirements-specification", "FEAT-G-VOICE", "FEAT-G-MEMORY"]
+approved_date: "2026-11-01"
+approval_basis: "Owner authorized cooperative own-GSI party sharing and repository documentation; assistant selects detailed protocol. Prior 900MB decision is preserved; no release/native acceptance is implied."
+related_docs: ["roadmap", "mvp-backlog", "mvp-execution-dag", "software-requirements-specification", "FEAT-G-VOICE", "FEAT-G-MEMORY", "FEAT-G-PARTY", "CR-037-party-gsi-own-stat-sharing", "FEAT-G-FRIENDS", "ADR-20", "CR-038-party-friends-presence-invitations"]
 ---
 
 # มติสำหรับเริ่มพัฒนา MVP
@@ -26,6 +26,7 @@ related_docs: ["roadmap", "mvp-backlog", "mvp-execution-dag", "software-requirem
 - Own-player fields ใช้เฉพาะ GSI ที่ valid; อีก 9 คนไม่สมมติ KDA/items. CV รับรองเฉพาะ hero classes ที่ผ่านเกณฑ์ราย class และบันทึก model/labels hashes; ยอมรับ coverage แบบค่อยเพิ่ม แต่ก่อน release ต้องแสดงรายการ supported/unknown จริง.
 - คง Alt+M เป็น mute; PTT เลือก **Ctrl+Alt+V** เป็นค่าเริ่มต้นใน MVP-038 พร้อมตรวจ hotkey conflict และ remap ได้. ไม่มี always-on mic.
 - MVP-053–062 เลื่อนตาม backlog; Store/payment, GID Shield/recovery/public profiles, deep Coach และ public campaign อยู่หลัง MVP.
+- **Owner-directed extension (2026-11-01): G-Party** แชร์ own-GSI stats ระหว่างสมาชิกที่ยินยอมเองตาม MVP-005A และ [[FEAT-G-PARTY]]. ไม่เปลี่ยน 62 parent task/priority ของ MVP เดิม และไม่รับรอง implementation/native/live acceptance จากการอนุญาต scope.
 
 ## MVP-004 — Access/offline และขอบเขต account
 
@@ -69,6 +70,32 @@ Cloud game-context **off by default**. การ sign-in, เลือก Claude
 
 Consent toggle, match/session generation และ backend เป็นส่วนหนึ่งของ request/cache key; late response จากบริบทเก่าถูก discard. Runtime traffic acceptance ของ MVP-050 ต้องพิสูจน์ denylist ทั้ง manual/auto/CLI/API/error/retry/cancel paths.
 
+## MVP-005A — G-Party peer-sharing data contract
+
+ผู้ใช้สั่งให้พัฒนา own-GSI party sharing และแก้เอกสารวันที่ 2026-11-01 ตาม [[CR-037-party-gsi-own-stat-sharing]]. นี่เป็น route ใหม่ที่จำกัด purpose/recipients ของตน **ไม่ขยาย AI allowlist/denylist ใน MVP-005**. รายละเอียด relay/protocol เป็น assistant implementation decision; ไม่ใช่การอนุมัติ hosting/deployment/release หรือผล native/live acceptance.
+
+- **Consent และ access:** ปิดโดยค่าเริ่มต้น. Create/join ต้อง checked explicit sharing consent พร้อม activation ใน action เดียวกัน; native reject ก่อน network เมื่อไม่ยินยอม. ไม่มี view-only mode, auto-join หรือ saved room credentials ใน slice นี้. Google/app account ไม่จำเป็น; account sign-in/AI opt-in/Ask/provider choice ไม่ให้สิทธิ์ publish.
+- **Source:** own GSI ของ app570, explicit playing, verified active local Steam owner, canonical positive match ID, exact radiant/dire และ PRE_GAME/GAME_IN_PROGRESS. ต้องมี valid hero/level/HP/maxHP/MP%/alive/respawn ครบ; missing ไม่ใช้ default แทน. ไม่ส่ง raw GSI/GameTick.
+- **Allowlist ของ peer route:** เฉพาะ own hero/level/HP/maxHP/manaPercent/alive/respawnSeconds และ bounded room/member/display-name/sequence/freshness/session metadata ตาม [[FEAT-G-PARTY]]. Match/team binding ใช้ room-scoped SHA-256 matchKey และ team; raw match ID/SteamID อยู่ local. Hash เป็น scoped pseudonym/equality fence ไม่ใช่ anonymity หรือ official game/party attestation.
+- **Recipients และ transport:** สมาชิกห้องที่ผ่าน membership authorization และอยู่ matchKey/team เดียวกันเท่านั้นได้รับ vitals. Relay operator เห็น shared stats ได้; remote ต้อง HTTPS, HTTP literal loopback สำหรับ local test เท่านั้น. ไม่อ้าง E2EE หรือว่ามี hosted service/deployment แล้ว.
+- **Lifecycle:** rooms/tokens/stats อยู่ memory; leave หยุด local sharing ล้าง data/fence pending workทันที และ remote delete แบบ best effort. Offline remote health หมดความสดภายใน 2 s และ membership หลังไม่ sync 30 s; owner leave/expiry ปิดห้อง. ไม่อ้าง instantaneous remote erase. ไม่เก็บ peer history หรือส่งต่อ AI/Memory/G-Log/public profiles/analytics.
+- **Denylist คงเดิม:** CV/enemy/position/images, Voice audio/transcript/free-form question, Memory, G-Log/history/replay, account/security data และ raw GSI/raw match ID/SteamID ไม่ออก peer route. ไม่เพิ่มสิทธิ์ส่งข้อมูลเหล่านี้ไป AI. Local core/G-Signal ไม่ขึ้นกับ relay/network/account.
+
+รายละเอียด strict schema, freshness, limits, kick/rotate และเกณฑ์ PARTY-AC อยู่ใน [[FEAT-G-PARTY]]; plan/evidence แยกที่ [[2026-11-01-g-party-gsi-sharing]]. คง thresholds/resource matrix ใน MVP-006 โดยไม่เปลี่ยนเพื่อทำให้ feature ผ่าน.
+
+## MVP-005B — G-Friends social contract
+
+ผู้ใช้อนุญาต source implementation ผ่าน CR/PR/merge สำหรับระบบเพื่อนและคำเชิญวันที่ 2026-11-01 ตาม [[CR-038-party-friends-presence-invitations]]. [[FEAT-G-FRIENDS]] เป็น feature contract; [[ADR-20]] และ [[2026-11-01-g-party-friends-design]] บันทึก implementation choices ของ assistant หลัง design review ไม่ใช่การอ้างว่า Owner ตรวจราย field แล้ว
+
+- Google session เป็น requirement เฉพาะ friend/presence/targeted-invite actions; guest room code, local core และ own-GSI source admission เดิมไม่ต้องมี app account และไม่บังคับเป็นเพื่อนก่อนเข้าห้อง
+- มิตรภาพที่ทั้งสองฝ่ายยอมรับไม่เปิด stats หรือ sharing อัตโนมัติ Presence off by default หมายถึงออนไลน์ในแอปเท่านั้น; profile linking มี opt-in แยก; ทุก join ต้อง fresh checked GSI consent พร้อม action ของผู้ใช้
+- อนุญาต private social graph/settings/blocks และ bounded temporary presence/request/invitation/account-room binding ใน `social_private` ของ account backend เท่านั้น ไม่ส่งข้อมูลเหล่านี้ไป AI/Memory/G-Log และไม่ส่ง gameplay stats เข้า social storage
+- Public social projection จำกัด GID + safe displayName ของความสัมพันธ์ที่มีสิทธิ์ดู ไม่ขยาย profiles SELECT ไม่เปิด email/phone/Steam/session UUID/raw profile ไม่มี public directory หรือ last-seen/history
+- Account JWT อยู่กับ account broker; relay ไม่รับ JWT/GID/UUID. Native เก็บ member credentials; social DB ไม่เก็บ GMP1 secret/memberToken. Registered HTTPS relay proof + one-use challenge/ticket ใช้ permission และ expiry แยกจาก stats route
+- Block/remove/revocation ปฏิเสธ pending authorization ตาม transaction ordering ที่กำหนด ไม่อ้างว่าเตะ current room members ทันที ห้าม fallback เข้า guest code อัตโนมัติเมื่อ social admission ล้มเหลว
+- Limits, retention/cleanup, key rotation, failure semantics และ protocol upgrade ต้องเป็นไปตาม FEAT/spec/runbook. Missing configuration ทำให้ social link/invites unavailable โดย friends/settings/presence และ guest/core ที่มี prerequisites ของตนยังทำงาน
+- คง 62 MVP task/priority และ MVP-006 quality budgets เดิม Source merge ไม่เท่ากับ migration/deployment/release/live Google/Dota/two-monitor/NFR acceptance ดู [[g-party-social-operations]]
+
 ## MVP-006 — เกณฑ์ก่อนเริ่มวัด
 
 Reference tier: 6 physical cores / 12 logical processors, RAM 16 GB, DXGI GPU และจอ 1080p ≥60 Hz; บันทึก SKU/driver/OS/audio/model จริงทุก receipt. เลือกเครื่องใน tier นี้ก่อนวัด ห้ามใช้จำนวน core สมมติเป็นผลวัด.
@@ -87,7 +114,7 @@ Reference tier: 6 physical cores / 12 logical processors, RAM 16 GB, DXGI GPU �
 | danger preemption | 100 overlap trials ทุก trial preempt stale Voice/advice และยังผ่าน G-Signal hard latency |
 | G-Signal latency | p50 ≤250 ms, ทุก measured sample ≤300 ms; ≥300 samples/scenario/profile และ live audible probe |
 | CPU | whole-app process group normalized by logical CPU capacity, ทุก 1 s sample ≤10% |
-| RAM | peak aggregate Working Set ≤400,000,000 bytes (400 MB); รวม host/WebView2/feeder/STT/SLM และ external model PIDs ที่ใช้งาน |
+| RAM | peak aggregate Working Set ≤900,000,000 bytes (900 MB); รวม host/WebView2/feeder/STT/SLM และ external model PIDs ที่ใช้งาน |
 | FPS impact | ≤3% แต่ละ paired overlay off/on run; ≥3 pairs ×60 s, same device/segment/settings |
 
 **Latency landmarks:** T0 = fresh GSI POST arrival หรือเวลาที่ critical capture acquisition cycle ถึงกำหนด ก่อนรอ scheduler/acquisition/inference; T1 = Rust decision; T2 = audio admission; T3 = loopback first audible sample. วัด T3−T0 รวม wait/acquisition ไม่ขยับ T0 ไปหลัง poll/frame-ready เพื่อกลบ delay; รายงาน upstream observation age แยก. ใช้ event-driven evaluation; 500 ms เป็น watchdog/freshness cadence เท่านั้น. p99/headless estimated budget ไม่แทน hard max/live acoustic proof.
@@ -110,6 +137,16 @@ Required cell ที่ไม่มี OS/device/label/audio evidence เป็�
 
 Owner ตัดสินใจวันที่ 2026-10-13 ว่าเมื่อ Job Object initialization/configuration/assignment ล้มเหลว ให้ปฏิเสธการเปิดแอป: บันทึกข้อผิดพลาดและออกด้วย exit code 1 ก่อนสร้าง Tauri/WebView หรือ sidecar. หาก setup สำเร็จแต่ runtime accounting query ล้มเหลว ให้แสดง CPU unavailable และคง capture throttle; OS hard cap ยังทำงาน. UI จึงต้องแยกเฉพาะกรณี runtime query failure ที่เกิดหลังแอปเริ่มแล้ว.
 
+### Decision v0.4.0 — Owner-approved 800 MB aggregate RAM budget
+
+วันที่ 2026-10-28 Owner สั่งโดยตรงว่า “เพิ่มramจาก400เป็น 800”. เปลี่ยนเพดานเป็น **800,000,000 bytes (800 decimal MB)** ของ peak aggregate full Working Set รวมทุก process ของแอปและ external provider/model PIDs ที่ใช้จริง. มตินี้แทนการคง400MBเมื่อ2026-10-27; ไม่ใช่การอนุมัติข้อเสนอ1,000MBเดิม.
+
+คงวิธีวัดและการนับ shared resident pages/child processes เดิม ไม่มีการยกเว้น WebView2/feeder/model, เปลี่ยนเป็น private/PSS, trim Working Set หรือสั่ง GC เพื่อให้ผ่าน. CPU≤10%ต่อsample1วินาที, operating hard cap8%, latency/FPS/privacy/consentและprovider admissionเดิมไม่เปลี่ยน. External Ollama ที่พิสูจน์reservation/processgroupไม่ได้ยัง unavailable. ผลวัดและauditที่ใช้400MBเป็นหลักฐานย้อนหลังของสัญญาเก่า ห้ามเปลี่ยนให้ดูว่าผ่าน800MBมาก่อน; buildและnative acceptanceรอบ800MBต้องตรวจใหม่.
+
+### Decision v0.5.0 — MVP 900 MB aggregate RAM budget
+
+Owner สั่งวันที่2026-10-28ว่า “900mb ก็ได้สำหรับ mvp ทำส่วนอื่นต่อ”. เพดาน MVP ปัจจุบันคือ **900,000,000bytes (900 decimal MB)** รวม full Working Set ของทุก process ที่ใช้จริง. มตินี้แทน800MBในv0.4.0; คงCPU/latency/FPS/privacy/consent/provider admissionและวิธีวัดเดิม ไม่มีการยกเว้นchild/model/shared pages. ผลเดิม400/800MBยังเป็นประวัติ ไม่ใช่ผลผ่าน900MB; การกดEscapeทำให้รอบ800MBหยุดก่อนเก็บsample จึงไม่มีacceptanceจากรอบนั้น. ดำเนินการแก้event/overlayตามauditต่อโดยไม่ใช้การลดRAMเป็นตัวบล็อกงานอื่น.
+
 ## Baseline และ dispatch
 
 รับผล verification ของ MVP-001/002 ภายใต้คำสั่งมอบหมายตัดสินใจ: integrated source commit `c63bad098d6e12e6f073e832dce045dbbeacd687`, tree `d687254de6c4cfc976e06e4f60e0f4dc8e038009`; Rust 315 passed/5 ignored, desktop Vitest 284 passed, ESLint/tsc/clippy/native no-bundle ผ่าน. Evidence อยู่ที่ `D:/gm-mvp-001-evidence/MVP-001-B-evidence.md`; binary SHA-256 `970D6C0D5DE02B5BDAE86BF26145969E129AAA6A4BCC244B37405AAA98008BA1`. เป็น baseline engineering receipt ไม่ใช่ผล live MVP acceptance.
@@ -127,3 +164,7 @@ MVP-007 reconcile PRD/SRS/AGENTS/CLAUDE ตามมตินี้. งาน c
 | 0.3.1 | 2026-10-16 | Remove retired local review integration and related references. |
 | 0.3.2 | 2026-10-18 | Clarified local startup and account Terms boundaries. |
 | 0.3.3 | 2026-10-18 | Removed the obsolete desktop handoff activation flag; local startup remains account-independent. |
+| 0.4.0 | 2026-10-28 | Owner explicitly raised aggregate full Working Set budget to800MB; retain all-process accounting, CPU/latency/FPS/privacy and provider-admission gates. |
+| 0.5.0 | 2026-10-28 | Owner approved900MB for MVP and continuing other audited event defects; retain prior evidence and all accounting/quality gates. |
+| 0.6.0 | 2026-11-01 | เพิ่ม Owner-authorized G-Party peer route พร้อม consent/allowlist/match-team/freshness boundaries แยกจาก AI; รักษา MVP tasks, raw-data denylist และ pending native/live acceptance. |
+| 0.7.0 | 2026-11-01 | เพิ่ม G-Friends เป็น optional social extension ตาม CR-038 แยก friendship/presence/profile-link/GSI consent และ private persistence โดยไม่เปลี่ยน MVP parent tasks หรืออ้าง live/deployed acceptance. |

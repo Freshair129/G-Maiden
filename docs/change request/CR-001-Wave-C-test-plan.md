@@ -1,9 +1,9 @@
 ---
 title: "CR-001 Wave C — In-Game Validation Test Plan (DXGI Migration)"
 doc_id: "CR-001-Wave-C-test-plan"
-status: "ready to execute"
-version: "1.0.0"
-updated: "2026-06-29"
+status: "active"
+version: "1.0.1"
+updated: "2026-11-06"
 owner: "Boss"
 related_docs: ["CR-001-REVIEW-execution-plan", "ADR-13-dxgi-capture-migration", "IMPL-PLAN-DXGI-migration"]
 ---
@@ -156,3 +156,4 @@ gate: RAM ≤ 400 MB + FPS-drop ≤ 3% (CPU% ดูแยกจาก resource c
 | Version | Date | Summary |
 | --- | --- | --- |
 | 1.0.0 | 2026-07-19 | changelog table added per Step-5 SOP (G1.5) |
+| 1.0.1 | 2026-11-06 | status normalized to enum `active` (was "ready to execute"): still to be run or cancelled |

@@ -62,7 +62,8 @@ export function buildHeroes(
   base: CompanionData["heroes"],
   enemySlots: Map<string, number>,
   roster: DraftRoster | null = null,
-  teamName = ""
+  teamName = "",
+  visibleHeroes: ReadonlySet<string> = new Set()
 ): CompanionData["heroes"] {
   const cvNames = cv?.detections?.length ? cv.detections.map((d) => d.name).filter(Boolean) : [];
   if (!tick && missing.size === 0 && cvNames.length === 0 && enemySlots.size === 0 && !roster) return base;
@@ -71,18 +72,22 @@ export function buildHeroes(
   // filled straight from its permanent assignment (no re-derivation).
   const slotToName = new Map<number, string>();
   for (const [name, slot] of enemySlots.entries()) slotToName.set(slot, name);
+  const shortName = (name: string) => name.replace(/^npc_dota_hero_/, "");
+  const confirmedVisible = new Set([...visibleHeroes].map(shortName));
+  const confirmedMissing = new Map([...missing].map(([name, ms]) => [shortName(name), ms]));
 
   // Draft-CV: the full roster (all 10 identities) split by the LOCAL player's
   // team — this is what fills ally slots 1-4 (which GSI never reveals) and
   // pre-seeds enemy identities before CV ever sights them. Short label form.
-  let allyOthers: string[] = [];
-  let enemyRoster: string[] = [];
-  if (roster && teamName) {
+  let allyOthers: (string | null)[] = [];
+  let enemyRoster: (string | null)[] | null = null;
+  if (roster && (teamName === "radiant" || teamName === "dire")) {
+    enemyRoster = teamName === "radiant" ? roster.dire : roster.radiant;
     const mine = teamName === "radiant" ? roster.radiant : roster.dire;
-    const theirs = teamName === "radiant" ? roster.dire : roster.radiant;
-    const localShort = tick ? tick.hero.replace(/^npc_dota_hero_/, "") : "";
-    allyOthers = mine.filter((n) => n !== localShort); // the 4 teammates
-    enemyRoster = theirs;
+    const localShort = tick ? shortName(tick.hero) : "";
+    const localSlot = mine.findIndex((name) => name !== null && shortName(name) === localShort);
+    // Preserve unknown portrait slots; compacting them would reorder teammates.
+    if (localSlot >= 0) allyOthers = mine.filter((_, slot) => slot !== localSlot);
   }
 
   let allyIndex = 0;
@@ -94,6 +99,7 @@ export function buildHeroes(
     if (hero.team === "ally") {
       const a = allyIndex;
       allyIndex += 1;
+      const allyName = allyOthers[a - 1];
       if (tick && index === 0) {
         next = {
           ...next,
@@ -111,10 +117,10 @@ export function buildHeroes(
           state: tick.alive ? "visible" : "dead",
           timer: tick.alive ? 0 : Math.round(tick.respawn_seconds),
         };
-      } else if (a >= 1 && allyOthers[a - 1]) {
+      } else if (a >= 1 && allyName) {
         // Ally slots 1-4: identity ONLY (GSI never exposes teammate KDA/economy,
         // so those stay "—"). This is the honest gain Draft-CV unlocks.
-        next = { ...next, hero: prettyHeroName(allyOthers[a - 1]) || next.hero };
+        next = { ...next, hero: prettyHeroName(allyName) || next.hero };
       }
     }
 
@@ -122,13 +128,13 @@ export function buildHeroes(
       const e = enemyIndex;
       enemyIndex += 1;
       // Identity: prefer the pre-known draft roster; else the CV/missing slot map.
-      const npcName = enemyRoster[e] ?? slotToName.get(e);
+      const npcName = enemyRoster ? enemyRoster[e] : slotToName.get(e);
       if (npcName) {
-        const missingMs = missing.get(npcName);
+        const missingMs = confirmedMissing.get(shortName(npcName));
         next = {
           ...next,
           hero: prettyHeroName(npcName) || next.hero,
-          state: missingMs !== undefined ? "missing" : "visible",
+          state: missingMs !== undefined ? "missing" : confirmedVisible.has(shortName(npcName)) ? "visible" : "empty",
           timer: missingMs !== undefined ? Math.round(missingMs / 1000) : 0,
         };
       }

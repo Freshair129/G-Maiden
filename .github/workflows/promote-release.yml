@@ -19,37 +19,59 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: gmaiden-stable-publication
+  cancel-in-progress: false
+
 jobs:
   promote:
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     environment: production
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 20
       - name: Validate candidate and current Stable
+        env:
+          CANDIDATE_MANIFEST: ${{ inputs.candidate_manifest }}
         run: |
-          node scripts/releases/channel-manifest.mjs validate-published "${{ inputs.candidate_manifest }}"
+          node scripts/releases/channel-manifest.mjs validate-published "$CANDIDATE_MANIFEST"
           node scripts/releases/channel-manifest.mjs validate release/channels/stable.json
       - name: Promote same artifact metadata
-        run: node scripts/releases/channel-manifest.mjs promote "${{ inputs.candidate_manifest }}" release/channels/stable.json "${{ inputs.approval_file }}"
+        env:
+          CANDIDATE_MANIFEST: ${{ inputs.candidate_manifest }}
+          APPROVAL_FILE: ${{ inputs.approval_file }}
+        run: node scripts/releases/channel-manifest.mjs promote "$CANDIDATE_MANIFEST" release/channels/stable.json "$APPROVAL_FILE"
       - name: Prove no artifact identity changed
+        env:
+          CANDIDATE_MANIFEST: ${{ inputs.candidate_manifest }}
         run: |
           node - <<'NODE'
           const fs=require('fs');
-          const c=JSON.parse(fs.readFileSync('${{ inputs.candidate_manifest }}'));
-          const s=JSON.parse(fs.readFileSync('release/channels/stable.json'));
-          if (JSON.stringify(c.artifacts)!==JSON.stringify(s.artifacts)) throw new Error('artifact set changed during promotion');
+          const c=JSON.parse(fs.readFileSync(process.env.CANDIDATE_MANIFEST, 'utf8'));
+          const s=JSON.parse(fs.readFileSync('release/channels/stable.json', 'utf8'));
+          if (JSON.stringify(c.platforms)!==JSON.stringify(s.platforms)) throw new Error('artifact set changed during promotion');
           if (c.sourceSha!==s.sourceSha || c.version!==s.version) throw new Error('source/version changed during promotion');
           NODE
-      - name: Commit audited Stable pointer
-        if: ${{ !inputs.dry_run }}
+      - name: Publish the stable promotion branch
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "Dry run complete: no promotion branch, commit, or push was created."
+            exit 0
+          fi
+          branch="release/stable-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          git switch -c "$branch"
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add release/channels/stable.json
-          git commit -m "release: promote $(node -p \"require('./release/channels/stable.json').version\") to stable"
-          git push
+          version=$(node -p "require('./release/channels/stable.json').version")
+          git commit -m "release: promote $version to stable"
+          git push --set-upstream origin "$branch"
+          echo "Promotion branch $branch has been pushed. Please ask the owner to open a pull request manually."

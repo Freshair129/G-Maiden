@@ -147,8 +147,8 @@ archive, checksum, licence and audit record. Do not delete source projects or pr
 
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
-| 0.3.1b | 2026-07-21 | accepted | Added the pinned doc-graph `updated` and approval metadata and mapped the approved beta lifecycle to canonical `accepted`; no requirement changed. | null | ATHER |
-| 0.3.0b | 2026-07-21 | beta | Recorded the verified G:-only MPFB2/system-assets installation, hashes, licence provenance, portable enablement, and handoff into the separately approved CR-028 review gate. | null | ATHER |
-| 0.2.0b | 2026-07-21 | beta | Owner approved the MPFB2 2.0.16 install/provenance boundary and autonomous execution through the downstream CR-028 landing handoff. | null | ATHER |
-| 0.1.1b | 2026-07-21 | candidate | Explicitly preserved the existing Studio review-pending and disabled-export contract. | null | ATHER |
 | 0.1.0b | 2026-07-21 | candidate | Proposed portable MPFB2 installation as the maintained Blender-compatible character-authoring route, with a provider-neutral external image-to-3D quarantine lane. | null | ATHER |
+| 0.1.1b | 2026-07-21 | candidate | Explicitly preserved the existing Studio review-pending and disabled-export contract. | null | ATHER |
+| 0.2.0b | 2026-07-21 | beta | Owner approved the MPFB2 2.0.16 install/provenance boundary and autonomous execution through the downstream CR-028 landing handoff. | null | ATHER |
+| 0.3.0b | 2026-07-21 | beta | Recorded the verified G:-only MPFB2/system-assets installation, hashes, licence provenance, portable enablement, and handoff into the separately approved CR-028 review gate. | null | ATHER |
+| 0.3.1b | 2026-07-21 | accepted | Added the pinned doc-graph `updated` and approval metadata and mapped the approved beta lifecycle to canonical `accepted`; no requirement changed. | null | ATHER |

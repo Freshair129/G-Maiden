@@ -168,6 +168,83 @@ impl Motion {
         self.dead_enemies = 0;
     }
 
+    pub fn retain_allowed(&mut self, allowed: &[String]) {
+        self.history.retain(|sample| allowed.contains(&sample.hero));
+    }
+
+    /// Require a coherent recent moving trail, not two unrelated noisy pixels.
+    /// This is evidence of a shared rotation, NOT a claim about the player's position.
+    pub fn coordinated_rotation_heroes(
+        &self,
+        missing: &[(String, u64, (f32, f32))],
+        now: u64,
+    ) -> Vec<String> {
+        let moving: Vec<_> = missing
+            .iter()
+            .filter_map(|(hero, age, pos)| {
+                if !(5_000..=18_000).contains(age) {
+                    return None;
+                }
+                let vanished_at = now.saturating_sub(*age);
+                let samples: Vec<_> = self
+                    .history
+                    .iter()
+                    .filter(|sample| {
+                        sample.hero == *hero
+                            && sample.ms <= vanished_at
+                            && vanished_at.saturating_sub(sample.ms) <= 3000
+                    })
+                    .collect();
+                let (Some(first), Some(last)) = (samples.first(), samples.last()) else {
+                    return None;
+                };
+                let heading = (last.pos.0 - first.pos.0, last.pos.1 - first.pos.1);
+                let distance = heading.0.hypot(heading.1);
+                if samples.len() < 4
+                    || last.ms.saturating_sub(first.ms) < 1000
+                    || vanished_at.saturating_sub(last.ms) > 500
+                    || !(0.015..=0.15).contains(&distance)
+                {
+                    return None;
+                }
+                let mut path = 0.0;
+                for pair in samples.windows(2) {
+                    let dt = pair[1].ms.saturating_sub(pair[0].ms);
+                    let step = (pair[1].pos.0 - pair[0].pos.0).hypot(pair[1].pos.1 - pair[0].pos.1);
+                    if dt == 0 || dt > 1500 || step > 0.06 {
+                        return None;
+                    }
+                    path += step;
+                }
+                if path > distance * 1.8 {
+                    return None;
+                }
+                Some((
+                    *age,
+                    *pos,
+                    (heading.0 / distance, heading.1 / distance),
+                    hero,
+                ))
+            })
+            .collect();
+        let mut heroes = Vec::new();
+        for (i, a) in moving.iter().enumerate() {
+            for b in moving.iter().skip(i + 1) {
+                if a.0.abs_diff(b.0) <= 3000
+                    && (a.1 .0 - b.1 .0).hypot(a.1 .1 - b.1 .1) <= 0.18
+                    && a.2 .0 * b.2 .0 + a.2 .1 * b.2 .1 >= 0.5
+                {
+                    for hero in [a.3, b.3] {
+                        if !heroes.contains(hero) {
+                            heroes.push(hero.clone());
+                        }
+                    }
+                }
+            }
+        }
+        heroes
+    }
+
     /// Refresh the believed dead-enemy count for the next [`Motion::assess`].
     /// Cheap (one word); the capture loop calls it every frame from
     /// `runtime::dead_enemy_count()`, the same shape as `Signal::set_sensitivity`.
@@ -358,6 +435,63 @@ mod tests {
             x: 0,
             y: 0,
             side: 256,
+        }
+    }
+
+    #[test]
+    fn rotation_requires_two_nearby_coherent_moving_trails() {
+        let mut m = Motion::new();
+        let missing = vec![
+            ("axe".into(), 6000, (0.25, 0.25)),
+            ("lina".into(), 6000, (0.28, 0.25)),
+        ];
+        for (t, x) in [(0, 50), (400, 53), (800, 56), (1200, 59)] {
+            m.record(&[det("axe", x, 60), det("lina", x + 8, 60)], &region(), t);
+        }
+        assert_eq!(m.coordinated_rotation_heroes(&missing, 7200).len(), 2);
+        assert!(m
+            .coordinated_rotation_heroes(&missing[..1], 7200)
+            .is_empty());
+        assert!(m
+            .coordinated_rotation_heroes(
+                &[
+                    ("axe".into(), 6000, (0.1, 0.1)),
+                    ("lina".into(), 6000, (0.9, 0.9))
+                ],
+                7200
+            )
+            .is_empty());
+        assert!(m
+            .coordinated_rotation_heroes(
+                &[
+                    ("axe".into(), 19000, (0.25, 0.25)),
+                    ("lina".into(), 19000, (0.28, 0.25))
+                ],
+                20200
+            )
+            .is_empty());
+    }
+
+    #[test]
+    fn stationary_and_jittering_icons_are_not_rotation_evidence() {
+        for xs in [[50, 50, 50, 50], [50, 70, 40, 59]] {
+            let mut m = Motion::new();
+            for (i, x) in xs.into_iter().enumerate() {
+                m.record(
+                    &[det("axe", x, 60), det("lina", x + 8, 60)],
+                    &region(),
+                    i as u64 * 400,
+                );
+            }
+            assert!(m
+                .coordinated_rotation_heroes(
+                    &[
+                        ("axe".into(), 6000, (0.25, 0.25)),
+                        ("lina".into(), 6000, (0.28, 0.25))
+                    ],
+                    7200
+                )
+                .is_empty());
         }
     }
 

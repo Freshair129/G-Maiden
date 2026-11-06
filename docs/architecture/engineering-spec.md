@@ -2,8 +2,8 @@
 title: "G-Maiden — Engineering Spec"
 doc_id: "engineering-spec"
 status: "active"
-version: "0.3.1"
-updated: "2026-10-18"
+version: "0.3.7"
+updated: 2026-11-06
 owner: "Boss"
 source_of_truth: false
 complexity: "C-3"
@@ -172,7 +172,13 @@ enum CoreEvent {
 }
 ```
 
-UI subscribe ผ่าน event แยกชื่อ (ไม่มี channel รวม `core-event`): `game-tick`, `gsi-status`, `resource-stats`, `minimap-cv`, `gank-alert`, `gank-clear`, `enemy-missing`, `announcer-banner`, `advice-update`, `buyback-advice`, `buyback-narrative`, `capture-mode`, `volume-change`, `oauth-callback`, `oauth-error`, `preview-kill`. commands ที่สั่งจาก UI เช่น `set_cv_signal_sensitivity`, `set_cv_signal_enabled` (ไม่มี `set_sensitivity`/`toggle_module`).
+UI subscribe ผ่าน event แยกชื่อ (ไม่มี channel รวม `core-event`): `game-tick`, `gsi-status`, `resource-stats`, `minimap-cv`, `gank-alert`, `gank-clear`, `enemy-missing`, `announcer-banner`, `vrzo-banner-playback`, `advice-update`, `buyback-advice`, `buyback-narrative`, `capture-mode`, `volume-change`, `oauth-callback`, `oauth-error`, `preview-kill`. commands ที่สั่งจาก UI เช่น `set_cv_signal_sensitivity`, `set_cv_signal_enabled` และ `preview_vrzo_banner_variant` (ไม่มี `set_sensitivity`/`toggle_module`).
+
+### 5.1 VRZO playback identity และ local preview (source integration)
+
+`vrzo-banner-playback` เป็น local overlay event ของ VRZO พร้อม `id`, `phase` (`start`/`completed`/`stop`), `clipId`, `event`, `session_epoch`, `preview` และ `expires_at_ms`; ไม่ใช่การยืนยันว่าภาพแสดงหรือเสียงออกลำโพงแล้ว. Audio owner ออก monotonic playback identity หลัง rodio รับ source; bounded nonblocking lifecycle channel ส่งไป worker นอก audio thread. Worker เทียบ pack/event/selected clip ID กับ SHA-256 ของ bytes ที่ถอดรหัสและ catalog ก่อนเลือก bundled composite WebM; overlay ใน `src/src/app/Overlay.tsx` fence ด้วย playback/session/pack scope. WebM ปิดเสียง และ rodio เป็นเจ้าของเสียงเพียงตัวเดียว. Reject/unknown/mismatch ไม่สร้าง VRZO visual; pack hash match ไม่เป็น Store signature หรือ entitlement.
+
+Natural completion อาจคง silent tail ได้สูงสุด 3.2 วินาทีและไม่เกิน expiry; cancel/เปลี่ยน scope ล้าง visual; same-scope replacement retires the old layer as specified below. `preview_vrzo_banner_variant(event, clipId)` เป็น trusted Control command สำหรับแพ็ก VRZO ที่ equip แล้ว มี preview identity แยกจาก event แมตช์. ดู [[vrzo-banner-validation]] (`docs/operations/vrzo-banner-validation.md`) สำหรับขั้นตอนและ [[2026-10-29-vrzo-synced-banner]] (`docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md`) สำหรับขอบเขตแบบ. WebView2 alpha/mute, first cold timing, live synchronization และ resource acceptance 900,000,000 bytes ยัง **NOT_RUN**; source/dispatch ไม่ใช่ native presentation proof.
 
 > **สถานะ (2026-07): `enum CoreEvent` ด้านบนเป็นแบบจำลอง — โค้ดจริง emit แต่ละ event แยกชื่อตามรายการนี้ และ `ResourceStats` มาจาก [`governor.rs`](file:///g:/G-Maiden/src-tauri/src/governor.rs).**
 
@@ -210,9 +216,9 @@ MVP own-stat cloud allowlist applies to manual G-Master advice only.
 
 ## 7. Orchestrator — Role-based Multi-Platform Agent Dispatch
 
-> ADR: [ADR-O-005](../orchestration/docs/ADR-O-005--provider-registry.md) ·
-> Spec: [SPEC--PROVIDER-REGISTRY](../orchestration/docs/SPEC--PROVIDER-REGISTRY.md) ·
-> Guide: [GUIDE--ADDING-PROVIDER](../orchestration/docs/GUIDE--ADDING-PROVIDER.md)
+> ADR: [ADR-O-005](https://github.com/Freshair129/g-orchestra/blob/main/docs/ADR-O-005--provider-registry.md) ·
+> Spec: [SPEC--PROVIDER-REGISTRY](https://github.com/Freshair129/g-orchestra/blob/main/docs/SPEC--PROVIDER-REGISTRY.md) ·
+> Guide: [GUIDE--ADDING-PROVIDER](https://github.com/Freshair129/g-orchestra/blob/main/docs/GUIDE--ADDING-PROVIDER.md)
 
 G-Maiden ใช้ **G-Orch** orchestrator สำหรับจัดการ development agents (AI ที่เขียน code,
 review, และ plan). G-Orch dispatch task ผ่าน **role-based provider registry** —
@@ -263,12 +269,12 @@ Role ประกาศ `requires`; Provider ประกาศ `capabilities`.
 | Full-agent | claude, codex, antigravity | ชี้ doc paths ให้ agent อ่านเอง |
 | Text-only | ollama, openrouter | Inline scaffold + small-model rules |
 
-**Implementation:** [`orchestration/providers.mjs`](file:///g:/G-Maiden/orchestration/providers.mjs), [`orchestration/config.json`](file:///g:/G-Maiden/orchestration/config.json), [`orchestration/engine.mjs`](file:///g:/G-Maiden/orchestration/engine.mjs)
+**Implementation:** [`orchestration/providers.mjs`](https://github.com/Freshair129/g-orchestra/blob/main/providers.mjs), [`orchestration/config.json`](https://github.com/Freshair129/g-orchestra/blob/main/config.json), [`orchestration/engine.mjs`](https://github.com/Freshair129/g-orchestra/blob/main/engine.mjs)
 
 ### 7.6 Live Tauri events (command deck) & GID/account contract
 
 Command deck (CR-002 Phase 2a/2b, merged `170805b8`) subscribes to live Tauri events via
-[`useCompanionData`](file:///g:/G-Maiden/src/src/companion.ts#L941), feeding pure builders in `src/src/live/` that are merged over a MOCK
+[`useCompanionData`](file:///g:/G-Maiden/src/src/companion.ts#L1201), feeding pure builders in `src/src/live/` that are merged over a MOCK
 fallback (renders signed-out/offline). Events actually emitted: `game-tick`, `gsi-status`,
 `minimap-cv`, `enemy-missing`, `gank-alert`, `gank-clear`, `resource-stats`. Live builders อยู่ใน `src/src/live/` (เช่น [`buildTelemetry`](file:///g:/G-Maiden/src/src/live/buildTelemetry.ts)/[`buildWeekly`](file:///g:/G-Maiden/src/src/live/buildWeekly.ts)/[`buildInsights`](file:///g:/G-Maiden/src/src/live/buildInsights.ts)/[`buildHistory`](file:///g:/G-Maiden/src/src/live/buildHistory.ts)).
 
@@ -295,7 +301,7 @@ native cold/offline/revoke acceptance remains pending.
 - [ ] CPU whole-app process group normalized by logical CPU capacity, every 1s sample ≤10% on the MVP reference tier (MVP decision v0.2.0)
 - [ ] CPU gate ต้องพิสูจน์จาก sustained app-path harness; Windows Task Manager peak `20%+` ณ 2026-07-08 ยังสูงกว่า budget ใหม่ จนกว่าจะยืนยัน steady-state อยู่ใน budget
 - [ ] CPU investigation ต้องแยก `Rust host` vs `WebView2 child processes` vs `sidecars/subprocesses`; harness หลักคือ `tests/perf/src/bin/perf_cpu_tree.rs`
-- [ ] aggregate peak Working Set ≤400,000,000 bytes; include app host, WebView2, feeder, STT/SLM and external model PIDs
+- [ ] aggregate peak Working Set ≤900,000,000 bytes (MVP decision v0.5.0); include app host, WebView2, feeder, STT/SLM and external model PIDs
 - [ ] FPS impact ≤3% in each of ≥3 paired overlay-off/on 60s runs, same device/segment/settings; P7 receipt `verdict=pass`
 - [ ] matrix evidence: ≥10 sessions per required OS/mode/geometry cell; Windows 19045/26100, live All Pick Ranked/Unranked, default 1080p borderless geometry
 - [ ] cloud-loss test: local G-Sentry/G-Motion/G-Signal and Voice/Memory path stay local; G-Signal has no cloud or SLM dependency
@@ -306,6 +312,28 @@ native cold/offline/revoke acceptance remains pending.
 - [ ] orchestrator: เพิ่ม provider ใหม่แก้ ≤2 ไฟล์ (config.json + providers.mjs)
 
 
+
+
+## VRZO filesystem revision 3 transition contract (historical)
+
+Owner-directed local candidate change,2026-10-30: ID manifest revision3 preserves every sound ID and all63 WAV bytes;21silent1280x560 VP9 alpha files now60fps/CRF32 with one lossless transparent final frame. Native width680px/max72vw. Natural completion permits a3.2s silent tail, including approximately0.7s eased fade; expiry still bounds it.
+
+Same-scope announcer replacement starts the new selected event immediately at normal audio rate/gain. Previous visual plays2x with300ms opacity fade; previous voice receives a sample-accurate150ms fade. Bound to one active plus one outgoing visual/sink; a third arrival removes oldest outgoing. Preparation admission is3slots, at most12MiB PCM. Critical/non-announcer interruption, explicit cancellation, pack revision/session invalidation or live announcer disable hard-stops stale announcer sources. Audio owner validates scoped sources on its50ms control loop, outside the output callback. Draft match_start retains the active-session contract. New audio remains uniquely selected/verified; overlap is a bounded old-source retirement authorized by the owner.
+
+Verified native video byte cache is24MiB/6entries, keyed by admitted revision/path/hash/file metadata. One worker coalesces the latest pending warmup, preloads FirstBlood/DoubleKill/firstKill on activation/startup, then predicts next multikill on relevant events. Pack cache rebuild invalidates snapshots and stale worker insertion. It does not preplay audio or run hidden animations, and byte warmup does not establish decoder readiness. Local-only G-BannerVisual receipts record browser frame/drop/first-frame counters; native playback, visual smoothness and900,000,000-byte resource acceptance must be measured separately. No SQL/release or player-data egress.
+
+Current checks/asset/native evidence: ignored target/vrzo-smooth-20261030 and Studio workspace/vrzo-smooth-v3. Historical v8/v2 receipts remain historical; these local receipts do not establish release or native acceptance.
+
+
+## VRZO filesystem revision 4 ready-frame contract
+
+This runtime contract supersedes the revision3 video/runtime policy. Release and native acceptance remain separate. Revision4 keeps all IDs and63 WAV bytes;21 silent VP8 alpha videos are960x420/60fps, rendered directly from1280x560 Canvas sources. Apparent width remains680px/max72vw. Video ends with a fully transparent frame after its intended3.2s post-audio tail (including0.7s eased fade).
+
+The Overlay owns at most3 video DOM nodes total: active, optional retiring, and remaining paused warm candidates. Native ID-only hints carry resolved pack generation, on startup/activation, predicted events and Control variant selection. Muted first-frame preparation pauses rather than looping hidden media; admitted playback reuses the prepared node. Scope change destroys stale candidates. Same-generation hints preserve useful paused nodes and evict only an unclaimed lower-priority candidate under capacity pressure. Byte-cache warmup alone is not decoder readiness. The ID protocol allows at most3 simultaneous verified reads and waits at most500ms for a permit, then checks the generation again; no arbitrary webview filesystem path is accepted.
+
+Natural completion permits the queued current=0 lifecycle state while its audio generation and scope still match. Video ended clears normally; native/frontend hard caps allow up to4.2s after completion receipt (3.2s intended tail plus1s bounded decoding grace), under the original15s lifetime. Duplicate completion cannot extend the deadline. Cancellation, critical interruption, pack/session invalidation and expiry remain hard fences. Same-scope replacement retains the old visual2x/300ms opacity fade and old voice150ms fade; incoming image/audio start without waiting for old retirement, at normal rate. At most one active and one outgoing source remain.
+
+Local visual receipts distinguish warmed/cold, wait count, first nontransparent presented frame (frame1 rather than transparent frame0), frame/drop deltas excluding preparation, full media duration and ended/cleared/error. Native acceptance must separately verify FirstBlood, DoubleKill, Rampage, quiet drops, complete fade and rapid differing-event insertion. Target ready first present<=100ms and quiet drops<=1% per clip. Source/asset tests do not establish these native gates or acoustic/whole-match/FPS acceptance. Aggregate RAM ceiling900000000bytes, original Nakhom, local-only data and filesystem-only persistence remain unchanged. Evidence: target/vrzo-ready-20261030 and Studio workspace/vrzo-smooth-v4; native results are recorded there without rewriting failed v3 evidence.
 
 ## Changelog
 | Version | Date | Summary |
@@ -321,3 +349,9 @@ native cold/offline/revoke acceptance remains pending.
 | 0.2.0 | 2026-10-10 | Reconciled T0/T3 and strict G-Signal latency, local-only Voice/Memory and critical path, cloud allowlist target, account-optional target versus current gate, and whole-app acceptance measurements. |
 | 0.2.1 | 2026-10-11 | Added the static gameplay data structural and lineage consistency checks to the CI acceptance gate; retained accuracy and patch currency as unverified. |
 | 0.3.0 | 2026-10-12 | Updated the whole-app CPU acceptance threshold to 10% per one-second sample per MVP decision v0.2.0. |
+| 0.3.2 | 2026-10-29 | Record VRZO playback event, decoded clip identity, preview command and unverified native acceptance. |
+| 0.3.3 | 2026-10-30 | Record larger60fps ID visuals, predictive bounded cache and owner-authorized visual/audio retirement. |
+| 0.3.4 | 2026-10-30 | Record revision4 paused decoder preparation, VP8 media and bounded natural-completion grace. |
+| 0.3.5 | 2026-11-06 | Align the Definition of Done RAM gate with the accepted 900,000,000-byte aggregate Working Set ceiling (MVP decision v0.5.0); it still read 400,000,000 bytes (#134). |
+| 0.3.6 | 2026-11-06 | Point the provider-registry ADR/spec/guide links at the G-Orchestra repository after `orchestration/` moved out of this repo (#134). |
+| 0.3.7 | 2026-11-06 | relinked 1 code symbol anchor(s) to the symbol's current definition (or dropped the line anchor where the symbol no longer exists) — no content change |

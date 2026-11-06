@@ -1,0 +1,11 @@
+[package]
+name = "package-ipc-tests"
+version = "0.1.0"
+edition = "2021"
+publish = false
+[dependencies]
+g-ann-package = { path = "../../src-tauri/gann-package" }
+ring = "0.17"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "net", "macros", "time"] }

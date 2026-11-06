@@ -1,8 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
+import { listen } from '@tauri-apps/api/event'
 import { C } from '../theme'
 import { Card, Row, Toggle } from '../primitives'
 import type { GameTick, Advice, MasterBackend, MasterReadiness } from '../types'
+import { adviceAllowedBySettings, isAdviceGenerationCurrent, validAdviceGeneration } from '../adviceGeneration'
 
 // ─────────────────────────────── G-MASTER (local-first advisor) ──────────────────────────────
 export const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: number; enabled: boolean; onEnabledChange: (v: boolean) => void; autoAdvice: boolean; onAutoAdviceChange: (v: boolean) => void; backend: MasterBackend; onBackendChange: (b: MasterBackend) => void; cloudContextOptIn: boolean; onCloudContextOptInChange: (v: boolean) => void; auth: 'plan' | 'apikey'; onAuthChange: (a: 'plan' | 'apikey') => void; apiKeyPresent: boolean; onApiKeySave: (k: string) => void; ollamaModel: string; onOllamaModelChange: (m: string) => void; onUsageChanged?: () => void }> = ({ tick, voice, rate, enabled, onEnabledChange, autoAdvice, onAutoAdviceChange, backend, onBackendChange, cloudContextOptIn, onCloudContextOptInChange, auth, onAuthChange, apiKeyPresent, onApiKeySave, ollamaModel, onOllamaModelChange, onUsageChanged }) => {
@@ -15,6 +17,7 @@ export const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: 
   const readinessRequest = useRef(0)
   const adviceRequest = useRef(0)
   const activeSessionEpoch = useRef<number | null>(tick?.session_epoch ?? null)
+  const nativeGeneration = useRef<number | null>(null)
   // CR-008 WP-2: the key never round-trips back to the webview. We keep only a
   // transient draft; on save it goes straight to the DPAPI store via the backend
   // and is cleared here. `apiKeyPresent` reflects stored state (has_master_api_key).
@@ -42,15 +45,30 @@ export const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: 
     const timer = window.setTimeout(() => void refreshReadiness(), 250)
     return () => window.clearTimeout(timer)
   }, [refreshReadiness, backend, cloudContextOptIn, ollamaModel, auth, apiKeyPresent])
-  useEffect(() => {
-    activeSessionEpoch.current = tick?.session_epoch ?? null
+  const invalidateAdvice = useCallback(() => {
     adviceRequest.current += 1
     setAdvice(null)
     setError(null)
     setBusy(false)
-  }, [tick?.session_epoch])
+  }, [])
+  useLayoutEffect(() => {
+    activeSessionEpoch.current = tick?.session_epoch ?? null
+    invalidateAdvice()
+  }, [tick?.session_epoch, tick?.session_lifecycle, tick?.in_game, enabled, autoAdvice, backend, cloudContextOptIn, auth, apiKeyPresent, ollamaModel, voice, rate, invalidateAdvice])
+  useEffect(() => {
+    const unlisten = listen<{ context_generation: number }>('master-context-changed', ({ payload }) => {
+      if (!validAdviceGeneration(payload.context_generation)) return
+      if (nativeGeneration.current !== null && payload.context_generation <= nativeGeneration.current) return
+      nativeGeneration.current = payload.context_generation
+      invalidateAdvice()
+    })
+    return () => {
+      adviceRequest.current += 1
+      void unlisten.then((stop) => stop())
+    }
+  }, [invalidateAdvice])
   const ask = async () => {
-    if (!tick || !Number.isSafeInteger(tick.session_epoch) || tick.session_lifecycle !== 'live') {
+    if (!enabled || !tick?.in_game || !Number.isSafeInteger(tick.session_epoch) || tick.session_lifecycle !== 'live') {
       setError('รอข้อมูล match/session ที่ยัง live ก่อนขอคำแนะนำ')
       return
     }
@@ -60,6 +78,11 @@ export const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: 
     try {
       const a = await invoke<Advice>('request_advice', { tick, sessionEpoch: requestEpoch })
       if (requestId !== adviceRequest.current || activeSessionEpoch.current !== requestEpoch) return
+      if (!adviceAllowedBySettings(a, { masterEnabled: enabled, masterBackend: backend, cloudContextOptIn })) return
+      if (nativeGeneration.current !== null && a.context_generation < nativeGeneration.current) return
+      if (!await isAdviceGenerationCurrent(a)) return
+      if (requestId !== adviceRequest.current || activeSessionEpoch.current !== requestEpoch) return
+      nativeGeneration.current = a.context_generation
       setAdvice(a)
       if (!a.cached) onUsageChanged?.()
     } catch (e: unknown) {
@@ -72,8 +95,9 @@ export const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: 
   }
   const speakAdvice = () => {
     if (!advice) return
-    // Go through speak_event so a user-supplied advice/ WAV pool is used when present.
-    void invoke('speak_event', { event: 'advice', fallback: advice.text, voice: voice || null, rate }).catch(() => {})
+    // Dynamic advice uses its own generation-guarded speech route.
+    void invoke('speak_advice', { text: advice.text, voice: voice || null, rate,
+      adviceGeneration: advice.context_generation, adviceSessionEpoch: activeSessionEpoch.current }).catch(() => {})
   }
   const backendLabel: Record<MasterBackend, string> = {
     auto: cloudContextOptIn ? 'อัตโนมัติ (Claude → Ollama)' : 'อัตโนมัติ (Ollama local · cloud ปิด)',
@@ -82,11 +106,11 @@ export const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: 
   }
   return (
     <Card title="G-Master (advisor)">
-      <Row label="เปิดใช้งาน G-Master"><Toggle on={enabled} onChange={onEnabledChange} /></Row>
+      <Row label="เปิดใช้งาน G-Master"><Toggle on={enabled} onChange={(value) => { invalidateAdvice(); onEnabledChange(value) }} /></Row>
       <Row label="Backend">
         <div style={{ display: 'inline-flex', border: `1px solid ${C.line}`, borderRadius: 9, overflow: 'hidden' }}>
           {(['auto','claude','ollama'] as MasterBackend[]).map((b) => (
-            <button key={b} onClick={() => onBackendChange(b)}
+            <button key={b} onClick={() => { invalidateAdvice(); onBackendChange(b) }}
               style={{ background: backend === b ? 'rgba(143,212,255,0.16)' : 'transparent', color: backend === b ? C.ice : C.mut, border: 'none', padding: '6px 14px', cursor: 'pointer', fontSize: 12 }}>
               {b === 'auto' ? 'Auto' : b === 'claude' ? 'Claude' : 'Ollama'}
             </button>
@@ -94,14 +118,14 @@ export const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: 
         </div>
       </Row>
       <Row label="อนุญาตบริบท own-stat ไปยัง Claude">
-        <Toggle on={cloudContextOptIn} onChange={onCloudContextOptInChange} />
+        <Toggle on={cloudContextOptIn} onChange={(value) => { invalidateAdvice(); onCloudContextOptInChange(value) }} />
       </Row>
       <div style={{ margin: '-2px 0 10px', fontSize: 11.5, lineHeight: 1.5, color: C.mut }}>
         ปิดไว้เป็นค่าเริ่มต้น · เมื่อเปิด จะส่งเฉพาะช่วงเกม ฮีโร่/เลเวล/KDA/net worth/gold/HP%/mana% และคะแนนทีม. การเลือก Backend, API key หรือกดขอคำแนะนำไม่ถือเป็นการยินยอม. CV, enemy identity, items, clock, burst, G-Log, Memory, เสียง และข้อความพูดคงอยู่ในเครื่อง.
       </div>
       {usesClaude && (
         <Row label="Login / Auth (Claude)">
-          <select value={auth} onChange={(e) => onAuthChange(e.target.value as 'plan' | 'apikey')}
+          <select value={auth} onChange={(e) => { invalidateAdvice(); onAuthChange(e.target.value as 'plan' | 'apikey') }}
             style={{ background: 'rgba(18,20,28,0.86)', color: C.txt, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 10px', fontSize: 12.5 }}>
             <option value="plan">Plan — claude CLI (ล็อกอินอัตโนมัติ)</option>
             <option value="apikey">API key — Anthropic</option>
@@ -114,10 +138,10 @@ export const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: 
             <input type="password" value={keyDraft} onChange={(e) => setKeyDraft(e.target.value)}
               placeholder={apiKeyPresent ? '•••••• บันทึกไว้แล้ว — พิมพ์เพื่อแทนที่' : 'sk-ant-…'} autoComplete="off"
               style={{ background: 'rgba(18,20,28,0.86)', color: C.txt, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 10px', fontSize: 12.5, width: 260 }} />
-            <button onClick={() => { const k = keyDraft.trim(); if (k) { onApiKeySave(k); setKeyDraft('') } }} disabled={!keyDraft.trim()}
+            <button onClick={() => { const k = keyDraft.trim(); if (k) { invalidateAdvice(); onApiKeySave(k); setKeyDraft('') } }} disabled={!keyDraft.trim()}
               style={{ background: keyDraft.trim() ? 'rgba(143,212,255,0.16)' : 'transparent', color: keyDraft.trim() ? C.ice : C.mut, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 12px', fontSize: 12, cursor: keyDraft.trim() ? 'pointer' : 'default' }}>บันทึก</button>
             {apiKeyPresent && (
-              <button onClick={() => { onApiKeySave(''); setKeyDraft('') }}
+              <button onClick={() => { invalidateAdvice(); onApiKeySave(''); setKeyDraft('') }}
                 style={{ background: 'transparent', color: C.bad, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 12px', fontSize: 12, cursor: 'pointer' }}>ลบคีย์</button>
             )}
           </div>
@@ -125,7 +149,7 @@ export const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: 
       )}
       {(backend === 'ollama' || backend === 'auto') && (
         <Row label="Ollama model">
-          <input value={ollamaModel} onChange={(e) => onOllamaModelChange(e.target.value)}
+          <input value={ollamaModel} onChange={(e) => { invalidateAdvice(); onOllamaModelChange(e.target.value) }}
             placeholder="qwen3.5:4b"
             style={{ background: 'rgba(18,20,28,0.86)', color: C.txt, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 10px', fontSize: 12.5, width: 220 }} />
         </Row>
@@ -169,7 +193,7 @@ export const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: 
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 'none', fontSize: 12, color: C.mut }}>
           พูดอัตโนมัติเมื่อเลเวล 6/12/18/25 หรือตาย 2 รอบติด
-          <Toggle on={autoAdvice} onChange={onAutoAdviceChange} />
+          <Toggle on={autoAdvice} onChange={(value) => { invalidateAdvice(); onAutoAdviceChange(value) }} />
         </div>
         <div style={{ display: 'flex', gap: 8, flex: 'none' }}>
           <button onClick={ask} disabled={!canAsk}

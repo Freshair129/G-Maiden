@@ -8,7 +8,12 @@ export function savedDotaInstallPath(): string | null {
   try { return localStorage.getItem(DOTA_INSTALL_PATH_KEY) } catch { return null }
 }
 
-export function saveDotaInstallPath(path: string | null): void {
+export function initializeGsiSetupSelection(path: string | null): Promise<void> {
+  return invoke<void>('set_gsi_dota_selection', { dotaInstallPath: path })
+}
+
+export async function saveDotaInstallPath(path: string | null): Promise<void> {
+  await initializeGsiSetupSelection(path)
   try {
     if (path) localStorage.setItem(DOTA_INSTALL_PATH_KEY, path)
     else localStorage.removeItem(DOTA_INSTALL_PATH_KEY)

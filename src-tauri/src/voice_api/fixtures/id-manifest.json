@@ -1,0 +1,195 @@
+{
+  "schema_version": 1,
+  "announcer_id": "ann_c4d92f17-167a-504b-9393-64fd959981cd",
+  "name": "VRZO Announcer",
+  "revision": 2,
+  "source_pack_id": "pack_vrzo_20261028",
+  "source_pack_version": "0.2.0",
+  "locale": "th",
+  "sounds": [
+    {
+      "sound_id": "snd_39df2a79-0983-5630-9522-fad6ff6a7ced",
+      "role": "original_voice",
+      "label": "Startgame",
+      "path": "audio/snd_39df2a79-0983-5630-9522-fad6ff6a7ced.wav",
+      "sha256": "891854b434c8cc76ba26f5caeecae0cb62eab7499dcadf15b2ec4ab2adaf4562",
+      "revision": 1
+    },
+    {
+      "sound_id": "snd_f5beb627-d750-5b06-947c-c757d21b9953",
+      "role": "sfx",
+      "label": "comic-pop",
+      "path": "audio/snd_f5beb627-d750-5b06-947c-c757d21b9953.wav",
+      "sha256": "3399480c2d5671b4d798c0e2c5cbf57797f43b19d39b2fcbac383d5392b7e929",
+      "revision": 1
+    },
+    {
+      "sound_id": "snd_be7de2d2-48f4-5e71-9d23-989055aed0b9",
+      "role": "mixed_voice_sfx",
+      "label": "match_start_01",
+      "path": "audio/snd_be7de2d2-48f4-5e71-9d23-989055aed0b9.wav",
+      "sha256": "0a184ab4da4fa1ae7a683ac7419d428711d3963e9169cc65b8b8d4eb47310d2f",
+      "revision": 1
+    }
+  ],
+  "events": {
+    "match_start": [
+      {
+        "sound_id": "snd_39df2a79-0983-5630-9522-fad6ff6a7ced",
+        "banner_id": "bnr_5984c525-b54a-5bf7-aca7-cbdd7d19cd95"
+      }
+    ]
+  },
+  "banners": [
+    {
+      "banner_id": "bnr_5984c525-b54a-5bf7-aca7-cbdd7d19cd95",
+      "legacy_clip_id": "match_start_01",
+      "event_key": "match_start",
+      "original_sound_id": "snd_39df2a79-0983-5630-9522-fad6ff6a7ced",
+      "playback_sound_id": "snd_be7de2d2-48f4-5e71-9d23-989055aed0b9",
+      "components": [
+        {
+          "instance_id": "ins_3cb86470-2d46-5dc8-8fe8-ccdceed67561",
+          "slot": "frame",
+          "component_id": "cmp_e3d3066c-33ed-5616-9726-ae02913440cc"
+        },
+        {
+          "instance_id": "ins_b95b9203-b2c7-5f99-8f49-ac3e2d502aec",
+          "slot": "props",
+          "component_id": "cmp_797431e5-657c-5151-90df-10e9fbc5f4c9"
+        },
+        {
+          "instance_id": "ins_fbf82bb3-0eb5-5726-a17d-d0c0a74a63a8",
+          "slot": "fx",
+          "component_id": "cmp_f8a4f01c-c95b-575f-9747-3f93acf81a79"
+        },
+        {
+          "instance_id": "ins_657d6ccc-774c-5362-99bf-89833bd364a1",
+          "slot": "caption",
+          "component_id": "cmp_e753250a-76bd-5b28-8c7b-5cfd58e5c4af"
+        },
+        {
+          "instance_id": "ins_d052589b-e569-5dd5-9134-2472b33ced0e",
+          "slot": "motion",
+          "component_id": "cmp_d30d321a-5752-553c-ad82-b59bbe9408c7"
+        }
+      ],
+      "cues": [
+        {
+          "cue_id": "cue_40d3466f-bfa4-5a46-9d80-5db1a855405b",
+          "sound_id": "snd_f5beb627-d750-5b06-947c-c757d21b9953",
+          "time_seconds": 0.32,
+          "gain": 0.16
+        }
+      ],
+      "visual_source": {
+        "root": ".",
+        "video": "video/bnr_5984c525-b54a-5bf7-aca7-cbdd7d19cd95.webm",
+        "sha256": "a1a78d36af8953e3900cab0a362995d37c9d724205655c54decf7ce63630cce7",
+        "silent": true
+      },
+      "config": {
+        "accent": "#67e9db",
+        "duration_seconds": 5.7,
+        "typography": {
+          "fontPx": 78,
+          "requestedFontPx": 80,
+          "lines": [
+            "เพื่อเป็นการ",
+            "ไม่เสียเวลา",
+            "เราไปลุยกันเลยครับ"
+          ],
+          "lineWidths": [
+            378.7599983215332,
+            348.0399971008301,
+            632.4999961853027
+          ],
+          "lineHeight": 87,
+          "lineheight": 87,
+          "baselines": [
+            238,
+            314,
+            389
+          ],
+          "lineGap": 12,
+          "bounds": {
+            "minX": 317.75000190734863,
+            "maxX": 962.2499980926514,
+            "minY": 155,
+            "maxY": 415
+          },
+          "minX": 317.75000190734863,
+          "maxX": 962.2499980926514,
+          "minY": 155,
+          "maxY": 415,
+          "revealEnd": 1.02,
+          "graphemeCount": 33,
+          "horizontalScale": 1,
+          "safeBounds": {
+            "minX": 300,
+            "maxX": 980,
+            "minY": 150,
+            "maxY": 420
+          }
+        }
+      }
+    }
+  ],
+  "components": [
+    {
+      "component_id": "cmp_e3d3066c-33ed-5616-9726-ae02913440cc",
+      "kind": "frame",
+      "revision": 1,
+      "config": {
+        "theme": "greeting"
+      }
+    },
+    {
+      "component_id": "cmp_797431e5-657c-5151-90df-10e9fbc5f4c9",
+      "kind": "props",
+      "revision": 1,
+      "config": {
+        "theme": "greeting",
+        "granularity": "procedural_group"
+      }
+    },
+    {
+      "component_id": "cmp_f8a4f01c-c95b-575f-9747-3f93acf81a79",
+      "kind": "fx",
+      "revision": 1,
+      "config": {
+        "preset": "comic",
+        "continuous": true
+      }
+    },
+    {
+      "component_id": "cmp_e753250a-76bd-5b28-8c7b-5cfd58e5c4af",
+      "kind": "caption",
+      "revision": 1,
+      "config": {
+        "text": "เพื่อเป็นการไม่เสียเวลา\nเราไปลุยกันเลยครับ",
+        "displayText": "เพื่อเป็นการ\nไม่เสียเวลา\nเราไปลุยกันเลยครับ",
+        "textStatus": "draft-transcript",
+        "fontSize": 80
+      }
+    },
+    {
+      "component_id": "cmp_d30d321a-5752-553c-ad82-b59bbe9408c7",
+      "kind": "motion",
+      "revision": 1,
+      "config": {
+        "preset": "pop",
+        "unit": "grapheme"
+      }
+    }
+  ],
+  "unmapped_sound_ids": [],
+  "playback_policy": "Select original sound ID once; use its paired mixed WAV and silent visual. Do not play original and mixed together.",
+  "authoring_policy": "Config changes require rerendering baked exports. Procedural props are group-level until renderer decomposition.",
+  "provenance": {
+    "source_manifest_sha256": "d708ee90c805051bd5185a13a962b99968803e62ab02028ae26134d3b943c54b",
+    "v8_manifest_sha256": "1868efeb10a211883b798100600e18df6f7aa45e7a1ec0c1d29243a4e56029b5",
+    "registry_v1_sha256": "62dcfd76af00e30ef96ce972540825b82299b1deecf02a16c308814882e58777"
+  },
+  "distribution": "self_contained_filesystem"
+}

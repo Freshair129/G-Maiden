@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { speakStaticAdvicePreview } from "./app/adviceGeneration";
 import type { MatchPhase } from "./live/phase";
 import { PAGES } from "./shortcuts";
 import type { DeckActions, DeckQuality } from "./shortcuts";
@@ -121,7 +122,7 @@ export default function MaidenLine({ open, onClose, onOpenSheet, actions, matchP
       label: "Test voice (ทดสอบเสียง)",
       labelTh: "ทดสอบเสียง (Test voice)",
       run: () => {
-        void invoke("speak_event", { event: "advice", fallback: "ทดสอบเสียงค่ะ" }).catch(() => {});
+        void speakStaticAdvicePreview().catch(() => {});
       },
     },
     {

@@ -7,7 +7,7 @@
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::fs;
-use std::io::Write;
+use std::io::{BufRead, BufReader, Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -20,6 +20,7 @@ use crate::log;
 const MEMORY_SCHEMA_VERSION: u32 = 1;
 const MEMORY_CLEAR_SCHEMA_VERSION: u32 = 1;
 const RECENT_HERO_LIMIT: usize = 20;
+const MAX_SOURCE_HEADER_BYTES: usize = 16 * 1024;
 
 static MEMORY_IO: Mutex<()> = Mutex::new(());
 
@@ -165,16 +166,46 @@ fn memory_clear_path() -> PathBuf {
 }
 
 fn match_start_ms(name: &str) -> Option<u64> {
-    name.strip_prefix("match-")?
-        .strip_suffix(".jsonl")?
-        .parse::<u64>()
-        .ok()?
-        .checked_mul(1000)
+    let seconds = name.strip_prefix("match-")?.strip_suffix(".jsonl")?;
+    if seconds.is_empty() || !seconds.bytes().all(|c| c.is_ascii_digit()) {
+        return None;
+    }
+    let started_ms = seconds.parse::<u64>().ok()?.checked_mul(1000)?;
+    (started_ms > 0 && started_ms <= current_epoch_ms().ok()?).then_some(started_ms)
 }
 
 fn filter_matches(
     matches: Vec<log::MatchLog>,
     clear_before_ms: Option<u64>,
+) -> (Vec<log::MatchLog>, bool) {
+    filter_matches_with_reader(matches, clear_before_ms, |name| {
+        first_source_record(fs::File::open(log::log_dir().join(name)).ok()?)
+    })
+}
+
+/// Eligibility needs only the first nonempty record, never the match body.
+/// One extra byte distinguishes an oversized/truncated header from EOF.
+fn first_source_record(reader: impl Read) -> Option<String> {
+    let limited = reader.take((MAX_SOURCE_HEADER_BYTES + 1) as u64);
+    let mut reader = BufReader::with_capacity(1024, limited);
+    let mut consumed = 0;
+    loop {
+        let mut line = String::new();
+        let count = reader.read_line(&mut line).ok()?;
+        consumed += count;
+        if count == 0 || consumed > MAX_SOURCE_HEADER_BYTES {
+            return None;
+        }
+        if !line.trim().is_empty() {
+            return Some(line);
+        }
+    }
+}
+
+fn filter_matches_with_reader(
+    matches: Vec<log::MatchLog>,
+    clear_before_ms: Option<u64>,
+    read_source: impl Fn(&str) -> Option<String>,
 ) -> (Vec<log::MatchLog>, bool) {
     let Some(clear_before_ms) = clear_before_ms else {
         return (matches, false);
@@ -183,15 +214,59 @@ fn filter_matches(
     let mut invalid_name = false;
     let eligible = matches
         .into_iter()
-        .filter(|entry| match match_start_ms(&entry.name) {
-            Some(start_ms) => start_ms > clear_before_ms,
-            None => {
-                invalid_name = true;
-                false
+        .filter(|entry| {
+            match match_start_ms(&entry.name).or_else(|| {
+                if !entry.name.starts_with("match-dota-") && !entry.name.starts_with("match-local-")
+                {
+                    return None;
+                }
+                let content = read_source(&entry.name)?;
+                session_start_ms(&entry.name, &content)
+            }) {
+                Some(start_ms) => start_ms > clear_before_ms,
+                None => {
+                    invalid_name = true;
+                    false
+                }
             }
         })
         .collect();
     (eligible, invalid_name)
+}
+
+/// A session filename is identity, not time. Only its first start record can
+/// establish when the archive began; a later reconnect/tick cannot revive it.
+fn session_start_ms(name: &str, content: &str) -> Option<u64> {
+    let stem = name.strip_prefix("match-")?.strip_suffix(".jsonl")?;
+    let (id, epoch) = stem.rsplit_once("-e")?;
+    let epoch = epoch.parse::<u64>().ok().filter(|epoch| *epoch > 0)?;
+    let numeric_parts = if let Some(id) = id.strip_prefix("dota-") {
+        vec![id]
+    } else if let Some(id) = id.strip_prefix("local-") {
+        let parts: Vec<_> = id.split('-').collect();
+        if parts.len() != 3 {
+            return None;
+        }
+        parts
+    } else {
+        return None;
+    };
+    if numeric_parts
+        .iter()
+        .any(|part| part.is_empty() || !part.bytes().all(|c| c.is_ascii_digit()))
+    {
+        return None;
+    }
+    let first = content.lines().find(|line| !line.trim().is_empty())?;
+    let record: Value = serde_json::from_str(first).ok()?;
+    if record.get("type")?.as_str()? != "match_start"
+        || record.get("session_id")?.as_str()? != id
+        || record.get("session_epoch")?.as_u64()? != epoch
+    {
+        return None;
+    }
+    let started_ms = record.get("ts")?.as_u64()?;
+    (started_ms > 0 && started_ms <= current_epoch_ms().ok()?).then_some(started_ms)
 }
 
 fn load_clear_before_ms(path: &Path) -> Result<Option<u64>, String> {
@@ -670,6 +745,154 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec!["match-11.jsonl"]
         );
+    }
+
+    #[test]
+    fn eligibility_reader_stops_after_small_header_before_large_body() {
+        struct CountingReader<'a> {
+            source: std::io::Cursor<Vec<u8>>,
+            bytes_read: &'a std::cell::Cell<usize>,
+        }
+        impl std::io::Read for CountingReader<'_> {
+            fn read(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
+                let count = std::io::Read::read(&mut self.source, buffer)?;
+                self.bytes_read.set(self.bytes_read.get() + count);
+                Ok(count)
+            }
+        }
+        let header = concat!(
+            r#"{"type":"match_start","ts":11000,"session_id":"dota-123","session_epoch":7}"#,
+            "\n"
+        );
+        let mut fixture = header.as_bytes().to_vec();
+        fixture.resize(2 * 1024 * 1024, b'x');
+        let bytes_read = std::cell::Cell::new(0);
+        let record = super::first_source_record(CountingReader {
+            source: std::io::Cursor::new(fixture),
+            bytes_read: &bytes_read,
+        })
+        .unwrap();
+        assert!(
+            bytes_read.get() <= 16 * 1024 + 1,
+            "read {} bytes",
+            bytes_read.get()
+        );
+        assert_eq!(record, header);
+        assert_eq!(
+            super::session_start_ms("match-dota-123-e7.jsonl", &record),
+            Some(11_000)
+        );
+    }
+
+    #[test]
+    fn eligibility_reader_rejects_oversized_or_missing_first_record() {
+        let header =
+            r#"{"type":"match_start","ts":11000,"session_id":"dota-123","session_epoch":7}"#;
+        let oversized = format!("{}{header}\n", " ".repeat(16 * 1024));
+        assert!(super::first_source_record(oversized.as_bytes()).is_none());
+        assert!(super::first_source_record(" ".repeat(2 * 1024 * 1024).as_bytes()).is_none());
+        assert!(super::first_source_record("\n\n".as_bytes()).is_none());
+        let small = format!("\n  \n{header}");
+        assert_eq!(
+            super::first_source_record(small.as_bytes()).as_deref(),
+            Some(header)
+        );
+    }
+
+    #[test]
+    fn session_logs_resume_after_clear_using_bound_start_record_not_mtime() {
+        let content = |name: &str| {
+            Some(format!(
+                r#"{{"type":"match_start","ts":{},"session_id":"dota-123","session_epoch":7}}"#,
+                if name.contains("dota-123") {
+                    11_000
+                } else {
+                    9_000
+                }
+            ))
+        };
+        let (eligible, invalid) = super::filter_matches_with_reader(
+            vec![match_log("match-dota-123-e7.jsonl")],
+            Some(10_500),
+            content,
+        );
+        assert!(!invalid);
+        assert_eq!(eligible.len(), 1);
+    }
+
+    #[test]
+    fn session_logs_reject_old_boundary_unknown_and_malformed_start_evidence() {
+        for content in [
+            r#"{"type":"match_start","ts":9000,"session_id":"dota-123","session_epoch":7}"#,
+            r#"{"type":"match_start","ts":10500,"session_id":"dota-123","session_epoch":7}"#,
+            r#"{"type":"match_start","ts":0,"session_id":"dota-123","session_epoch":7}"#,
+            r#"{"type":"match_start","ts":-1,"session_id":"dota-123","session_epoch":7}"#,
+            r#"{"type":"match_start","ts":"11000","session_id":"dota-123","session_epoch":7}"#,
+            r#"{"type":"match_start","ts":18446744073709551615,"session_id":"dota-123","session_epoch":7}"#,
+            r#"{"type":"match_start","ts":11000,"session_id":"dota-456","session_epoch":7}"#,
+            r#"{"type":"match_start","ts":11000,"session_id":"dota-123","session_epoch":8}"#,
+            r#"{"type":"tick","ts":11000,"session_id":"dota-123","session_epoch":7}"#,
+            "not-json",
+            "",
+        ] {
+            let mut source = match_log("match-dota-123-e7.jsonl");
+            source.modified_ms = u64::MAX;
+            let (eligible, _) =
+                super::filter_matches_with_reader(vec![source], Some(10_500), |_| {
+                    Some(content.into())
+                });
+            assert!(eligible.is_empty(), "must reject {content}");
+        }
+        let (eligible, invalid) = super::filter_matches_with_reader(
+            vec![match_log("match-unknown.jsonl")],
+            Some(10_500),
+            |_| {
+                Some(
+                    r#"{"type":"match_start","ts":11000,"session_id":"unknown","session_epoch":7}"#
+                        .into(),
+                )
+            },
+        );
+        assert!(eligible.is_empty());
+        assert!(invalid);
+    }
+
+    #[test]
+    fn local_session_start_is_supported_but_later_records_cannot_revive_old_sessions() {
+        let (eligible, invalid) = super::filter_matches_with_reader(
+            vec![match_log("match-local-42-11000-3-e7.jsonl")],
+            Some(10_500),
+            |_| {
+                Some(
+                r#"{"type":"match_start","ts":11000,"session_id":"local-42-11000-3","session_epoch":7}"#.into()
+            )
+            },
+        );
+        assert!(!invalid);
+        assert_eq!(eligible.len(), 1);
+        let (eligible, _) = super::filter_matches_with_reader(
+            vec![match_log("match-dota-123-e7.jsonl")],
+            Some(10_500),
+            |_| {
+                Some(concat!(
+                r#"{"type":"match_start","ts":9000,"session_id":"dota-123","session_epoch":7}"#, "\n",
+                r#"{"type":"match_start","ts":11000,"session_id":"dota-123","session_epoch":7}"#
+            ).into())
+            },
+        );
+        assert!(eligible.is_empty());
+        for name in [
+            "match-0.jsonl",
+            "match-+11.jsonl",
+            "match-18446744073709551615.jsonl",
+        ] {
+            let (eligible, invalid) =
+                super::filter_matches_with_reader(vec![match_log(name)], Some(10_500), |_| {
+                    panic!("unknown filename must not be read")
+                });
+            assert!(eligible.is_empty());
+            assert!(invalid);
+        }
     }
 
     #[test]

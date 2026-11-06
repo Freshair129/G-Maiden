@@ -7,12 +7,18 @@ function makeEvent(overrides: Partial<UtteranceEvent> = {}): UtteranceEvent {
     atMs: 1_000,
     source: "signal",
     kind: "line",
+    phase: "requested",
     text: "ระวังนะคะ Pudge หายจากแมพ",
     ...overrides
   };
 }
 
 describe("buildUtterances", () => {
+  it('keeps generated/requested/admitted distinct rather than implying actual sound', () => {
+    for (const phase of ['generated', 'requested', 'admitted'] as const) {
+      expect(buildUtterances([], makeEvent({ phase }))[0].phase).toBe(phase)
+    }
+  });
   it("prepends the new event so it becomes index 0", () => {
     const prev: Utterance[] = [
       {
@@ -21,6 +27,7 @@ describe("buildUtterances", () => {
         timeLabel: "00:00:00",
         source: "signal",
         kind: "line",
+    phase: "requested",
         text: "seed",
         retracted: null,
         meta: null

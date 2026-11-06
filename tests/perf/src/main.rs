@@ -378,7 +378,7 @@ fn main() {
 
         // Hop 4: signal — edge-triggered threshold state machine.
         let t0 = Instant::now();
-        let event = signal.evaluate(&risk);
+        let event = signal.evaluate(&risk, &risk.missing_heroes, now_ms, true);
         let signal_ms = t0.elapsed().as_secs_f64() * 1000.0;
         match event {
             SignalEvent::Alert(_) => {

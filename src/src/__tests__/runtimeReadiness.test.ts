@@ -21,6 +21,16 @@ const healthySensor: SensorHealth = {
 };
 
 describe("runtime readiness contract", () => {
+  it.each(["stale", "waiting", "unavailable"] as const)("does not pass %s GSI even if an active flag remains set", (gsi_freshness) => {
+    const readiness = readinessFromRuntime({
+      gsiConfigured: true,
+      gsiStatus: { ...liveGsi, gsi_freshness },
+      sensorHealth: null,
+      overlayReady: null,
+    });
+    expect(readiness.gsi).toBe(gsi_freshness === "stale" ? "degraded" : "unknown");
+  });
+
   it("uses live producer evidence and leaves unmeasured coverage/audio unknown", () => {
     const readiness = readinessFromRuntime({
       gsiConfigured: true,

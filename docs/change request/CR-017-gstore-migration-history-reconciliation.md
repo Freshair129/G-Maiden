@@ -107,5 +107,5 @@ after the snapshot evidence above.
 
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
-| 0.2.0b | 2026-07-21 | implemented | Approved migration-history repair completed; schema hash and dry-run verified. | — | ATHER |
 | 0.1.0b | 2026-07-21 | candidate | Proposed metadata-only reconciliation after production schema snapshot. | — | ATHER |
+| 0.2.0b | 2026-07-21 | implemented | Approved migration-history repair completed; schema hash and dry-run verified. | — | ATHER |

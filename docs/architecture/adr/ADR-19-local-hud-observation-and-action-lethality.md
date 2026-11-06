@@ -2,8 +2,8 @@
 title: "ADR-19: Local HUD Observation and Action-Scoped Lethality"
 doc_id: "ADR-19-local-hud-observation-and-action-lethality"
 status: "draft"
-version: "0.1.0"
-updated: "2026-10-18"
+version: "0.1.2"
+updated: "2026-10-28"
 owner: "Boss"
 source_of_truth: true
 related_docs: ["CR-035-selected-target-hud-cv-and-action-lethality", "FEAT-G-DAMAGE", "G-SERIES-DATA-LINEAGE", "ADR-13-dxgi-capture-migration", "ADR-10-hybrid-ingestion-resilience", "mvp-decisions"]
@@ -126,7 +126,7 @@ The existing `TargetCombatSnapshot::to_kill_input()` is the source-safe boundary
 2. **Capture:** prove single acquisition/releases under timeout, device reset, monitor move, GDI fallback, calibration and concurrent frame requests; profile ROI payloads and stale semantics.
 3. **Detector:** held-out labeled captures for enemy hero, ally, creep, building, no-target, HUD switches, fog, occlusion and read errors. Agree quality thresholds before observing test results.
 4. **Damage:** fixed-source current-patch receipts for Sniper Assassinate and its attack/talent/item interaction; deterministic typed/unit tests for armor (points), MR (%), level, HP interval, mana/cooldown, barriers/regeneration/travel and patch mismatch.
-5. **System:** Win10 19045 / Win11 26100 accepted matrix; critical voice **p50 ≤250ms and every measured sample ≤300ms**, whole-app CPU ≤10%, aggregate peak RAM ≤400,000,000 bytes, Dota FPS drop ≤3%; verify with minimap + target ROI enabled.
+5. **System:** Win10 19045 / Win11 26100 accepted matrix; critical voice **p50 ≤250ms and every measured sample ≤300ms**, whole-app CPU ≤10%, aggregate peak RAM ≤900,000,000 bytes, Dota FPS drop ≤3%; verify with minimap + target ROI enabled.
 6. **Security/Privacy:** outbound packet/payload inspection, no external CV/target data, no injection/automated game actions. Live enabled only after explicit owner acceptance and fair-play rules review.
 
 **Rollback:** feature isolated behind not-enabled-by-default product gate during proof; turn off target ROI/OCR and revert to the existing GSI+minimap path without changing player data, game client or cloud schema. The presence of a technical flag in a proposed design does not waive the repository's rule against accumulating ungoverned compatibility flags.
@@ -146,3 +146,5 @@ The existing `TargetCombatSnapshot::to_kill_input()` is the source-safe boundary
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.1.0 | 2026-10-18 | Proposed local player-visible selected-target ROI observation, shared-frame capture, source-safe target state and action-scoped lethality architecture; pending approval and evidence. |
+| 0.1.1 | 2026-10-28 | Align active RAM target with owner-approved800MB aggregate full Working Set (MVP decision v0.4.0); retain accounting and historical evidence. |
+| 0.1.2 | 2026-10-28 | Align active MVP RAM ceiling to owner-approved900MB aggregate Working Set; preserve accounting and historical evidence. |

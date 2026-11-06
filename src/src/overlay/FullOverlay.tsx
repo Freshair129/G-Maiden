@@ -1,25 +1,7 @@
-/**
- * Full overlay — the redesign tier (opt-in via Settings.uiMode = 'full').
- *
- * Isolated from the stable "lite" overlay in App.tsx. Each piece is an
- * independent MODULE positioned + scaled from Settings.layout (edited in the
- * G-AnnStudio's Overlay Lab, synced in). Backend is shared — same game-tick / gank
- * events drive both tiers.
- *
- * Phase 2: stats split into individual draggable modules (clock/KDA/gold/GPM/
- * XPM/NW/score/HP-mana) + a CompanionStage presence module. Next: drop the
- * Crystal Maiden portrait into CompanionStage, voice-pack tab.
- */
-import React from 'react'
+import type { MissingState } from '../app/types'
+import React, { useEffect, useRef, useState } from 'react'
 import type { GameTick, GsiFreshness, Settings, GankState, ReviveAdvice } from '../App'
-import { cfgOf, type ModuleCfg, type ModuleId } from './modules'
-import { VoiceWave } from './VoiceWave'
-import { STREAK_LABELS } from './streaks'
-
-/** Kill banner state (lite parity) — the built-in card shown per kill/streak. */
-export type KillBanner = { phase: 'show' | 'exit'; kills: number; streak: number; victim: string | null } | null
-/** Announcer-pack banner — the active pack's own image; REPLACES the kill card. */
-export type PackBanner = { phase: 'show' | 'exit'; url: string | null; text: string; thai: string; clip: string | null } | null
+import { BOX_REF, MODULE_BOX, cfgOf, type ModuleCfg, type ModuleId } from './modules'
 
 const C = {
   ice: '#8fd4ff', txt: '#e7eef6', mut: '#8794a6',
@@ -31,11 +13,23 @@ const heroName = (raw: string) => {
   return n ? n.replace(/\b\w/g, (c) => c.toUpperCase()) : '—'
 }
 
-const Module: React.FC<{ cfg: ModuleCfg; children: React.ReactNode }> = ({ cfg, children }) => (
-  <div style={{ position: 'fixed', left: `${cfg.x}%`, top: `${cfg.y}%`, transform: `translate(-50%, -50%) scale(${cfg.scale})`, pointerEvents: 'none', zIndex: 10 }}>
-    {children}
+const Module: React.FC<{ id: ModuleId; cfg: ModuleCfg; children: React.ReactNode }> = ({ id, cfg, children }) => {
+  const content = useRef<HTMLDivElement>(null)
+  const [fit, setFit] = useState(1)
+  const box = MODULE_BOX[id]
+  useEffect(() => {
+    const node = content.current
+    if (!node) return
+    const measure = () => setFit(id === 'banner' ? 1 : Math.min(1, box.w / Math.max(1, node.scrollWidth), box.h / Math.max(1, node.offsetHeight)))
+    const observer = new ResizeObserver(measure)
+    observer.observe(node)
+    measure()
+    return () => observer.disconnect()
+  }, [box, id])
+  return <div data-overlay-module={id} style={{ position: 'fixed', left: `${cfg.x}%`, top: `${cfg.y}%`, width: box.w, height: box.h, display: 'flex', alignItems: 'center', justifyContent: 'center', transform: `translate(-50%, -50%) scale(calc(${cfg.scale} * var(--gm-overlay-scale, 1)))`, pointerEvents: 'none', zIndex: 10 }}>
+    <div ref={content} style={{ width: box.w, flexShrink: 0, overflowWrap: 'anywhere', overflow: id === 'banner' ? 'visible' : undefined, transform: `scale(${fit})` }}>{children}</div>
   </div>
-)
+}
 
 const glass = (op: number): React.CSSProperties => ({
   background: `rgba(14,17,24,${op})`,
@@ -60,20 +54,10 @@ interface Props {
   s: Settings
   gank: GankState
   missingHeroes: Set<string>
+  warningStatus?: MissingState | null
   overlayAdvice: string | null
   /** G-Revive buyback verdict shown while dead (null when alive/none). */
   buyback: { advice: ReviveAdvice; narrative: string | null } | null
-  /** Last voice event mirrored on-screen (G-Signal/persona/advice). Becomes
-   * the silent fallback when the voice pack hasn't shipped — users still see
-   * which event triggered. Auto-dismisses in the parent. */
-  toast: { event: string; text: string } | null
-  // ── Ported from the lite overlay so Full is the single overlay ──
-  /** Built-in kill/streak card (null when hidden or superseded by packBanner). */
-  killBanner: KillBanner
-  /** Active pack's queue-banner image; when set it REPLACES the kill card. */
-  packBanner: PackBanner
-  /** HP crossed the danger threshold (down) while alive — inline "ถอย!" cue. */
-  lowHp: boolean
   /** Volume 0–100 for the transient Alt+Up/Down/M feedback, or null when idle. */
   volToast: number | null
   /** GSI feed is live (Dota running) — gates the pre-game standby chip. */
@@ -91,6 +75,7 @@ interface Props {
    * stall — states in which the missing-hero set is empty for the wrong reason,
    * so the G-Meter must NOT show green. */
   sensorOk: boolean
+  referenceViewport?: boolean
 }
 
 /** Continuous-risk level derived from G-Sentry's missing-hero count (and the
@@ -99,19 +84,26 @@ interface Props {
  * อันตราย" — without showing raw probability percentages. */
 function gmeterLevel(missing: number, gank: GankState): 0 | 1 | 2 | 3 {
   if (gank?.phase === 'alert') return 3
-  if (missing >= 3) return 3
-  if (missing >= 2) return 2
   if (missing >= 1) return 1
   return 0
 }
 const G_LEVELS = [
-  { label: 'ปลอดภัย', color: '#5be3a7', glow: 'rgba(91,227,167,0.35)' },
-  { label: 'ระวัง', color: '#8fd4ff', glow: 'rgba(143,212,255,0.35)' },
+  { label: 'ยังไม่มีสัญญาณเสี่ยง', color: '#8794a6', glow: 'rgba(91,227,167,0.35)' },
+  { label: 'มองไม่เห็น', color: '#8fd4ff', glow: 'rgba(143,212,255,0.35)' },
   { label: 'เสี่ยง', color: '#ffcf6b', glow: 'rgba(255,207,107,0.5)' },
   { label: 'อันตราย', color: '#ff7b85', glow: 'rgba(255,123,133,0.6)' },
 ] as const
 
-export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, overlayAdvice, buyback, toast, killBanner, packBanner, lowHp, volToast, gsiActive, gsiFresh, gsiFreshness, gsiAgeMs, matchActive, previewMode, sensorOk }) => {
+export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, warningStatus, overlayAdvice, buyback, volToast, gsiActive, gsiFresh, gsiFreshness, gsiAgeMs, matchActive, previewMode, sensorOk, referenceViewport = false }) => {
+  const [viewportScale, setViewportScale] = useState(1)
+  useEffect(() => {
+    if (referenceViewport) return
+    const resize = () => setViewportScale(Math.min(window.innerWidth / BOX_REF.w, window.innerHeight / BOX_REF.h))
+    resize()
+    window.addEventListener('resize', resize)
+    return () => window.removeEventListener('resize', resize)
+  }, [referenceViewport])
+
   const op = s.opacity
   // Session lifecycle remains visible during a feed outage, while own-state
   // widgets stay suppressed because the parent passes no stale tick.
@@ -122,7 +114,7 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
   /** Wrap content in a positioned module iff it's enabled in the layout. */
   const M = (id: ModuleId, content: React.ReactNode) => {
     const cfg = cfgOf(L, id)
-    return cfg.enabled ? <Module key={id} cfg={cfg}>{content}</Module> : null
+    return cfg.enabled ? <Module key={id} id={id} cfg={cfg}>{content}</Module> : null
   }
   /** Small stat chip (one value). */
   const chip = (label: string, value: React.ReactNode, color?: string) => (
@@ -131,20 +123,6 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
       {label && <div style={{ fontSize: 9, color: C.mut, textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 2 }}>{label}</div>}
     </div>
   )
-
-  // ── Danger Alert (special — gank state drives the variant)
-  const alertCfg = cfgOf(L, 'alert')
-  const alert = s.gankVisuals && gank && alertCfg.enabled ? (
-    <Module key="alert" cfg={alertCfg}>
-      {gank.phase === 'clear' ? (
-        <div style={{ ...glass(0.82), padding: '9px 22px', border: `1px solid ${C.ice}`, color: C.ice, fontWeight: 600, fontSize: 14 }}>เอ๊ะ… ปลอดภัยแล้วค่ะ</div>
-      ) : (
-        <div style={{ ...glass(0.84), padding: '10px 24px', border: `1px solid ${C.warn}`, color: C.warn, fontWeight: 700, fontSize: 15, boxShadow: '0 0 30px rgba(255,207,107,0.4)' }}>
-          ⚠️ ระวังแก๊งค์! {gank.heroes.length ? gank.heroes.map(heroName).join(', ') + ' — ' : ''}{Math.round(gank.probability * 100)}%
-        </div>
-      )}
-    </Module>
-  ) : null
 
   // ── CompanionStage — Maiden presence. Stylized SVG portrait (Crystal-Maiden
   // archetype: hood, ice palette, frost crystal); a higher-fidelity render can
@@ -174,7 +152,7 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
   // case is the one failure a safety companion may not have, so when the
   // sensor is not healthy the meter goes dark and says so instead. An active
   // G-Signal alert still wins: we withhold reassurance, never a warning.
-  const blind = inGame && (!sensorOk || !gsiFresh) && gank?.phase !== 'alert'
+  const blind = inGame && (!sensorOk || !gsiFresh || (!previewMode && !warningStatus?.ready)) && gank?.phase !== 'alert'
   const lvl = inGame ? gmeterLevel(missingHeroes.size, gank) : 0
   const meterColor = blind ? C.mut : G_LEVELS[lvl].color
   const gMeter = (
@@ -194,91 +172,10 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
         ))}
       </div>
       <span style={{ fontSize: 11.5, fontWeight: 700, color: meterColor, marginLeft: 'auto' }}>
-        {blind ? 'ไม่มีสัญญาณ' : G_LEVELS[lvl].label}
+        {blind ? (warningStatus && warningStatus.roster_known < 5 ? `ยืนยันศัตรู ${warningStatus.roster_known}/5` : 'ข้อมูลยังไม่พร้อม') : G_LEVELS[lvl].label}
       </span>
     </div>
   )
-
-  // ── Voice notice (toast) — mirrors the spoken cue on-screen so the player
-  // sees the trigger event even when the voice pack isn't installed yet.
-  const toastUi = toast ? (
-    <div style={{ ...glass(0.88), padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 10, maxWidth: 460, border: `1px solid ${C.ice}` }}>
-      <span style={{ fontSize: 10, color: C.ice, textTransform: 'uppercase', letterSpacing: 0.7, flex: 'none' }}>🔔 {toast.event} (voice)</span>
-      <span style={{ fontSize: 12.5, opacity: 0.92 }}>{toast.text}</span>
-    </div>
-  ) : null
-
-  // ── Kill / Announcer banner (ported from lite). The active pack's image
-  // REPLACES the built-in kill card; falls back to the card when the pack maps
-  // no image. Same 'gm-kill'/'gm-kill-exit' enter/exit CSS as the lite overlay.
-  const packBannerFrame: React.CSSProperties = { position: 'relative', display: 'inline-block', lineHeight: 0, borderRadius: 16, overflow: 'hidden', boxShadow: '0 0 24px rgba(91,227,167,0.25)' }
-  const killCardFrame: React.CSSProperties = { background: 'rgba(12,20,32,0.45)', border: '1px solid rgba(91,227,167,0.35)', borderRadius: 16, padding: '10px 18px 10px 10px', display: 'flex', alignItems: 'center', gap: 14, backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', boxShadow: '0 0 24px rgba(91,227,167,0.2)' }
-  const caption = (text: string, thai: string) => (
-    <div style={{ textAlign: 'center' }}>
-      {text && <div style={{ fontSize: 12, fontWeight: 700, color: C.txt, letterSpacing: 1, textTransform: 'uppercase', textShadow: '0 1px 4px rgba(0,0,0,0.85)' }}>{text}</div>}
-      {thai && <div style={{ fontSize: 13, fontWeight: 600, color: C.ice, textShadow: '0 1px 4px rgba(0,0,0,0.85)' }}>{thai}</div>}
-    </div>
-  )
-  const bannerUi = !s.killVisuals ? null : packBanner ? (
-    <div className={packBanner.phase === 'exit' ? 'gm-kill-exit' : 'gm-kill'} style={packBannerFrame}>
-      {packBanner.url && (
-        <img src={packBanner.url} alt={packBanner.text} style={{ display: 'block', maxWidth: 420, maxHeight: 150, width: 'auto', height: 'auto', objectFit: 'contain' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-      )}
-      {packBanner.url && (packBanner.text || packBanner.thai) && (
-        <div style={{ position: 'absolute', left: 0, right: 0, bottom: 6, textAlign: 'center', pointerEvents: 'none' }}>{caption(packBanner.text, packBanner.thai)}</div>
-      )}
-      {packBanner.clip && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center', padding: packBanner.url ? '6px 10px 8px' : '10px 14px', background: 'rgba(12,14,20,0.82)', lineHeight: 1.25 }}>
-          {!packBanner.url && (packBanner.text || packBanner.thai) && caption(packBanner.text, packBanner.thai)}
-          <VoiceWave key={packBanner.clip} clip={packBanner.clip} />
-        </div>
-      )}
-    </div>
-  ) : killBanner ? (
-    <div className={killBanner.phase === 'exit' ? 'gm-kill-exit' : 'gm-kill'} style={killCardFrame}>
-      <div style={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}>
-        <div style={{ width: 56, height: 56, borderRadius: '50%', overflow: 'hidden', background: 'rgba(18,20,28,0.9)', border: '2px solid rgba(91,227,167,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {killBanner.victim ? (
-            <img src={`https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${killBanner.victim.replace(/^npc_dota_hero_/, '')}.png`} alt="" style={{ width: '110%', height: '110%', objectFit: 'cover' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-          ) : (
-            <span style={{ fontSize: 22, opacity: 0.6 }}>💀</span>
-          )}
-        </div>
-        <svg className="gm-kill-cross" viewBox="0 0 56 56" style={{ position: 'absolute', inset: 0, width: 56, height: 56, pointerEvents: 'none' }}>
-          <line x1="12" y1="12" x2="44" y2="44" stroke="#ff4455" strokeWidth="3.5" strokeLinecap="round" />
-          <line x1="44" y1="12" x2="12" y2="44" stroke="#ff4455" strokeWidth="3.5" strokeLinecap="round" />
-        </svg>
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 11, color: C.ok, fontWeight: 600, letterSpacing: 1.5, textTransform: 'uppercase', opacity: 0.8 }}>
-          {killBanner.streak >= 3 ? (STREAK_LABELS[Math.min(killBanner.streak, 10)] ?? 'BEYOND GODLIKE') : 'ENEMY SLAIN'}
-        </div>
-        <div style={{ fontSize: 17, fontWeight: 700, color: C.txt, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {killBanner.victim ? heroName(killBanner.victim) : 'ฆ่าได้สวยค่ะ!'}
-        </div>
-      </div>
-      {t && (
-        <div style={{ background: 'rgba(143,212,255,0.06)', border: '1px solid rgba(143,212,255,0.18)', borderRadius: 10, padding: '5px 16px', textAlign: 'center', flexShrink: 0 }}>
-          <div style={{ fontSize: 20, fontWeight: 800, whiteSpace: 'nowrap', letterSpacing: 1 }}>
-            <span style={{ color: C.ok }}>{t.kills}</span>
-            <span style={{ color: C.mut, fontSize: 14, margin: '0 6px' }}>:</span>
-            <span style={{ color: C.bad }}>{t.deaths}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, letterSpacing: 0.8, marginTop: 2 }}>
-            <span style={{ color: C.ok, fontWeight: 600 }}>YOU</span>
-            <span style={{ color: C.bad, fontWeight: 600 }}>FOE</span>
-          </div>
-        </div>
-      )}
-    </div>
-  ) : null
-
-  // ── Low-HP inline warning (ported). Rising-edge is computed in the parent.
-  const lowHpUi = lowHp && t ? (
-    <div style={{ ...glass(0.82), padding: '9px 22px', border: `1px solid ${C.warn}`, color: C.warn, fontWeight: 700, fontSize: 14, boxShadow: '0 0 24px rgba(255,207,107,0.35)' }}>
-      ⚠ HP เหลือ {t.hp_percent}% — ถอยก่อนค่ะเพื่อน!
-    </div>
-  ) : null
 
   // ── Volume toast (ported) — brief Alt+Up/Down/M feedback.
   const volUi = volToast !== null ? (
@@ -311,19 +208,14 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
   ) : null
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'transparent', pointerEvents: 'none' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'transparent', pointerEvents: 'none', '--gm-overlay-scale': viewportScale } as React.CSSProperties}>
       {staleNotice}
-      {alert}
+
       {inGame && M('gmeter', gMeter)}
-      {/* Consolidation (Boss 2026-07-20): the announcer banner already carries
-          the transcript + waveform for the same event, so while it's up the
-          voice toast would be a duplicate — banner wins, toast stays hidden. */}
-      {toastUi && !packBanner && M('toast', toastUi)}
+
       {inGame && M('companion', companion)}
 
-      {/* Ported announcer/persona visuals — each positionable from G-AnnStudio's Overlay Lab */}
-      {inGame && bannerUi && M('banner', bannerUi)}
-      {inGame && lowHpUi && M('lowhp', lowHpUi)}
+
       {volUi && M('vol', volUi)}
       {showStandby && M('standby', standbyUi)}
 
@@ -340,7 +232,7 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
         ? M('buyback', (() => {
             const a = buyback.advice
             const accent = a.urgency === 'Strong' ? C.bad : a.urgency === 'Consider' ? C.warn : C.ice
-            const verdict = a.recommend_buyback ? (a.urgency === 'Strong' ? 'ซื้อเกิดเลย!' : 'ควรซื้อเกิด') : 'รอเกิด'
+            const verdict = a.recommend_buyback === null ? 'ยังประเมินไม่ได้' : a.recommend_buyback ? (a.urgency === 'Strong' ? 'ซื้อเกิดเลย!' : 'ควรซื้อเกิด') : 'รอเกิด'
             // Live countdown: GSI streams hero.respawn_seconds every tick, so
             // prefer it over the advice's frozen at-death snapshot (Boss
             // 2026-07-20: "เวลาไม่นับถอยหลัง").

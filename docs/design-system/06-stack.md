@@ -1,15 +1,15 @@
 ---
-version: "2.0.2-draft"
+version: "2.0.2"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
 last_update: "2026-10-19T00:00:00+07:00,Codex"
-status: "draft"
+status: "active"
 attributes:
   domain: "ui-ux"
   scope: "tech stack + code map"
   language: "th/en"
 title: "06 — Stack & Code Map"
 doc_id: "06-stack"
-updated: "2026-10-19"
+updated: "2026-11-06"
 owner: "Boss"
 ---
 
@@ -80,3 +80,4 @@ Release ใช้ `workflow_dispatch` ตาม channel workflow; tag เป็�
 | 2.0.0-draft | 2026-07-19 | changelog table added per Step-5 SOP (G1.5) |
 | 2.0.1-draft | 2026-10-18 | Update voice-pack code map to reflect Store-only player installation and separate G-AnnStudio authoring. |
 | 2.0.2-draft | 2026-10-19 | Point voice settings to AudioSettingsCard and align release entry with workflow_dispatch. |
+| 2.0.2 | 2026-11-06 | status `draft` → `active`: referenced as the design SSOT (CLAUDE.md, code and sibling docs) and describes the shipped deck; not marked accepted because no owner approval is recorded |

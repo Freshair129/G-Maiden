@@ -2,8 +2,74 @@
 
 ## [Unreleased]
 
+### Release
+- เตรียม candidate 0.13.6 หลัง workflow ของ 0.13.5 ล้มเหลวในขั้นสร้าง Dev PR โดยรักษาไฟล์และหลักฐาน candidate เดิม
+
+### Added
+- **G-Friends ใน G-Party (CR-038)** — เพิ่มเพื่อนด้วย GID/verified room link, ตอบรับ/ปฏิเสธ/ยกเลิก, remove/block/unblock, online แบบ opt-in และคำเชิญที่ต้องยินยอมแชร์ GSI ใหม่ทุกครั้ง; guest room code ยังไม่ต้องมีบัญชี Backend ใช้ private social schema และ registered relay proof/ticket; ต้องตั้งค่า/ตรวจ hosted service ก่อนใช้งานจริง และ live Google/Dota/สองจอ/NFR ยังรอ acceptance
+- **G-Party — แชร์สถานะของเพื่อนจาก GSI ของแต่ละเครื่อง** — สร้าง/เข้าห้องด้วยรหัสเชิญและความยินยอมแยก แสดงฮีโร่ เลเวล HP/HP สูงสุด MP% และสถานะชีวิต/รอเกิดเฉพาะแมตช์และทีมเดียวกัน; ค่าเก่าเป็น unknown พร้อมออก/เตะ/เปลี่ยนรหัสเชิญ ตัว relay เก็บในหน่วยความจำและ native transport แยกจาก G-Signal ต้องรัน relay ที่เข้าถึงได้ก่อนใช้งานข้ามเครื่อง; Windows/live Dota/สองจอและงบทรัพยากรยังรอ acceptance
+- **เอกสาร G-Party และการทดสอบ** — เพิ่ม FEAT/CR-037/implementation plan, สัญญา peer-sharing แยกจาก AI consent และ CI สำหรับ relay/portable Rust โดยคง 62 MVP tasks เดิม
+
 ### Fixed
-- **One Canvas UI** — Voice pack inventory paginates within its available space, Account content uses a bounded scroll region, Insights links to Account when Steam is not linked, and duplicate voice/GSI cards are removed from Settings.
+- **One Canvas UI** — Voice pack inventory paginates within its available space, Account content uses a bounded scroll region, Insights links to Account when Steam is not linked.
+
+## [0.13.5] — Pending release
+
+- **ความต่อเนื่องของ minimap ระหว่างคลิป** — ให้ worker ทำงานที่ priority ปกติภายใต้งบ CPU เดิม ลดเฉพาะภาพสะท้อน minimap เหลือ 5 FPS ระหว่างเล่นคลิป และคืน cadence หลังจบ พร้อมบันทึกจุดสะดุดแบบตัวเลขในเครื่อง
+- **CV ลองภาพใหม่หลังประมวลผลไม่ทัน** — ภาพที่ถูกปฏิเสธเพราะเลย deadline หรือทรัพยากรไม่พร้อมไม่กินสิทธิ์ของภาพจากการจับครั้งใหม่ที่เหมือนกัน โดยยังไม่นับภาพที่ผ่านแล้วซ้ำเป็นการยืนยันเพิ่ม
+- **Preview คลิป GANN** — เลือก variant จากแพ็กที่ตรวจและเปิดใช้งานแล้ว เพื่อลดเวลาตรวจแพ็กซ้ำก่อนเล่น พร้อมตรวจความถูกต้องของเสียงและภาพก่อนส่งออก
+- **แพ็ก announcer ไฟล์เดียว `.gann`** — รวม manifest แบบ ID, เสียง, silent banner video, motion/config และ stock ใน indexed ZIP ที่ตรวจขนาด/พาธ/SHA-256; นำเข้าจาก Control ได้ทั้ง local development และ consumer build เก็บต้นฉบับพร้อม playback cache โดยไม่เพิ่ม SQL หรือสิทธิ์ Store
+- **ตัวเล่น GANN แบบ native** — ถอดรหัส VP8/VP9 และ alpha ภายในแอป แสดงผ่าน DirectComposition โดยใช้ clock ร่วมกับ WASAPI; เลิกเส้นทางแบนเนอร์ WebView สำหรับ event คงเวลา/เฟรมจากแพ็ก การตรวจ hash, priority, Stop, volume และ session/pack fences พร้อมจำกัด worker/หน่วยความจำและแยก gain ของแต่ละ stream
+- **แปลงสีและ alpha ด้วย GPU** — ส่ง Y/U/V/alpha ที่ถอดรหัสแล้วให้ D3D11 แปลงเป็นภาพ โดยคงคิวเฟรม เวลา GANN และ clock เสียงเดิม
+- **Minimap ระหว่างเล่นคลิป** — ลดเฉพาะภาพ mirror เหลือ 5 FPS แล้วคืน cadence เดิมเมื่อคลิปจบหรือกด Stop; DXGI/CV ยังทำงาน และแยก heartbeat ช่วงเริ่ม worker ออกจากการจับภาพที่พร้อมแล้วเพื่อป้องกันเริ่ม process ซ้ำก่อน DXGI เริ่มเสร็จ
+
+
+- **CV/เสียงแย่ง CPU** — เว้นช่วงคืน CPU ตามงานจับภาพ/CV ที่ใช้จริง โดยรวมเวลารอใน deadline เดิม; ลงทะเบียนเธรดที่ดึง PCM กับ Windows MMCSS Audio และเพิ่มตัวนับช่วงขาดการดึง sample เพื่อแยกจากเวลารายงานจบช้า ความลื่น/เสียงในเกมยังรอวัดกับ build ใหม่
+- **Live บนจอรอง** — ส่งข้อมูลฮีโร่และสถิติให้หน้าที่มองเห็นแม้โฟกัสอยู่ใน Dota; หน้าที่ซ่อนยังพักการแจ้ง UI และรายชื่อฝ่ายเดียวกันที่ CV ยืนยันแล้วแสดงได้โดยคงช่องที่ยังอ่านไม่ได้
+- **ลดงาน CV ซ้ำ** — เก็บผลเฉพาะอินพุต classifier ที่ตรงกันทุกบิตในเฟรมปัจจุบัน/ก่อนหน้า พร้อมจำกัดหน่วยความจำและล็อกจำนวนครั้งที่ใช้ผลเดิม; CPU และ FPS จริงยังต้องวัดในแมตช์
+- **Double Kill ถูก Killing Streak แย่งคิว** — ให้อีเวนต์ multikill มีลำดับสูงกว่า streak เมื่อเกิดพร้อมกัน โดยยังเล่นเพียงหนึ่งคลิป และบันทึก candidates/เหตุผลเลือกไว้ในล็อกภายในเครื่อง
+
+- **เสียง announcer ไม่ซ้ำและมาจาก GANN เท่านั้น** — event ใช้คู่เสียง/ภาพจากแพ็กที่ยืนยันแล้วเพียงคู่เดียว; หากไม่มี mapping หรือ integrity ไม่ผ่าน จะเงียบและบันทึกเหตุผล โดยไม่มี default voice, event TTS หรือเส้นทางไฟล์เก่ามาทดแทน
+- **ข้อจำกัด MVP ที่ยอมรับ** — ใช้เพดานคลาดเคลื่อนการเล่นคลิป announcer ประมาณ 500 ms และเก็บ Match Start เป็น known issue ที่ไม่บล็อก MVP ตามคำยืนยันเจ้าของ; ไม่เปลี่ยนข้อกำหนด G-Signal, ความครบของสี่ event หลัก หรือ CPU/RAM/privacy
+- **Announcer event ownership** — ไม่ให้ Overlay สั่งเสียงทับ native announcer; ยืนยัน SteamID ผู้เล่นกับบัญชี Steam ที่ล็อกอินบนเครื่อง ก่อนอีเวนต์ส่วนตัว รีเซ็ตเมื่อเปลี่ยนผู้เล่น และไม่อนุมาน Double Kill จากคิลสะสมที่กระโดดหลายตัว; ยังต้องยืนยันในแมตช์จริง
+
+- **Resource accounting และ PID reuse** — ตรวจเวลาเริ่มและตัวตนของ parent/child กับสมาชิก Job เพื่อไม่ให้นับ process เก่าที่ใช้ parent PID ซ้ำ; กรณีอ่าน identity ไม่ได้ยังพักงานตามเดิม รอ native verification
+
+
+- **VRZO แบนเนอร์ภาพเคลื่อนไหวตามคลิปที่เลือก** — จับคู่อีเวนต์และ SHA-256 ของเสียงที่ rodio ถอดรหัสกับวิดีโอ composite ที่ปิดเสียง พร้อม preview เลือก 21 คลิปและจัดการจบ/ยกเลิกแยกตาม playback; การแสดง alpha, ความตรงเสียงในเกม, cold-start และงบทรัพยากรยังรอ native acceptance
+
+- **พรีวิวมินิแมปสด** — แยกภาพจากรอบ CV, ทิ้งเฟรมเก่าโดยรักษาช่องส่งภาพ และลดงานแปลงภาพกับ preprocessing ที่ให้ผลเท่าเดิม; อ่านเวลาหลัง receipt และภายใต้ lease lock เพื่อไม่ยกเลิก worker หรือ lease จากเฟรมใหม่ที่มาระหว่างรอ; เป้าหมาย 60 FPS และผลต่อเกมยังรอทดสอบในแมตช์จริง
+
+### Changed
+- **แยกโปรไฟล์ Rust tests จากตัวแอป** — unit tests ใช้ opt-level 0 และไม่ใช้ incremental cache โดยคงรายการ tests, debug assertions และ overflow checks; dev/release ของตัวแอปใช้ค่าประสิทธิภาพเดิม
+- **งบ RAM รวม 900 MB ตามมติผู้ใช้** — ใช้เพดาน 900,000,000 bytes สำหรับ Working Set รวม host/WebView2/feeder/STT/SLM และ provider/model ที่ใช้จริง; UI และ resource governor ใช้เกณฑ์เดียวกัน คง CPU, latency, FPS, privacy และการปฏิเสธ provider ที่พิสูจน์งบไม่ได้
+
+### Fixed
+- **MVP-011 readiness ไม่สรุปจากสวิตช์** — หน้าเตรียมเกมแยกค่าที่เปิด/ตั้งไว้จากสถานะที่มีหลักฐานจริง; GSI ต้องสดและ active จึงได้เครื่องหมายพร้อม ส่วน capture/audio ยังไม่ถูกอ้างว่าผ่าน และค่าระดับเสียงที่ผิดรูปแบบคง unknown
+- **ปิด logic ที่เหลือจาก feature audit** — กันคำขอคำแนะนำซ้อนและคำตอบเก่าข้ามการตั้งค่า/แมตช์; ซื้อเกิดผูกกับ death episode/request; บัญชีและ Steam ปฏิเสธ response เก่า พร้อมรับ OAuth callback เพียงชุดเดียว
+- **เสียงและแบนเนอร์ตรงแหล่งจริง** — ANN ใช้เฉพาะแพ็กที่เลือก ไม่แทนด้วยเสียงกลางเมื่อไม่มีคลิป; SAPI/rodio ใช้ admission ร่วม; ledger แยกสร้าง/ร้องขอ/รับเข้าเล่นและระบุคลิปจริง; preview นอกเกมมี identity/expiry ของตัวเอง
+- **Memory และ combat inventory** — log ชื่อ session ใช้งานหลังล้าง Memory ได้จาก start record ที่ตรวจสอบแล้ว อ่าน header แบบจำกัด; combo ใช้เฉพาะช่องไอเท็มที่พร้อมรบ โดยคงข้อมูล ownership/NW แยกไว้
+- **Event ของ overlay ไม่ถูกกลืน** — แยก baseline ของ persona, kill banner และ auto-advice; กันพลาด kill แรกตอนเปลี่ยนแมตช์/เข้า live และไม่เดาชื่อเหยื่อจากรายชื่อฮีโร่หาย
+- **Announcer ตรงข้อมูลเกมมากขึ้น** — เริ่มที่ horn แทนเวลาติดลบก่อนเกม; reset สตรีคจากยอดตายแม้ feed ขาด; ไม่ประกาศ first blood หรือสตรีคจากชุดข้อมูลที่ลำดับกำกวม
+- **ลดงานซ้ำของหน้าจอและภาพจับ** — cache ข้อความวันที่ประวัติแบบจำกัดขนาด และสร้าง texture เต็มจอของ DXGI เมื่อมีผู้ใช้จริง; การจับ ROI และเงื่อนไข CV เดิมยังครบ ต้องวัด RAM รวมจาก native build อีกครั้ง
+- **Waveform และปุ่มฟังแพ็ก** — สร้างข้อมูลแถบเสียงขนาดจำกัดใน Rust แทนการถอดรหัสและเปิดเสียงเงียบซ้ำใน WebView; ปุ่ม Play ฟังแพ็กที่เลือกผ่าน native โดยไม่เปลี่ยนแพ็กหลักหรือเรียกแบนเนอร์
+- **รายชื่อเสียง Windows และไฟล์เสียงว่าง** — อ่าน metadata classic SAPI ผ่าน native COM โดยไม่เปิด PowerShell; ปฏิเสธ WAV ที่ไม่มีเฟรมก่อนยืนยัน playback และล้าง priority ค้างเมื่อเสียงถูกปฏิเสธ
+- **ลดโปรเซสชั่วคราวของระบบตรวจจับ** — ตรวจชื่อ Dota ด้วย native process snapshot และอ่าน GPU ผ่าน NVML แบบ read-only แทนการเปิด tasklist/NVIDIA-SMI; คง error/health/ACK และนับ RAM ของทุกโปรเซสตามเดิม ผลรอบทดสอบงบเดิม 400 MB เก็บแยกจากมติ MVP 900 MB
+- **ลดการสร้าง formatter ซ้ำในหน้าแอป** — ใช้ตัวจัดรูปแบบวันที่ประวัติร่วมกันแทนการสร้างใหม่ทุกแถวเมื่อ telemetry อัปเดต โดยคงวันที่ท้องถิ่นและภาษาเดิม; ผล native ต้องแยกจากผล unit tests
+- **แก้เจ็ดจุดเร่งด่วนจาก feature audit** — GSI เลือกพอร์ต 3000–3010 พร้อม health/Studio/feeder และซิงก์ตำแหน่งติดตั้งที่เลือก; สถานะฮีโร่และซื้อเกิดไม่ตีความข้อมูลที่ขาดว่าปลอดภัย; updater ตรวจอีกครั้งก่อนเปิด installer; คำแนะนำและเสียงปฏิเสธ generation เก่าเมื่อเปลี่ยนสิทธิ์หรือการตั้งค่า
+- **Resource/CV admission** — รวม RAM ของ process group ตามหน่วย decimal MB และ CPU ลูกที่จบไปแล้ว; ปฏิเสธ Ollama ที่พิสูจน์งบไม่ได้; ตัด polling delay ออกจาก critical path ใช้ deadline และ cached audio admission พร้อมคง prewarmed Signal fallback และ priority ของเสียงเตือน
+- **อ่าน HUD portrait ให้ตรงภาพจริง (CR-036)** — แก้กรอบครอปและตัดไอคอนทับออก เทียบทั้ง grayscale/RGB กับ default/Arcana/Persona อ้างอิงในเครื่อง; คง confidence/margin และ hero-ID/temporal gates เดิม ไม่บังคับเดาช่องที่ตายหรือมีเอฟเฟกต์บัง
+- **ผูก CV กับ Valve hero ID (CR-036)** — Sentry ติดตามด้วย ID ที่ยืนยันจาก portrait และ session ปัจจุบันเท่านั้น; unknown/ชื่อไม่มี ID/รายชื่อเก่าไม่สร้างการเตือน พร้อม local roster_confirmed และ hero_id ใน missing log
+- **ลด false missing/gank alerts (CR-036)** — ใช้รายชื่อศัตรูที่ยืนยันจาก portrait หลายเฟรม กรอง unknown/ชื่อซ้ำ/พันธมิตร; งดเตือนก่อนเกมเริ่ม ขณะตาย ภาพขาดหรือออกจากเกม และต้องมีหลักฐานการเคลื่อนที่ร่วมกันก่อนเตือนเสียง
+- **กันเตือนซ้ำและชื่อค้าง** — หนึ่งเสียงต่อการหายหนึ่งครั้ง พร้อม cooldown; ใช้ missing snapshot สด ไม่สะสมชื่อ 30 วินาที และไม่อ้างปลอดภัยจาก risk ที่ลดลงเอง มี local warning_gate log สำหรับตรวจย้อนหลัง
+
+### Added
+- **จัดวาง Overlay ในแอปและขยายเต็มจอ** — ลาก/ปรับขนาดบนภาพ Dota ที่ฝังมากับแอป บันทึกโปรไฟล์ กดปิดหรือ Esc กลับขนาดหน้าต่างเดิม; preview แสดง Score/KDA/Gold โดยไม่ส่ง game-tick จำลอง และย้ายค่าเริ่มต้นออกจาก HUD กลางจอ
+- **แท็บฮีโร่ CV ตั้งแต่ Draft ถึง In-game** — อ่านช่องผู้เล่น Radiant/Dire จากภาพ
+  เลือกฮีโร่โดยคงตำแหน่งช่องไว้และแสดงช่องที่ยังไม่มั่นใจเป็น “ยังไม่รู้”; เก็บ portrait
+  อ้างอิงไว้ในเครื่อง; แสดงจุดเขียวเมื่อ CV เห็นฮีโร่บน minimap และจุดเทาที่ตำแหน่งล่าสุด
+  เมื่อหายจากสายตา; รวมคำใบ้การตายจาก HUD กับสถานะ GSI ของผู้เล่นเรา และบอก readiness
+  ของ G-Signal ตามสถานะเซนเซอร์จริง
 
 ## [0.13.4] — 2026-10-18
 ### Changed

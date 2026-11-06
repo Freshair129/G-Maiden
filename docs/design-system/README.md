@@ -1,8 +1,8 @@
 ---
-version: "3.0.2-draft"
+version: "3.0.3"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-10-19T00:00:00+07:00,Codex"
-status: "draft"
+last_update: "2026-10-30T00:00:00+07:00,Codex"
+status: "active"
 supersedes: "docs/architecture/design-system.md (Iceglass v0.1.0b, candidate)"
 attributes:
   domain: "ui-ux"
@@ -10,7 +10,7 @@ attributes:
   language: "th/en"
 title: "G-Maiden Design System — SSOT"
 doc_id: "design-system/README"
-updated: "2026-10-19"
+updated: "2026-11-06"
 owner: "Boss"
 ---
 
@@ -43,6 +43,7 @@ owner: "Boss"
 | 10 | [[10-wireframes]] | target wireframes for the seven Command Deck pages |
 | 11 | [[11-wireflows]] | target navigation, confirmation, and recovery paths |
 | 12 | [[12-user-flows]] | target user goals, decisions, and outcomes |
+| 13 | [[13-ui-technical-drawing-atlas]] | measured implementation snapshot: 36 technical drawing sheets, component dimensions, overlay keep-outs and source schematics |
 | — | [`assets/`](assets/) | wireframe/mockup SVGs, swatches, and the interactive viewer under `assets/wireframes/` |
 
 ### Mockup / snapshot (ระบุ dimension)
@@ -115,3 +116,5 @@ owner: "Boss"
 | 3.0.0-draft | 2026-07-19 | changelog table added per Step-5 SOP (G1.5) |
 | 3.0.1-draft | 2026-10-12 | Synced the CPU design gate with the current MVP decision; runtime acceptance remains evidence-gated. |
 | 3.0.2-draft | 2026-10-19 | Indexed accepted Graphite Clarity and the target flow documents while retaining the accepted product flow-board reference. |
+| 3.0.3-draft | 2026-10-30 | Indexed the measured UI technical drawing atlas as an implementation snapshot separate from the target design contracts. |
+| 3.0.3 | 2026-11-06 | status `draft` → `active`: referenced as the design SSOT (CLAUDE.md, code and sibling docs) and describes the shipped deck; not marked accepted because no owner approval is recorded |

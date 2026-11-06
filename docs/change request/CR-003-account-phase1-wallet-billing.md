@@ -4,8 +4,8 @@ doc_id: "CR-003-account-phase1-wallet-billing"
 status: "accepted"
 approved_date: "2026-07-11"
 approved_by: "Boss"
-version: "0.3.2"
-updated: "2026-07-19"
+version: "0.3.3"
+updated: "2026-11-06"
 owner: "Boss"
 source_of_truth: true
 related_docs: ["ADR-14-gid-account-identity", "ADR-12-community-ai-marketplace", "ADR-11-optin-data-contribution-flywheel", "ADR-16-credit-economy-and-mint-oracle", "CR-002-Phase2-wire-backend"]
@@ -709,7 +709,7 @@ Deck nav    ─ Voice Packs ───────► Store (catalog จาก Su
 - Grid ของที่เป็นเจ้าของ; แต่ละใบ: banner, ชื่อ, source badge (ซื้อ/ของขวัญ/starter), วันที่ได้
 - ปุ่มตามสถานะ local: `ติดตั้ง` (เรียก `pack-download` → ดาวน์โหลด → `POST /announcer/install`
   ที่ **:3000 endpoint เดิม** — ใช้ pipeline ติดตั้งเดียวกับ G-AnnStudio ทุกอย่าง) →
-  `ใช้งาน` (activate ผ่านกลไก active pack ใน [`voice_api.rs`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L3) เดิม) → `✓ กำลังใช้งาน`
+  `ใช้งาน` (activate ผ่านกลไก active pack ใน [`voice_api.rs`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs) เดิม) → `✓ กำลังใช้งาน`
 - แถวบน: ช่อง **แลกโค้ด** (input + ปุ่มแลก) — ผลสำเร็จเด้งการ์ดใหม่เข้า grid ทันที
 
 ### 3.5 History (ประวัติธุรกรรม)
@@ -880,3 +880,4 @@ invariant DB-08 รันเป็น nightly กับข้อมูลจร�
 | 0.3.0 | 2026-07-11 | **ADR-16 reconciliation** — แยก `wallets` เป็น shard_balance/wallet_balance, `wallet_ledger`/`purchases`/`catalog_items` เพิ่ม `currency`, ตารางใหม่ `match_submissions`/`tips`/`economy_config`, RPC ใหม่ `mint_shard_from_match`/`tip`, Edge Fn ใหม่ `match-share-submit`, catalog separation constraint (shard→creator_id null), 6 user stories ใหม่ (US-16–21), 5 DB test ใหม่ (DB-09–13), sequencing แยก shard (ไม่ติด Omise) จาก wallet (ติด Omise business registration) — `blocked_by` เปลี่ยนจาก "ADR-16 §7 unresolved" เป็น "resolved; เหลือแค่ Omise business registration บล็อกครึ่ง wallet เท่านั้น" |
 | 0.3.1 | 2026-07-19 | symbol-link coverage extension (G1.5) |
 | 0.3.2 | 2026-07-19 | link/metadata sweep (G15-T2): fixed unresolved wikilink slug `[[architecture/design-system]]` → `[[design-system]]` |
+| 0.3.3 | 2026-11-06 | relinked 1 code symbol anchor(s) to the symbol's current definition (or dropped the line anchor where the symbol no longer exists) — no content change |

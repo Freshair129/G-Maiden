@@ -2,6 +2,9 @@
 //! Local HTTP server on 127.0.0.1:3000 that receives Dota 2 Game State Integration
 //! POSTs, extracts the useful fields, and emits a clean `game-tick` event to the UI.
 
+#[path = "gsi_ability.rs"]
+mod gsi_ability;
+
 use axum::{
     extract::{Query, State},
     http::StatusCode,
@@ -79,6 +82,8 @@ pub struct GameTick {
     /// the deck can auto-load their OpenDota profile without manual entry. "" when
     /// absent (menu / some spectator states).
     pub steamid: String,
+    #[serde(default)]
+    pub local_player_verified: bool,
     /// GSI `hero.buyback_cost` — gold needed to buy back (0 when N/A). Feeds G-Revive.
     pub buyback_cost: i64,
     /// GSI `hero.respawn_seconds` — live respawn countdown (0 when alive). Feeds G-Revive.
@@ -90,11 +95,13 @@ pub struct GameTick {
     /// -1 when kill_list is empty.
     pub last_victim_slot: i64,
     /// The player's own item names from the GSI `items` block (empty slots
-    /// dropped). Grounds G-Master's self-burst estimate (damage.rs). Own-hero
+    /// dropped). Ownership/NW context only; combat eligibility is separate. Own-hero
     /// data only — never the enemies'. `#[serde(default)]` so an older/partial
     /// tick (e.g. round-tripped from a prior build) still deserializes.
     #[serde(default)]
     pub item_names: Vec<String>,
+    #[serde(default)]
+    pub combat_items: Vec<crate::damage::LoadoutItem>,
 }
 
 // lenient extractors — GSI fields vary by game phase / spectator mode.
@@ -238,21 +245,32 @@ fn parse_tick_from_value(v: &Value) -> GameTick {
         hp: i(v, &["hero", "health"]),
         max_hp: i(v, &["hero", "max_health"]),
         steamid: s(v, &["player", "steamid"]),
+        local_player_verified: local_player_verified(
+            v,
+            crate::local_player::active_steam_id().as_deref(),
+        ),
         buyback_cost: i(v, &["hero", "buyback_cost"]),
         respawn_seconds: i(v, &["hero", "respawn_seconds"]),
         kill_list_len: kl_len,
         last_victim_slot: last_victim,
         item_names: crate::items::item_names_from(&v["items"]),
+        combat_items: crate::items::combat_loadout_from(&v["items"]),
     }
+}
+
+fn local_player_verified(v: &Value, active_steam_id: Option<&str>) -> bool {
+    let player = s(v, &["player", "steamid"]);
+    active_steam_id.is_some_and(|active| active.len() == 17 && active == player)
+        && matches!(s(v, &["player", "team_name"]).as_str(), "radiant" | "dire")
+        && value_at(v, &["player", "activity"])
+            .is_none_or(|activity| activity.as_str() == Some("playing"))
 }
 
 fn parse_match_id(v: &Value) -> Option<String> {
     let value = value_at(v, &["map", "matchid"])?;
     let id = match value {
         Value::Number(number) => number.as_u64()?,
-        Value::String(raw)
-            if !raw.is_empty() && raw.bytes().all(|byte| byte.is_ascii_digit()) =>
-        {
+        Value::String(raw) if !raw.is_empty() && raw.bytes().all(|byte| byte.is_ascii_digit()) => {
             raw.parse::<u64>().ok()?
         }
         _ => return None,
@@ -275,15 +293,42 @@ fn value_at<'a>(v: &'a Value, path: &[&str]) -> Option<&'a Value> {
 struct ParsedGsiPayload {
     tick: GameTick,
     match_id: Option<String>,
+    party_observation: Option<g_party::LocalObservation>,
+    // CR-039: never emit/log/share this unverified selected-unit candidate.
+    ability_candidate: Option<gsi_ability::AbilityCandidate>,
 }
 
 fn parse_gsi_payload_with_identity(body: &str) -> Result<ParsedGsiPayload, GsiPayloadError> {
     let value: Value = serde_json::from_str(body).map_err(|_| GsiPayloadError::InvalidJson)?;
-    validate_gsi_payload(&value).map_err(|_| GsiPayloadError::InvalidSchema)?;
+    validate_gsi_payload(&value).map_err(|reason| {
+        #[cfg(not(test))]
+        log_schema_rejection(reason);
+        #[cfg(test)]
+        let _ = reason;
+        GsiPayloadError::InvalidSchema
+    })?;
+    let tick = parse_tick_from_value(&value);
+    let party_observation = g_party::project_local(&value, tick.local_player_verified);
+    // Bad/missing abilities only withhold skills, never valid vitals.
+    let ability_candidate = gsi_ability::parse_candidate(&value);
     Ok(ParsedGsiPayload {
-        tick: parse_tick_from_value(&value),
+        tick,
         match_id: parse_match_id(&value),
+        party_observation,
+        ability_candidate,
     })
+}
+
+#[cfg(not(test))]
+fn log_schema_rejection(reason: &'static str) {
+    static LAST: std::sync::Mutex<Option<std::time::Instant>> = std::sync::Mutex::new(None);
+    let Ok(mut last) = LAST.try_lock() else {
+        return;
+    };
+    if last.is_none_or(|at| at.elapsed() >= std::time::Duration::from_secs(5)) {
+        *last = Some(std::time::Instant::now());
+        eprintln!("[GSI] rejected payload schema: {reason}");
+    }
 }
 
 fn optional_object<'a>(
@@ -500,9 +545,11 @@ fn validate_gsi_payload(v: &Value) -> Result<(), &'static str> {
         if !team.eq_ignore_ascii_case("radiant") && !team.eq_ignore_ascii_case("dire") {
             return Err("active match team must be radiant or dire");
         }
+        // Dota's local-player GSI omits net_worth; the parser derives it from
+        // gold and items. The optional value is still range-checked above when
+        // a provider supplies it.
         for (field, max) in [
             ("gold", 1_000_000),
-            ("net_worth", 10_000_000),
             ("gpm", 100_000),
             ("xpm", 100_000),
             ("kills", 100_000),
@@ -555,15 +602,23 @@ fn parse_gsi_payload(body: &str) -> Result<GameTick, GsiPayloadError> {
 }
 
 async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'static str) {
-    let ParsedGsiPayload { tick, match_id } = match parse_gsi_payload_with_identity(&body) {
+    let ParsedGsiPayload {
+        tick,
+        match_id,
+        party_observation,
+        ability_candidate,
+    } = match parse_gsi_payload_with_identity(&body) {
         Ok(parsed) => parsed,
         Err(GsiPayloadError::InvalidJson) => {
+            crate::party::invalidate_local(&app);
             return (StatusCode::BAD_REQUEST, "invalid JSON");
         }
         Err(GsiPayloadError::InvalidSchema) => {
+            crate::party::invalidate_local(&app);
             return (StatusCode::UNPROCESSABLE_ENTITY, "invalid GSI payload");
         }
     };
+    let _ = ability_candidate; // Intentionally not part of GameTick, Party or AI.
     // Note the POST (watchdog uses recency) and gate the CV pipeline to live
     // matches (saves idle CPU).
     crate::runtime::mark_post(epoch_ms());
@@ -575,11 +630,60 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
     );
     crate::runtime::set_in_draft(is_in_draft(&tick.game_state));
     crate::runtime::set_player_team_name(&tick.team_name);
+    crate::runtime::update_warning_context(session.session_epoch, &tick);
+    crate::party::observe_local(&app, party_observation, &session);
     // Announcer: detect kill/streak/state events from the tick and voice the
     // most significant one (clip-or-silent — these aren't TTS-faked).
-    let announce = crate::announcer::most_important(&crate::announcer::observe_for_session(
-        &tick, &session,
-    ));
+    let hp_event = crate::audio::critical_media_ready()
+        .then(|| crate::safety_events::observe_for_session(&tick, &session))
+        .flatten();
+    if let Some(event) = hp_event {
+        let app = app.clone();
+        let epoch = session.session_epoch;
+        let event = event.to_string();
+        tauri::async_runtime::spawn_blocking(move || {
+            if let Err(reason) = crate::voice_api::play_event(
+                app,
+                event,
+                epoch,
+                false,
+                crate::audio::Priority::Critical,
+                None,
+            ) {
+                eprintln!("[G-AnnouncerMedia] phase=rejected owner=hp reason={reason}");
+            }
+        });
+    }
+    let announce_candidates = crate::announcer::observe_for_session(&tick, &session);
+    let announce = crate::announcer::most_important(&announce_candidates);
+    if tick.in_game {
+        static LAST_OWNER_STATE: AtomicU8 = AtomicU8::new(0);
+        let state = if tick.local_player_verified { 1 } else { 2 };
+        if LAST_OWNER_STATE.swap(state, Ordering::Relaxed) != state {
+            eprintln!(
+                "[G-Announcer] local_player_verified={} personal_events={}",
+                tick.local_player_verified,
+                if tick.local_player_verified {
+                    "enabled"
+                } else {
+                    "suppressed"
+                }
+            );
+        }
+    }
+    if let Some(event) = announce.as_ref() {
+        crate::voice_api::prewarm_next_banner(event);
+        eprintln!("[G-Announcer] event={event} epoch={} clock={} local_kills={} local_deaths={} team_scores={}:{} owner_verified={}",
+            session.session_epoch, tick.clock_time, tick.kills, tick.deaths, tick.radiant_score, tick.dire_score, tick.local_player_verified);
+        crate::log::note_event_for_session(
+            session.session_epoch,
+            serde_json::json!({
+                "type": "announcer_selection", "candidates": announce_candidates,
+                "selected": event, "reason": "highest_priority_single_clip",
+                "clock": tick.clock_time, "local_player_verified": tick.local_player_verified,
+            }),
+        );
+    }
     // G-Motion threat discount (audit H3): a dead enemy is off the minimap and
     // therefore "missing", but is the opposite of a gank threat. Folded in here
     // — after `set_in_game` above, so a match boundary has already cleared the
@@ -595,6 +699,7 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
         }
     }
     crate::log::note_tick(&tick, &session);
+    crate::runtime::observe_buyback_tick(session.session_epoch, tick.alive, tick.deaths);
     // Publish freshness before the tick so every UI consumer can gate its own-
     // state decisions against the same validated observation. Reuse the cached
     // display-mode sample; the 500ms/process watchdogs refresh that separately.
@@ -614,41 +719,30 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
         if crate::runtime::announcer_enabled()
             && crate::runtime::is_current_active_session_epoch(session.session_epoch)
         {
-            // Voice the clip and show the banner from the SAME active pack, so the
-            // announcer sound and its queue banner always fire together (the bundle).
-            // Resolve the clip ONCE so the overlay can drive its reactive waveform
-            // from a silent copy of the exact clip that plays.
-            let clip = crate::audio::pick_clip(&ev);
-            if let Some(p) = &clip {
-                crate::audio::play_path(p.clone(), &ev);
-                // CR-011 §B utterance ledger — only when a clip actually
-                // played (Maiden stayed silent otherwise), and after the
-                // dispatch above so this never delays the clip itself.
-                crate::utterance::emit_for_session(
-                    &app,
-                    crate::utterance::UtterancePayload::new_for_session(
-                        "announcer",
-                        "line",
-                        ev.clone(),
-                        None,
-                        crate::voice_api::active_pack_name(),
-                        &session,
-                    ),
-                );
-            }
-            let mut banner = crate::voice_api::fired_banner(&ev);
-            banner.clip = clip.map(|p| p.to_string_lossy().into_owned());
-            if crate::runtime::is_current_active_session_epoch(session.session_epoch) {
-                let event = crate::runtime::MatchSessionEvent::new(banner, &session);
-                let _ = app.emit("announcer-banner", event);
-            }
+            let app = app.clone();
+            let epoch = session.session_epoch;
+            // Capture cancellation before dispatch: Stop can occur while the
+            // blocking-pool request is still queued.
+            let request_fence = crate::audio::AnnouncerRequestFence::capture();
+            tauri::async_runtime::spawn_blocking(move || {
+                if let Err(reason) = crate::voice_api::play_event(
+                    app,
+                    ev,
+                    epoch,
+                    false,
+                    crate::audio::Priority::Announcer,
+                    Some(request_fence),
+                ) {
+                    eprintln!("[G-AnnouncerMedia] phase=rejected reason={reason}");
+                }
+            });
         }
     }
     (StatusCode::OK, "ok")
 }
 
 /// Receive a GPU telemetry sample PUSHed by the headless `gpu-feeder` sidecar
-/// (own process, runs nvidia-smi). Body: `{ "gpus": [ { loadPercent, tempC,
+/// (own process, reads NVML). Body: `{ "gpus": [ { loadPercent, tempC,
 /// vramUsedMb, vramTotalMb } ] }`. Stashed in the governor; the next
 /// `resource-stats` emit carries it to the deck footer.
 async fn telemetry_ingest(body: String) -> &'static str {
@@ -658,15 +752,16 @@ async fn telemetry_ingest(body: String) -> &'static str {
     "ok"
 }
 
-/// Body accepted by `POST /announcer/install`. `pack_id` is preferred;
-/// `pack` is the legacy key kept for G-AnnStudio builds that predate this
-/// fix. `activate` defaults to true — install almost always means "use this
-/// pack now", but the caller can opt out (e.g. to stage a pack ahead of time).
+/// Notification uses packId and explicit containerSha256 when activation is requested.
+/// An omitted activate flag retains the existing true default and still requires that digest.
+#[cfg(test)]
 struct InstallRequest {
     pack_id: String,
     activate: bool,
+    container_sha256: Option<String>,
 }
 
+#[cfg(test)]
 fn parse_install_request(body: &str) -> InstallRequest {
     let v: Value = serde_json::from_str(body).unwrap_or(Value::Null);
     let pack_id = v["packId"]
@@ -675,19 +770,18 @@ fn parse_install_request(body: &str) -> InstallRequest {
         .unwrap_or("")
         .to_string();
     let activate = v["activate"].as_bool().unwrap_or(true);
-    InstallRequest { pack_id, activate }
+    let container_sha256 = v["containerSha256"].as_str().map(str::to_owned);
+    InstallRequest {
+        pack_id,
+        activate,
+        container_sha256,
+    }
 }
 
-/// Receive a notify from G-AnnStudio after it installs a pack into
-/// `voice-cache/packs/<id>/`. `:3000` has no auth and never writes, moves, or
-/// extracts files. Development builds can activate local authoring packs;
-/// release builds accept only a Store-install receipt and otherwise reject the
-/// activation. Returns real per-event counts resolved from the pack's manifest
-/// (`voice_api::install_report`), replacing the old
-/// `audio::all_counts()` call which counted subfolders of the legacy flat
-/// `voice-cache/` layout and had no notion of a manifest-based pack.
-async fn announcer_install(body: String) -> axum::Json<serde_json::Value> {
-    axum::Json(run_announcer_install(&parse_install_request(&body)))
+/// Report verified installed GANN coverage and optionally activate its exact container digest.
+/// This loopback route never extracts or rewrites package media.
+async fn announcer_install(_body: String) -> (axum::http::StatusCode, axum::Json<serde_json::Value>) {
+    (axum::http::StatusCode::GONE,axum::Json(serde_json::json!({"ok":false,"error":"Use the registered current-user Maiden package pipe"})))
 }
 
 /// Parse the bounded v1 authoring payload from G-AnnStudio. This is deliberately
@@ -800,11 +894,12 @@ async fn overlay_layout_sync(State(app): State<AppHandle>, body: String) -> axum
 
 /// Pure decision logic, split out of the async handler so it's unit-testable
 /// without spinning up axum/tokio.
+#[cfg(test)]
 fn run_announcer_install(req: &InstallRequest) -> serde_json::Value {
     if req.pack_id.is_empty() {
         return serde_json::json!({ "ok": false, "error": "missing packId" });
     }
-    if !crate::voice_api::is_store_installed(&req.pack_id) {
+    if !crate::voice_api::is_pack_available(&req.pack_id) {
         return serde_json::json!({
             "ok": false,
             "pack": req.pack_id,
@@ -812,6 +907,10 @@ fn run_announcer_install(req: &InstallRequest) -> serde_json::Value {
         });
     }
 
+    let digest = crate::voice_api::container_sha256(&req.pack_id);
+    if req.activate && (req.container_sha256.is_none() || req.container_sha256 != digest) {
+        return serde_json::json!({"ok":false,"packId":req.pack_id,"error":"GANN container hash mismatch"});
+    }
     let report = match crate::voice_api::install_report(&req.pack_id) {
         Ok(r) => r,
         Err(e) => {
@@ -855,6 +954,7 @@ fn run_announcer_install(req: &InstallRequest) -> serde_json::Value {
         "pack": report.pack_id,
         "packId": report.pack_id,
         "activated": activated,
+        "containerSha256": digest,
         "counts": report.counts,
         "unmappedEvents": report.unmapped_events,
         "missingClips": report.missing_clips,
@@ -941,6 +1041,32 @@ fn freshness_at(
 }
 
 static GSI_SERVER_STATE: AtomicU8 = AtomicU8::new(GsiServerState::Starting as u8);
+static GSI_DOTA_RESTART_REQUIRED: AtomicBool = AtomicBool::new(false);
+
+pub fn current_port() -> u16 {
+    crate::local_endpoint::current_port()
+}
+
+pub fn oauth_listener_ready() -> bool {
+    current_port() == crate::local_endpoint::PORT_START
+        && matches!(server_state(), GsiServerState::Listening)
+}
+
+pub fn note_config_port_changed(changed: bool) {
+    if changed && crate::setup::dota_running() {
+        GSI_DOTA_RESTART_REQUIRED.store(true, Ordering::Relaxed);
+    }
+}
+
+async fn endpoint_health() -> ([(axum::http::header::HeaderName, &'static str); 1], String) {
+    ([(axum::http::header::CONTENT_TYPE, "application/json")], {
+        let mut body: Value =
+            serde_json::from_str(&crate::local_endpoint::health_body(current_port()))
+                .unwrap_or(Value::Null);
+        body["voiceRootId"] = crate::voice_api::voice_root_id().ok().into();
+        body.to_string()
+    })
+}
 static DOTA_PROCESS_RUNNING: AtomicBool = AtomicBool::new(false);
 static DISPLAY_EXCLUSIVE_ACTIVE: AtomicBool = AtomicBool::new(false);
 
@@ -968,6 +1094,8 @@ fn set_server_state(app: &AppHandle, state: GsiServerState) {
 
 #[derive(Serialize, Clone)]
 struct GsiStatus {
+    gsi_port: u16,
+    dota_restart_required: bool,
     dota_running: bool,
     /// True only while a validated GSI observation is within the accepted 2s age.
     gsi_active: bool,
@@ -986,8 +1114,7 @@ struct GsiStatus {
     server_state: GsiServerState,
 }
 
-#[derive(Serialize)]
-#[derive(Clone)]
+#[derive(Serialize, Clone)]
 struct GameTickEvent<'a> {
     #[serde(flatten)]
     tick: &'a GameTick,
@@ -1036,6 +1163,8 @@ fn emit_status_snapshot(app: &AppHandle, running: bool, display_exclusive: bool)
     let _ = app.emit(
         "gsi-status",
         GsiStatus {
+            gsi_port: current_port(),
+            dota_restart_required: GSI_DOTA_RESTART_REQUIRED.load(Ordering::Relaxed),
             dota_running: running,
             gsi_active,
             gsi_freshness,
@@ -1058,6 +1187,9 @@ fn emit_status_snapshot(app: &AppHandle, running: bool, display_exclusive: bool)
 async fn watchdog(app: AppHandle) {
     loop {
         let running = crate::setup::dota_running();
+        if !running {
+            GSI_DOTA_RESTART_REQUIRED.store(false, Ordering::Relaxed);
+        }
         emit_status(&app, running);
         tokio::time::sleep(std::time::Duration::from_secs(4)).await;
     }
@@ -1082,24 +1214,40 @@ pub async fn serve(app: AppHandle) {
         .route("/announcer/install", post(announcer_install))
         .route("/overlay/layout", post(overlay_layout_sync))
         .route("/telemetry", post(telemetry_ingest))
+        .route("/health", get(endpoint_health))
         .route("/auth/callback", get(oauth_callback))
         .with_state(app.clone());
     loop {
-        match tokio::net::TcpListener::bind("127.0.0.1:3000").await {
-            Ok(listener) => {
-                eprintln!("[G-Maiden] GSI server listening on http://127.0.0.1:3000/gsi");
+        match bind_available_listener() {
+            Ok((listener, port)) => {
+                crate::local_endpoint::set_port(port);
+                match crate::setup::sync_gsi_config_port() {
+                    Ok(true) if crate::setup::dota_running() => {
+                        GSI_DOTA_RESTART_REQUIRED.store(true, Ordering::Relaxed)
+                    }
+                    Ok(_) => {}
+                    Err(error) => eprintln!("[G-Maiden] GSI config port sync: {error}"),
+                }
+                if let Err(error) = crate::setup::publish_gsi_port(port) {
+                    eprintln!("[G-Maiden] port publication failed: {error}");
+                }
+                eprintln!("[G-Maiden] GSI server listening on http://127.0.0.1:{port}/gsi");
                 set_server_state(&app, GsiServerState::Listening);
                 if let Err(error) = axum::serve(listener, router.clone()).await {
                     eprintln!("[G-Maiden] GSI server error: {error}");
                     set_server_state(&app, GsiServerState::BindError);
                 } else {
+                    crate::setup::clear_published_gsi_port(port);
                     break;
                 }
+                crate::setup::clear_published_gsi_port(port);
             }
             Err(error) => {
                 let state = classify_bind_error(&error);
                 if matches!(state, GsiServerState::PortConflict) {
-                    eprintln!("[G-Maiden] GSI port 3000 is occupied; close the other listener to restore GSI and OAuth.");
+                    eprintln!(
+                        "[G-Maiden] GSI ports 3000–3010 are occupied; retrying automatically."
+                    );
                 } else {
                     eprintln!("[G-Maiden] could not bind GSI port 3000: {error}");
                 }
@@ -1110,8 +1258,33 @@ pub async fn serve(app: AppHandle) {
     }
 }
 
+fn bind_available_listener() -> std::io::Result<(tokio::net::TcpListener, u16)> {
+    let (listener, port) = crate::local_endpoint::bind_available(
+        crate::local_endpoint::PORT_START,
+        crate::local_endpoint::PORT_END,
+    )?;
+    listener.set_nonblocking(true)?;
+    Ok((tokio::net::TcpListener::from_std(listener)?, port))
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn personal_events_require_local_steam_login_without_provider_steamid() {
+        let active = Some("76561198115363193");
+        let mut v = serde_json::json!({"provider":{"appid":570},
+            "player":{"steamid":"76561198115363193","team_name":"radiant","activity":"playing"}});
+        assert!(super::local_player_verified(&v, active));
+        assert!(!super::local_player_verified(&v, None));
+        v["player"]["steamid"] = "76561198115363194".into();
+        assert!(!super::local_player_verified(&v, active));
+        v["player"]["steamid"] = "76561198115363193".into();
+        v["player"]["activity"] = "menu".into();
+        assert!(!super::local_player_verified(&v, active));
+        v["player"]["activity"] = "playing".into();
+        v["player"]["team_name"] = "spectator".into();
+        assert!(!super::local_player_verified(&v, active));
+    }
     use super::*;
 
     #[test]
@@ -1132,17 +1305,35 @@ mod tests {
 
     #[test]
     fn freshness_status_distinguishes_waiting_fresh_stale_and_unavailable() {
-        assert_eq!(freshness_at(false, true, 1_000, 1_500), GsiFreshness::Unavailable);
-        assert_eq!(freshness_at(true, false, 1_000, 1_500), GsiFreshness::Unavailable);
+        assert_eq!(
+            freshness_at(false, true, 1_000, 1_500),
+            GsiFreshness::Unavailable
+        );
+        assert_eq!(
+            freshness_at(true, false, 1_000, 1_500),
+            GsiFreshness::Unavailable
+        );
         assert_eq!(freshness_at(true, true, 0, 1_500), GsiFreshness::Waiting);
-        assert_eq!(freshness_at(true, true, 10_000, 12_000), GsiFreshness::Fresh);
-        assert_eq!(freshness_at(true, true, 10_000, 12_001), GsiFreshness::Stale);
+        assert_eq!(
+            freshness_at(true, true, 10_000, 12_000),
+            GsiFreshness::Fresh
+        );
+        assert_eq!(
+            freshness_at(true, true, 10_000, 12_001),
+            GsiFreshness::Stale
+        );
     }
 
     #[test]
     fn stale_feed_while_dota_is_open_is_distinct_from_process_exit() {
-        assert_eq!(freshness_at(true, true, 10_000, 12_001), GsiFreshness::Stale);
-        assert_eq!(freshness_at(false, true, 10_000, 12_001), GsiFreshness::Unavailable);
+        assert_eq!(
+            freshness_at(true, true, 10_000, 12_001),
+            GsiFreshness::Stale
+        );
+        assert_eq!(
+            freshness_at(false, true, 10_000, 12_001),
+            GsiFreshness::Unavailable
+        );
     }
 
     #[test]
@@ -1190,6 +1381,33 @@ mod tests {
     }
 
     #[test]
+    fn cr039_ability_candidate_is_not_projected_or_shared() {
+        let mut payload = live_payload();
+        // Synthetic parser fixture: this is not player-mode Dota attribution proof.
+        payload["abilities"] = serde_json::json!({
+            "ability0": {
+                "name": "crystal_maiden_crystal_nova",
+                "level": 2, "cooldown": 4.5,
+                "can_cast": false, "ultimate": false
+            }
+        });
+        let parsed = parse_gsi_payload_with_identity(&payload.to_string()).unwrap();
+        assert_eq!(parsed.ability_candidate.as_ref().unwrap().entries.len(), 1);
+        // No ability fields escape via the shared game-tick, log, or existing Party v1.
+        let ui_tick = serde_json::to_value(&parsed.tick).unwrap();
+        assert!(ui_tick.get("abilities").is_none());
+        assert!(ui_tick.get("ability_candidate").is_none());
+        assert_eq!(parsed.tick.hp, 507);
+
+        payload["abilities"]["ability0"]["cooldown"] = serde_json::json!("ready");
+        let invalid_ability = parse_gsi_payload_with_identity(&payload.to_string()).unwrap();
+        assert!(invalid_ability.ability_candidate.is_none());
+        assert_eq!(invalid_ability.tick.hp, 507);
+        let ui_tick = serde_json::to_value(&invalid_ability.tick).unwrap();
+        assert!(ui_tick.get("abilities").is_none());
+    }
+
+    #[test]
     fn match_id_accepts_positive_decimal_numbers_and_strings() {
         let number = serde_json::json!({ "map": { "matchid": 123456u64 } });
         let string = serde_json::json!({ "map": { "matchid": "00123456" } });
@@ -1220,13 +1438,25 @@ mod tests {
     #[test]
     fn lifecycle_maps_only_game_in_progress_to_live() {
         let mut tick = run_handle(live_payload());
-        assert_eq!(lifecycle_for_tick(&tick), crate::runtime::MatchLifecycle::Live);
+        assert_eq!(
+            lifecycle_for_tick(&tick),
+            crate::runtime::MatchLifecycle::Live
+        );
         tick.game_state = "DOTA_GAMERULES_STATE_PRE_GAME".into();
-        assert_eq!(lifecycle_for_tick(&tick), crate::runtime::MatchLifecycle::Draft);
+        assert_eq!(
+            lifecycle_for_tick(&tick),
+            crate::runtime::MatchLifecycle::Draft
+        );
         tick.game_state = "DOTA_GAMERULES_STATE_DISCONNECT".into();
-        assert_eq!(lifecycle_for_tick(&tick), crate::runtime::MatchLifecycle::Disconnected);
+        assert_eq!(
+            lifecycle_for_tick(&tick),
+            crate::runtime::MatchLifecycle::Disconnected
+        );
         tick.game_state = "DOTA_GAMERULES_STATE_POST_GAME".into();
-        assert_eq!(lifecycle_for_tick(&tick), crate::runtime::MatchLifecycle::End);
+        assert_eq!(
+            lifecycle_for_tick(&tick),
+            crate::runtime::MatchLifecycle::End
+        );
     }
 
     fn run_handle(payload: Value) -> GameTick {
@@ -1392,6 +1622,22 @@ mod tests {
     }
 
     #[test]
+    fn active_local_player_gsi_is_accepted_when_net_worth_is_absent() {
+        let mut payload = live_payload();
+        payload["player"]
+            .as_object_mut()
+            .unwrap()
+            .remove("net_worth");
+
+        let tick = parse_gsi_payload(&payload.to_string())
+            .expect("Dota local-player GSI omits net_worth during active matches");
+
+        assert!(tick.in_game);
+        assert_eq!(tick.hero, "npc_dota_hero_crystal_maiden");
+        assert_eq!(tick.net_worth, tick.gold);
+    }
+
+    #[test]
     fn net_worth_passthrough_when_gsi_sends_real_value() {
         // Spectator clients populate net_worth — trust it (more accurate than
         // our cost-snapshot which lags patches).
@@ -1533,69 +1779,52 @@ mod tests {
 
     #[test]
     fn install_activates_existing_pack_and_reports_real_counts() {
-        let root = install_temp_root("ok");
+        let root = install_temp_root("gann-ok");
         crate::voice_api::set_test_voice_root(Some(root.clone()));
         let _guard = InstallRootGuard(root.clone());
-
-        install_write_pack(
-            &root,
-            "demo",
-            r#"{"kill":{"text":"","thai":"","banner":"","bannerAsset":"","clips":["clips/kill_01.wav","clips/kill_02.wav"]}}"#,
-        );
-        std::fs::write(root.join("packs/demo/clips/kill_01.wav"), b"x").unwrap();
-        std::fs::write(root.join("packs/demo/clips/kill_02.wav"), b"x").unwrap();
-
-        let resp = run_announcer_install(&InstallRequest {
-            pack_id: "demo".into(),
+        let (id, _, _) = crate::voice_api::test_package::install(&root, 91, "kill");
+        let digest = crate::voice_api::container_sha256(&id).unwrap();
+        let response = run_announcer_install(&InstallRequest {
+            pack_id: id.clone(),
             activate: true,
+            container_sha256: Some(digest.clone()),
         });
-        assert_eq!(resp["ok"], true);
-        assert_eq!(resp["activated"], true);
-        assert_eq!(resp["packId"], "demo");
-        assert_eq!(resp["counts"]["kill"], 2);
-
-        let active = std::fs::read_to_string(root.join("active-pack.txt")).unwrap();
-        assert_eq!(active.trim(), "demo");
+        assert_eq!(response["ok"], true);
+        assert_eq!(response["activated"], true);
+        assert_eq!(response["counts"]["kill"], 1);
+        assert_eq!(response["containerSha256"], digest);
+        assert_eq!(
+            std::fs::read_to_string(root.join("active-pack.txt")).unwrap(),
+            id
+        );
     }
 
     #[test]
-    fn install_accepts_legacy_pack_key_when_pack_id_absent() {
-        let root = install_temp_root("legacy-key");
+    fn install_rejects_legacy_pack_without_mutating_selection() {
+        let root = install_temp_root("legacy-rejected");
         crate::voice_api::set_test_voice_root(Some(root.clone()));
         let _guard = InstallRootGuard(root.clone());
-
         install_write_pack(&root, "demo", r#"{}"#);
-
-        let req = parse_install_request(r#"{"pack":"demo"}"#);
-        assert_eq!(req.pack_id, "demo");
-        assert!(req.activate); // default true when omitted
-
-        let resp = run_announcer_install(&req);
-        assert_eq!(resp["ok"], true);
-        assert_eq!(resp["activated"], true);
+        let response = run_announcer_install(&parse_install_request(r#"{"pack":"demo"}"#));
+        assert_eq!(response["ok"], false);
+        assert!(!root.join("active-pack.txt").exists());
     }
 
     #[test]
     fn install_activate_false_returns_counts_without_writing_active_pack() {
-        let root = install_temp_root("no-activate");
+        let root = install_temp_root("gann-stage");
         crate::voice_api::set_test_voice_root(Some(root.clone()));
         let _guard = InstallRootGuard(root.clone());
-
-        install_write_pack(
-            &root,
-            "demo",
-            r#"{"kill":{"text":"","thai":"","banner":"","bannerAsset":"","clips":["clips/kill_01.wav"]}}"#,
-        );
-        std::fs::write(root.join("packs/demo/clips/kill_01.wav"), b"x").unwrap();
-
-        let resp = run_announcer_install(&InstallRequest {
-            pack_id: "demo".into(),
+        let (id, _, _) = crate::voice_api::test_package::install(&root, 92, "kill");
+        let response = run_announcer_install(&InstallRequest {
+            pack_id: id,
             activate: false,
+            container_sha256: None,
         });
-        assert_eq!(resp["ok"], true);
-        assert_eq!(resp["activated"], false);
-        assert_eq!(resp["counts"]["kill"], 1);
-        assert!(!root.join("active-pack.txt").is_file());
+        assert_eq!(response["ok"], true);
+        assert_eq!(response["activated"], false);
+        assert_eq!(response["counts"]["kill"], 1);
+        assert!(!root.join("active-pack.txt").exists());
     }
 
     #[test]
@@ -1609,11 +1838,40 @@ mod tests {
         let resp = run_announcer_install(&InstallRequest {
             pack_id: "does-not-exist".into(),
             activate: true,
+            container_sha256: None,
         });
         assert_eq!(resp["ok"], false);
 
         let active = std::fs::read_to_string(root.join("active-pack.txt")).unwrap();
         assert_eq!(active.trim(), "previous");
+    }
+
+    #[test]
+    fn install_digest_mismatch_and_omission_preserve_the_current_gann() {
+        let root = install_temp_root("digest-fence");
+        crate::voice_api::set_test_voice_root(Some(root.clone()));
+        let _guard = InstallRootGuard(root.clone());
+        let (previous, _, _) = crate::voice_api::test_package::install(&root, 93, "kill");
+        crate::voice_api::activate_if_exists(&previous).unwrap();
+        let (next, _, _) = crate::voice_api::test_package::install(&root, 94, "death");
+        for digest in [None, Some("0".repeat(64))] {
+            let response = run_announcer_install(&InstallRequest {
+                pack_id: next.clone(),
+                activate: true,
+                container_sha256: digest,
+            });
+            assert_eq!(response["ok"], false);
+            assert_eq!(
+                std::fs::read_to_string(root.join("active-pack.txt")).unwrap(),
+                previous
+            );
+            assert_eq!(
+                crate::voice_api::select_announcer_clip("kill")
+                    .unwrap()
+                    .pack_id,
+                previous
+            );
+        }
     }
 
     #[test]

@@ -1,16 +1,33 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "version": "0.0.0",
-  "notes": "Stable channel has not published an update yet.",
-  "pub_date": "1970-01-01T00:00:00.000Z",
-  "sourceSha": "0000000000000000000000000000000000000000",
-  "publishedAt": "1970-01-01T00:00:00.000Z",
+  "version": "0.13.6",
+  "notes": "G-Maiden 0.13.6 MVP release.",
+  "pub_date": "2026-11-03T01:21:28.575Z",
+  "sourceSha": "8efdd32e03a6ce26088c06db29394bddbe9ad4bf",
+  "publishedAt": "2026-11-03T12:38:53.139Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://example.invalid/not-published",
-      "signature": "not-published",
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "url": "https://github.com/Freshair129/G-Maiden/releases/download/v0.13.6/G-Maiden_0.13.6_x64_en-US.msi",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSRG1YSUpTS1EyQ1cxbk13UUdJSHFTc01KUnUxQnZpYkZJWXJVS3ZvS0g2ZHAxSTRZcFdGcmtWWUtaOEkxRkdlSC8rYWtXSG4zdmFSUEc4MVhCY29SckhsZExCeFhEWlEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNjY4ODgzCWZpbGU6Ry1NYWlkZW5fMC4xMy42X3g2NF9lbi1VUy5tc2kJdmVyc2lvbjowLjEzLjYKREl4c3JnUVNmeDBGVjR4dTFLZWE4NGNqdFN4ZTRVUFZ0QkZ5Wllyb2UrZ2VYTVU3emx4NTcyd2xTN1JQbEJ0Y1dBc1lGRE1HV0ZUT0dhUmt3M2QyQUE9PQo=",
+      "sha256": "653018712181e8bbd572be7fd447aacd463fb03de5d8978982b3ab9f9ab64ffe"
+    },
+    "windows-x86_64-msi": {
+      "url": "https://github.com/Freshair129/G-Maiden/releases/download/v0.13.6/G-Maiden_0.13.6_x64_en-US.msi",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSRG1YSUpTS1EyQ1cxbk13UUdJSHFTc01KUnUxQnZpYkZJWXJVS3ZvS0g2ZHAxSTRZcFdGcmtWWUtaOEkxRkdlSC8rYWtXSG4zdmFSUEc4MVhCY29SckhsZExCeFhEWlEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNjY4ODgzCWZpbGU6Ry1NYWlkZW5fMC4xMy42X3g2NF9lbi1VUy5tc2kJdmVyc2lvbjowLjEzLjYKREl4c3JnUVNmeDBGVjR4dTFLZWE4NGNqdFN4ZTRVUFZ0QkZ5Wllyb2UrZ2VYTVU3emx4NTcyd2xTN1JQbEJ0Y1dBc1lGRE1HV0ZUT0dhUmt3M2QyQUE9PQo=",
+      "sha256": "653018712181e8bbd572be7fd447aacd463fb03de5d8978982b3ab9f9ab64ffe"
+    },
+    "windows-x86_64-nsis": {
+      "url": "https://github.com/Freshair129/G-Maiden/releases/download/v0.13.6/G-Maiden_0.13.6_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSRG1YSUpTS1EyQ1RJNjVRWlJRMjlXZ1pnK28wZHFyOVBidVFBUmh2Y0dBYXp6ZFJ4WTZjdUJiOTR6L2ZFcjBOdm40bG1mb0hjeWwwUmw3NTN1bGJXV0FiUzRIQVZ2cFE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNjY4ODgzCWZpbGU6Ry1NYWlkZW5fMC4xMy42X3g2NC1zZXR1cC5leGUJdmVyc2lvbjowLjEzLjYKb1FqdHI1T3l6Wmo1S01tZVNubHdPNDZoWnlIem1RUFJHMWFiUGNVOHdMRXQ2aUovRTJJNE1EOEUvcFpxc0tHdjFISVp6VTkxR1R5a0NEdFVlb3l4Q1E9PQo=",
+      "sha256": "0c80e9a988aa7310f8d191d3faa42591c5741918ee299d51a70d342a73debc9c"
     }
+  },
+  "promotion": {
+    "approver": "Codex (owner-delegated technical review)",
+    "approvedAt": "2026-11-03T04:02:31Z",
+    "previousVersion": "0.0.0",
+    "candidateManifest": "release/channels/dev.json",
+    "evidence": "release/evidence/v0.13.6/review.md"
   }
 }

@@ -25,6 +25,13 @@ function LegacyKeyProbe() {
   return <button data-testid="clear-legacy-key" onClick={clearLegacyMasterApiKey}>Clear migrated key</button>
 }
 
+function HpSettingsProbe() {
+  const { settings, setSettings } = useStartupSettings()
+  return <button onClick={() => setSettings(previous => ({ ...previous, alertEnabled: false, voiceEnabled: false, alertThreshold: 40 }))}>
+    {`${settings.alertEnabled}|${settings.voiceEnabled}|${settings.alertThreshold}`}
+  </button>
+}
+
 describe('startup settings hydration gate', () => {
   let root: Root | null = null
   let container: HTMLDivElement | null = null
@@ -43,6 +50,25 @@ describe('startup settings hydration gate', () => {
     container?.remove()
     container = null
     localStorage.clear()
+  })
+
+  it('applies HP voice eligibility and threshold to native detection when controls change', async () => {
+    invokeMock.mockImplementation((command: string) => Promise.resolve(command === 'load_settings_file' ? null : undefined))
+    container = document.createElement('div')
+    document.body.append(container)
+    root = createRoot(container)
+    await act(async () => {
+      root?.render(<StartupSettingsProvider><HpSettingsProbe /></StartupSettingsProvider>)
+      await new Promise(resolve => setTimeout(resolve, 0))
+    })
+    expect(container.textContent).toBe('true|true|25')
+    expect(invokeMock).toHaveBeenCalledWith('set_hp_alert_settings', { enabled: true, voiceEnabled: true, threshold: 25 })
+    await act(async () => {
+      container?.querySelector<HTMLButtonElement>('button')?.click()
+      await new Promise(resolve => setTimeout(resolve, 0))
+    })
+    expect(container.textContent).toBe('false|false|40')
+    expect(invokeMock).toHaveBeenCalledWith('set_hp_alert_settings', { enabled: false, voiceEnabled: false, threshold: 40 })
   })
 
   it('withholds the deck subtree until saved settings are read and applied', async () => {

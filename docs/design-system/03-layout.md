@@ -1,15 +1,15 @@
 ---
-version: "2.3.1-draft"
+version: "2.3.2"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
 last_update: "2026-07-19,Claude"
-status: "draft"
+status: "active"
 attributes:
   domain: "ui-ux"
   scope: "layout geometry, dimensions, responsive"
   language: "th/en"
 title: "03 - Layout"
 doc_id: "03-layout"
-updated: "2026-07-19"
+updated: "2026-11-06"
 owner: "Boss"
 ---
 
@@ -67,17 +67,17 @@ This means shell polish must be done in stage coordinates first, not screenshot 
 | Layer | Element | Current role |
 | --- | --- | --- |
 | L0 | Window canvas | transparent desktop window owned by Tauri |
-| L1 | [`.g-l1-white-glass`](file:///g:/G-Maiden/src/src/styles.css#L2438) | low-alpha support plate under the app mass, clamped to the panel envelope; no backdrop blur |
-| L2 | [`.g-deck-panel`](file:///g:/G-Maiden/src/src/styles.css#L2227) | clipped subtract-shell body |
-| L2r | [`.g-panel-rim`](file:///g:/G-Maiden/src/src/styles.css#L2530) | stage-sibling rim overlay (not a panel child — the panel's clip/overflow/contain would eat its drop-shadow); overlays the panel box, `z-index:11` |
-| L3 | [`.g-sidebar-fab`](file:///g:/G-Maiden/src/src/styles.css#L2186), [`.g-topbar-fab`](file:///g:/G-Maiden/src/src/styles.css#L2212), [`.g-audio-rail`](file:///g:/G-Maiden/src/src/styles.css#L2892) | floating shell attachments |
-| L4 | [`.g-power-radial`](file:///g:/G-Maiden/src/src/styles.css#L2611), [`.g-signals-fab`](file:///g:/G-Maiden/src/src/styles.css#L2261) | interaction overlays and status cards |
+| L1 | [`.g-l1-white-glass`](file:///g:/G-Maiden/src/src/styles.css) | low-alpha support plate under the app mass, clamped to the panel envelope; no backdrop blur |
+| L2 | [`.g-deck-panel`](file:///g:/G-Maiden/src/src/styles.css#L2409) | clipped subtract-shell body |
+| L2r | [`.g-panel-rim`](file:///g:/G-Maiden/src/src/styles.css) | stage-sibling rim overlay (not a panel child — the panel's clip/overflow/contain would eat its drop-shadow); overlays the panel box, `z-index:11` |
+| L3 | [`.g-sidebar-fab`](file:///g:/G-Maiden/src/src/styles.css#L2786), [`.g-topbar-fab`](file:///g:/G-Maiden/src/src/styles.css), [`.g-audio-rail`](file:///g:/G-Maiden/src/src/styles.css) | floating shell attachments |
+| L4 | [`.g-power-radial`](file:///g:/G-Maiden/src/src/styles.css), [`.g-signals-fab`](file:///g:/G-Maiden/src/src/styles.css) | interaction overlays and status cards |
 
 ## 4. Subtract panel path
 
 The panel shape is driven by two constants in [`src/src/CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx), selected per tab:
 `d={tab === "dashboard" ? FUNG_PANEL_PATH_SIGNALS : FUNG_PANEL_PATH}`. Only the dashboard tab
-renders the G-Signal cluster ([`SignalGrid`](file:///g:/G-Maiden/src/src/CommandDeck.tsx#L44)), so only the dashboard tab gets the bottom-right
+renders the G-Signal cluster ([`SignalGrid`](file:///g:/G-Maiden/src/src/CommandDeck.tsx)), so only the dashboard tab gets the bottom-right
 notch — every other tab keeps the plain (no-notch) path, avoiding a stray hole where nothing
 fills it. Both constants feed the same `<path id="gSubtractPanelPath">`, so the `clipPath` and
 the `.g-panel-rim` `<use>` always stay in sync automatically.
@@ -132,19 +132,19 @@ From `src/src/styles.css`:
 
 | Token | Value |
 | --- | --- |
-| [`--cr6-panel-left`](file:///g:/G-Maiden/src/src/styles.css#L2400) | `12px` |
-| [`--cr6-panel-top`](file:///g:/G-Maiden/src/src/styles.css#L2401) | `12px` |
-| [`--cr6-panel-width`](file:///g:/G-Maiden/src/src/styles.css#L2402) | `1280px` |
-| [`--cr6-panel-height`](file:///g:/G-Maiden/src/src/styles.css#L2403) | `720px` |
-| [`--cr6-topbar-left`](file:///g:/G-Maiden/src/src/styles.css#L2404) | `834px` |
-| [`--cr6-topbar-top`](file:///g:/G-Maiden/src/src/styles.css#L2405) | `24px` |
-| [`--cr6-topbar-width`](file:///g:/G-Maiden/src/src/styles.css#L2406) | `446px` |
-| [`--cr6-sidebar-left`](file:///g:/G-Maiden/src/src/styles.css#L2407) | `26px` |
-| [`--cr6-sidebar-top`](file:///g:/G-Maiden/src/src/styles.css#L2408) | `354px` |
-| [`--cr6-power-left`](file:///g:/G-Maiden/src/src/styles.css#L2419) | `35px` |
-| [`--cr6-power-top`](file:///g:/G-Maiden/src/src/styles.css#L2420) | `672px` |
-| [`--cr6-power-main-left`](file:///g:/G-Maiden/src/src/styles.css#L2421) | `0px` |
-| [`--cr6-power-main-top`](file:///g:/G-Maiden/src/src/styles.css#L2422) | `0px` |
+| [`--cr6-panel-left`](file:///g:/G-Maiden/src/src/styles.css) | `12px` |
+| [`--cr6-panel-top`](file:///g:/G-Maiden/src/src/styles.css) | `12px` |
+| [`--cr6-panel-width`](file:///g:/G-Maiden/src/src/styles.css) | `1280px` |
+| [`--cr6-panel-height`](file:///g:/G-Maiden/src/src/styles.css) | `720px` |
+| [`--cr6-topbar-left`](file:///g:/G-Maiden/src/src/styles.css) | `834px` |
+| [`--cr6-topbar-top`](file:///g:/G-Maiden/src/src/styles.css) | `24px` |
+| [`--cr6-topbar-width`](file:///g:/G-Maiden/src/src/styles.css) | `446px` |
+| [`--cr6-sidebar-left`](file:///g:/G-Maiden/src/src/styles.css) | `26px` |
+| [`--cr6-sidebar-top`](file:///g:/G-Maiden/src/src/styles.css) | `354px` |
+| [`--cr6-power-left`](file:///g:/G-Maiden/src/src/styles.css) | `35px` |
+| [`--cr6-power-top`](file:///g:/G-Maiden/src/src/styles.css) | `672px` |
+| [`--cr6-power-main-left`](file:///g:/G-Maiden/src/src/styles.css) | `0px` |
+| [`--cr6-power-main-top`](file:///g:/G-Maiden/src/src/styles.css) | `0px` |
 
 ### 5.2 L1 white-glass underlay
 
@@ -313,7 +313,7 @@ Cards:
 
 ## 6. Dashboard sector geometry
 
-Current dashboard sectors inside [`.gm-fung-layout`](file:///g:/G-Maiden/src/src/styles.css#L3007):
+Current dashboard sectors inside [`.gm-fung-layout`](file:///g:/G-Maiden/src/src/styles.css#L3186):
 
 | Sector | x | y | w | h |
 | --- | --- | --- | --- | --- |
@@ -358,3 +358,5 @@ When shell geometry changes, update these three artifacts together:
 | --- | --- | --- |
 | 2.3.0-draft | 2026-07-19 | + STAGE-LOCK invariant: 1420×760 outer / 1280×720 panel world + เหตุผล effects expansion zone (ice-mist, power radial) — จากผล design-doc audit + Boss ชี้แจง intent |
 | 2.3.1-draft | 2026-07-19 | symbol-link coverage extension (G1.5) |
+| 2.3.1 | 2026-11-06 | status `draft` → `active`: referenced as the design SSOT (CLAUDE.md, code and sibling docs) and describes the shipped deck; not marked accepted because no owner approval is recorded |
+| 2.3.2 | 2026-11-06 | relinked 23 code symbol anchor(s) to the symbol's current definition (or dropped the line anchor where the symbol no longer exists) — no content change |

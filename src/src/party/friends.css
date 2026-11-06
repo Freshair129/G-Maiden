@@ -1,0 +1,67 @@
+/* Friends owns its presentation. All selectors stay inside the G-Party surface. */
+.g-friends {
+  --friends-paper: var(--g-instrument);
+  --friends-ink: var(--g-text);
+  --friends-muted: var(--g-text-dim);
+  --friends-line: var(--g-hairline-2);
+  --friends-accent: var(--g-ice-500);
+  color: var(--friends-ink); background: var(--friends-paper);
+  padding: 12px; min-width: 0; min-height: 0; height: 100%;
+  display: flex; flex-direction: column; gap: 9px; overflow: auto;
+  font: 12px/1.5 var(--g-font-ui);
+  scrollbar-color: var(--g-ice-dim) var(--g-instrument);
+}
+.g-friends *, .g-friends *::before, .g-friends *::after { box-sizing: border-box; }
+.g-friends h3, .g-friends h4, .g-friends p { margin: 0; }
+.g-friends-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 2px; }
+.g-friends-heading h3 { font-size: 15px; letter-spacing: -.5px; font-weight: 650; }
+.g-friends-eyebrow { font-size: 10px; letter-spacing: 2px; color: var(--friends-accent); }
+.g-friends-account { border: 1px solid var(--friends-line); border-radius: var(--g-r-pill); padding: 5px 10px; font-size: 11px; overflow-wrap: anywhere; }
+.g-friends-controls, .g-friends-collections { display: grid; grid-template-columns: minmax(0, 1fr); gap: 9px; }
+.g-friends label { display: block; color: var(--friends-ink); font: inherit; }
+.g-friends input:not([type="checkbox"]) { display: block; width: 100%; min-width: 0; background: var(--g-instrument-2); color: var(--friends-ink); border: 1px solid var(--g-hairline-2); border-radius: var(--g-r-sm); padding: 8px 10px; font: inherit; margin: 5px 0 8px; }
+.g-friends .g-friends-check { display: flex; align-items: flex-start; gap: 9px; margin-block: 7px; cursor: pointer; }
+.g-friends input[type="checkbox"] { flex: 0 0 auto; width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--friends-accent); }
+.g-friends button { appearance: none; border: 1px solid var(--g-hairline-2); border-radius: var(--g-r-sm); padding: 6px 10px; color: var(--friends-ink); background: var(--g-card); font: 500 11px/1.5 var(--g-font-ui); cursor: pointer; white-space: normal; }
+.g-friends button:hover:not(:disabled) { background: var(--g-card); border-color: var(--friends-accent); }
+.g-friends button:disabled, .g-friends input:disabled { opacity: .48; cursor: default; }
+.g-friends :is(button, input, ul):focus-visible { outline: 2px solid var(--friends-accent); outline-offset: 3px; }
+.g-friends .g-friends-note { color: var(--friends-muted); font-size: 11px; line-height: 1.6; margin-block: 7px; }
+.g-friends-link { margin-block: 0; border-block: 1px solid var(--friends-line); padding-block: 10px; }
+.g-friends-collections { min-height: 80px; flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.g-friends-collection { display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0; border: 1px solid var(--friends-line); border-radius: var(--g-r-card); overflow: hidden; }
+.g-friends-collection h4 { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; background: var(--g-instrument-2); font-size: 13px; font-weight: 600; }
+.g-friends-collection h4 span { font-size: 10px; color: var(--friends-muted); font-weight: 400; }
+.g-friends-list { list-style: none; margin: 0; padding: 0; min-height: 0; flex: 1; overflow: auto; overscroll-behavior: contain; }
+.g-friends-list > li { display: flex; flex-wrap: wrap; align-items: center; gap: 7px 10px; padding: 11px 12px; border-top: 1px solid var(--friends-line); min-width: 0; }
+.g-friends-person { display: flex; flex-direction: column; min-width: 0; flex: 1 1 120px; overflow-wrap: anywhere; font-weight: 550; }
+.g-friends-person code { color: var(--friends-muted); font: 10px/1.7 var(--g-font-mono); background: transparent; border: 0; padding: 0; }
+.g-friends-meta, .g-friends-presence { font-size: 10px; color: var(--friends-muted); }
+.g-friends-presence[data-online="true"] { color: var(--friends-accent); }
+.g-friends-row-actions { display: flex; flex-wrap: wrap; gap: 6px; flex-basis: 100%; }
+.g-friends-invitation form { flex-basis: 100%; border-top: 1px solid var(--friends-line); margin-top: 4px; padding-top: 8px; }
+.g-friends-feedback { color: var(--g-warn); background: var(--g-card); padding: 9px 11px; border-radius: var(--g-r-sm); margin-block: 10px !important; overflow-wrap: anywhere; }
+.g-friends-empty { color: var(--friends-muted); font-size: 11px; }
+@media (max-width: 680px) {
+  .g-friends { padding: 12px; }
+  .g-friends-controls, .g-friends-collections { grid-template-columns: minmax(0, 1fr); }
+  .g-friends-heading { align-items: flex-start; gap: 8px; }
+
+}
+
+.g-friends [hidden] { display: none !important; }
+.g-friends-tabs { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 4px; }
+.g-friends-tabs button { padding: 5px; font-size: 10px; }
+.g-friends-tabs button[aria-pressed="true"] { color: var(--g-ice-500); border-color: var(--g-ice-dim); }
+.g-friends .g-friends-account { font-family: var(--g-font-ui); font-size: 9px; padding: 3px 7px; }
+.g-friends .g-friends-preferences { max-height: 180px; overflow: auto; }
+.g-friends .g-friends-link { max-height: 170px; overflow: auto; }
+.g-friends .g-friends-feedback { max-height: 90px; overflow: auto; flex: 0 0 auto; }
+
+.g-friends-meta { min-width: 0; overflow-wrap: anywhere; }
+.g-friends-request-entry > summary, .g-friends-more > summary { color: var(--g-ice-500); font-size: 11px; cursor: pointer; }
+.g-friends-request-entry > summary { padding-block: 5px; }
+.g-friends-request-entry > form { margin-top: 8px; }
+.g-friends-more { margin-left: auto; }
+.g-friends-more > div { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 5px; }
+.g-friends :is(summary):focus-visible { outline: 2px solid var(--g-ice-500); outline-offset: 3px; }

@@ -41,7 +41,8 @@ export function validatePublishedManifest(m) {
     throw new Error('published manifest requires a real SemVer version');
   }
   if (/^0+$/.test(m.sourceSha)) throw new Error('published manifest cannot use a zero sourceSha');
-  if (Date.parse(m.publishedAt) <= 0) throw new Error('published manifest requires a real publishedAt');
+  const publishedAt = Date.parse(m.publishedAt);
+  if (!Number.isFinite(publishedAt) || publishedAt <= 0) throw new Error('published manifest requires a real publishedAt');
   for (const [platform, artifact] of Object.entries(m.platforms)) {
     if (!/^https:\/\//.test(artifact.url) || artifact.url.includes('example.invalid')) {
       throw new Error(`platform ${platform} has a non-production artifact URL`);
@@ -105,7 +106,7 @@ async function main() {
     return;
   }
   if (cmd === 'promote') {
-    const [candidatePath, stablePath, approvalPath] = args.map(resolve);
+    const [candidatePath, stablePath, approvalPath] = args.map(path => resolve(path));
     const candidate = validateManifest(JSON.parse(await readFile(candidatePath, 'utf8')));
     const approval = JSON.parse(await readFile(approvalPath, 'utf8'));
     const previous = validateManifest(JSON.parse(await readFile(stablePath, 'utf8')));

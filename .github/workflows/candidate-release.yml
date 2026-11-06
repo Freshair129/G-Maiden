@@ -14,7 +14,6 @@ concurrency:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   verify-build-sign:
@@ -46,10 +45,14 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm -C src install --frozen-lockfile
       - run: node src-tauri/scripts/stage-gpu-feeder.mjs
+      - name: Build pinned native MSVC video decoder
+        shell: pwsh
+        run: ./scripts/setup-native-vpx.ps1
       - name: Verification gates
         run: |
           cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --locked -- -D warnings
           cargo test --manifest-path src-tauri/Cargo.toml --locked
+          cargo test --manifest-path src-tauri/native-vpx/Cargo.toml --locked
           pnpm -C src exec eslint .
           pnpm -C src exec tsc --noEmit
           pnpm -C src test -- --run
@@ -88,7 +91,7 @@ jobs:
         with:
           name: candidate-evidence-${{ inputs.tag }}
           path: release/evidence/${{ inputs.tag }}/build-evidence.json
-      - name: Open Dev channel manifest PR
+      - name: Publish Dev channel manifest branch
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -104,5 +107,4 @@ jobs:
           git add release/channels/dev.json
           git commit -m "release: publish ${{ inputs.tag }} to dev channel"
           git push --set-upstream origin $manifestBranch
-          $prUrl = gh pr create --repo "${{ github.repository }}" --base main --head $manifestBranch --title "release: publish ${{ inputs.tag }} to dev channel" --body "Derived from the published signed Tauri latest.json. Review source SHA, artifact URLs, signatures, and SHA-256 values before merge."
-          "Dev manifest PR: $prUrl" | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+          "Dev manifest branch: $manifestBranch. Open a pull request manually: https://github.com/${{ github.repository }}/compare/main...${manifestBranch}?expand=1" | Add-Content -Path $env:GITHUB_STEP_SUMMARY

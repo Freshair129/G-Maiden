@@ -1,0 +1,37 @@
+name: publish-legacy-stable
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Verify only; do not publish
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gmaiden-stable-publication
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: dtolnay/rust-toolchain@1.96.0
+      - name: Verify approved artifacts and publish legacy updater release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: node scripts/releases/publish-legacy-stable.mjs

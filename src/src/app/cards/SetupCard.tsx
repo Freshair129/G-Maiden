@@ -65,18 +65,21 @@ export const SetupCard: React.FC = () => {
     try {
       const path = await chooseDotaInstallPath(selectedPath)
       if (!path) return
+      await saveDotaInstallPath(path)
       setSelectedPath(path)
-      saveDotaInstallPath(path)
       await refresh(path)
     } catch (error) {
-      setPathError(`เปิดหน้าต่างเลือกโฟลเดอร์ไม่สำเร็จ: ${String(error)}`)
+      setPathError(`เลือกหรือบันทึกโฟลเดอร์ Dota 2 ไม่สำเร็จ: ${String(error)}`)
     } finally { setBusy(false) }
   }
   const clearPath = async () => {
     setBusy(true)
-    setSelectedPath(null)
-    saveDotaInstallPath(null)
-    try { await refresh(null) } finally { setBusy(false) }
+    try {
+      await saveDotaInstallPath(null)
+      setSelectedPath(null)
+      await refresh(null)
+    } catch (error) { setPathError(`เปลี่ยนตำแหน่ง Dota 2 ไม่สำเร็จ: ${String(error)}`) }
+    finally { setBusy(false) }
   }
   if (!st) return (
     <Card title="Setup (GSI)"><div style={{ fontSize: 12.5, color: C.mut, paddingTop: 8 }}>กำลังตรวจสอบ Steam / Dota 2…</div></Card>
@@ -84,9 +87,9 @@ export const SetupCard: React.FC = () => {
   const ok = st.installed
   const dot = <span style={{ width: 9, height: 9, borderRadius: 99, background: ok ? C.ok : C.warn, display: 'inline-block', marginRight: 8, boxShadow: ok ? `0 0 8px ${C.ok}` : 'none' }} />
   const serverText = !health ? 'กำลังตรวจ listener…'
-    : health.server_state === 'listening' ? 'listener พร้อมรับข้อมูล'
-      : health.server_state === 'port_conflict' ? 'พอร์ต 3000 ถูกใช้งาน — กระทบ GSI และ Google OAuth callback'
-        : health.server_state === 'bind_error' ? 'เปิดพอร์ต 3000 ไม่สำเร็จ — ปิดโปรแกรมที่ใช้พอร์ต แล้ว listener จะลองใหม่'
+    : health.server_state === 'listening' ? `127.0.0.1:${health.gsi_port ?? 3000} · listener พร้อมรับข้อมูล`
+      : health.server_state === 'port_conflict' ? 'พอร์ต 3000–3010 ถูกใช้งาน — กำลังลองใหม่'
+        : health.server_state === 'bind_error' ? 'เปิดพอร์ต GSI ไม่สำเร็จ — listener จะลองใหม่'
           : 'กำลังเริ่ม listener…'
   const feedText = health?.gsi_freshness === 'stale'
     ? `Dota เปิดอยู่แต่ feed GSI ล้าสมัย${health.gsi_age_ms === null ? '' : ` ${(health.gsi_age_ms / 1000).toFixed(1)} วินาที`} — หยุดใช้ own-state จนกว่าจะได้รับข้อมูลใหม่`
@@ -117,7 +120,8 @@ export const SetupCard: React.FC = () => {
         {!st.dota_cfg_dir && <div style={{ marginTop: 4 }}>เลือกโฟลเดอร์ Dota 2 beta ที่มี `game\bin\win64\dota2.exe` อยู่ด้านใน ระบบจะเขียนเฉพาะ GSI config ในโฟลเดอร์เกมนี้</div>}
         <div style={{ marginTop: 4 }}>พอร์ต GSI: <span style={{ color: health?.server_state === 'port_conflict' || health?.server_state === 'bind_error' ? C.warn : C.txt }}>{serverText}</span></div>
         <div>ข้อมูลเกม: <span style={{ color: health?.gsi_freshness === 'stale' ? C.warn : health?.gsi_active ? C.ok : C.mut }}>{feedText}</span></div>
-        {(health?.server_state === 'port_conflict' || health?.server_state === 'bind_error') && <div style={{ marginTop: 4 }}>ปิด G-Maiden ที่เปิดซ้ำหรือแอปที่ใช้พอร์ต 3000; listener จะลองใหม่อัตโนมัติทุก 3 วินาที โดยไม่ต้องใช้ terminal</div>}
+        {(health?.server_state === 'port_conflict' || health?.server_state === 'bind_error') && <div style={{ marginTop: 4 }}>ปิด G-Maiden ที่เปิดซ้ำหรือตรวจแอปที่ใช้พอร์ต 3000–3010; listener จะลองใหม่อัตโนมัติทุก 3 วินาที โดยไม่ต้องใช้ terminal</div>}
+        {health?.dota_restart_required && <div role="alert" style={{ marginTop: 4, color: C.warn }}>เปลี่ยนพอร์ต GSI อัตโนมัติเป็น {health.gsi_port} แล้ว — ปิดแล้วเปิด Dota 2 เพื่อโหลด config ใหม่</div>}
         {!ok && st.dota_cfg_dir && <div style={{ marginTop: 4 }}>หลังติดตั้งหรือซ่อม: ปิดแล้วเปิด Dota 2 เพื่อโหลด config ใหม่</div>}
       </div>
     </Card>

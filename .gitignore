@@ -22,7 +22,6 @@ yarn-error.log*
 
 # Nested Cargo.lock files for standalone/nested crates (src-tauri/Cargo.lock is tracked, not ignored)
 gpu-feeder/Cargo.lock
-orchestration/src-tauri/Cargo.lock
 tests/perf/Cargo.lock
 
 # Tauri build output (vite -> gen/web) + icon source scratch

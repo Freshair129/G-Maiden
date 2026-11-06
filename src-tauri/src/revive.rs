@@ -34,9 +34,9 @@ pub struct DeathContext {
     /// A Wraith King with Reincarnation is on our team (−10% respawn aura).
     pub wk_reincarnation_ally: bool,
     /// Living teammates who could defend without you (0 = you're the last hope).
-    pub allies_alive: u32,
+    pub allies_alive: Option<u32>,
     /// Enemies are actively pushing our high ground / throne (from CV).
-    pub base_under_threat: bool,
+    pub base_under_threat: Option<bool>,
     /// Estimated seconds until the throne falls if undefended (from CV). None →
     /// threat timing unknown.
     pub seconds_to_base_fall: Option<f64>,
@@ -44,9 +44,8 @@ pub struct DeathContext {
 
 impl DeathContext {
     /// Build the GSI-derived half of a death context from a game tick. Threat
-    /// fields (base push, allies-alive, base-fall time) come from CV and default
-    /// to "no known threat" until that layer is wired — so the verdict stays
-    /// conservative (no buyback recommended) on GSI data alone.
+    /// fields (base push, allies-alive, base-fall time) are unavailable from
+    /// own-player GSI. Keep them unknown until an evidence producer is wired.
     pub fn from_tick(tick: &crate::gsi::GameTick) -> Self {
         DeathContext {
             level: tick.level.max(0) as u32,
@@ -56,8 +55,8 @@ impl DeathContext {
             respawn_remaining: (tick.respawn_seconds > 0).then_some(tick.respawn_seconds as f64),
             seconds_since_death: 0.0,
             wk_reincarnation_ally: false,
-            allies_alive: 4, // unknown until CV; team-intact is the conservative default
-            base_under_threat: false, // unknown until CV
+            allies_alive: None,
+            base_under_threat: None,
             seconds_to_base_fall: None,
         }
     }
@@ -65,6 +64,8 @@ impl DeathContext {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 pub enum Urgency {
+    /// Available evidence cannot support a buyback decision.
+    Unknown,
     /// No need to buy back.
     None,
     /// Buyback is a reasonable option.
@@ -75,8 +76,11 @@ pub enum Urgency {
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct ReviveAdvice {
-    pub recommend_buyback: bool,
+    /// None is insufficient evidence, not a recommendation to wait.
+    pub recommend_buyback: Option<bool>,
     pub urgency: Urgency,
+    pub base_under_threat: Option<bool>,
+    pub allies_alive: Option<u32>,
     /// Seconds until you respawn naturally (no buyback).
     pub natural_respawn_remaining: f64,
     /// Some(true/false) when buyback cost is known; None when unknown.
@@ -110,11 +114,17 @@ pub fn advise_buyback(ctx: &DeathContext) -> ReviveAdvice {
     // Would natural respawn arrive too late to save the base?
     let too_late = ctx.seconds_to_base_fall.map(|t| t < natural);
 
-    let recommend = ctx.base_under_threat && affordable == Some(true) && too_late == Some(true);
+    let recommend = match (ctx.base_under_threat, affordable, too_late) {
+        (Some(false), _, _) | (Some(true), Some(false), _) => Some(false),
+        (Some(true), Some(true), Some(late)) => Some(late),
+        _ => None,
+    };
 
-    let urgency = if recommend && ctx.allies_alive == 0 {
+    let urgency = if recommend.is_none() {
+        Urgency::Unknown
+    } else if recommend == Some(true) && ctx.allies_alive == Some(0) {
         Urgency::Strong
-    } else if recommend {
+    } else if recommend == Some(true) {
         Urgency::Consider
     } else {
         Urgency::None
@@ -125,6 +135,8 @@ pub fn advise_buyback(ctx: &DeathContext) -> ReviveAdvice {
     ReviveAdvice {
         recommend_buyback: recommend,
         urgency,
+        base_under_threat: ctx.base_under_threat,
+        allies_alive: ctx.allies_alive,
         natural_respawn_remaining: natural,
         affordable,
         next_respawn_if_buyback: next_if_buyback,
@@ -141,7 +153,10 @@ fn build_reason(
     urgency: Urgency,
 ) -> String {
     let secs = natural.round() as i64;
-    if !ctx.base_under_threat {
+    if ctx.base_under_threat.is_none() {
+        return format!("ยังประเมินซื้อเกิดไม่ได้ — ข้อมูลภัยต่อฐานยังไม่พอ (เกิดเองใน {secs}s)");
+    }
+    if ctx.base_under_threat == Some(false) {
         return format!("ปลอดภัย รอเกิด {secs}s ได้เลย เก็บเงินไว้ก่อน");
     }
     match (affordable, too_late, urgency) {
@@ -150,17 +165,18 @@ fn build_reason(
              (ตายซ้ำจะรอ {next:.0}s)",
             next = next_if_buyback
         ),
-        (Some(true), Some(true), _) => format!(
-            "ซื้อเกิดได้ — เกิดเอง {secs}s อาจไม่ทันป้องบ้าน เพื่อนยังอยู่ {allies} คน \
-             (ตายซ้ำจะรอ {next:.0}s)",
-            allies = ctx.allies_alive,
-            next = next_if_buyback
-        ),
+        (Some(true), Some(true), _) => {
+            let defenders = ctx.allies_alive.map_or_else(
+                || "ยังไม่ทราบจำนวนเพื่อนที่ป้องบ้านได้".to_string(),
+                |allies| format!("เพื่อนยังอยู่ {allies} คน"),
+            );
+            format!("ซื้อเกิดได้ — เกิดเอง {secs}s อาจไม่ทันป้องบ้าน {defenders} (ตายซ้ำจะรอ {next_if_buyback:.0}s)")
+        }
         (Some(true), Some(false), _) => {
             format!("เกิดปกติทันป้องบ้าน ({secs}s) ไม่ต้องเปลืองซื้อเกิด")
         }
         (Some(false), _, _) => format!("บ้านโดนรุมแต่เงินไม่พอซื้อเกิด — รอเกิด {secs}s"),
-        _ => format!("บ้านโดนกดดัน — รอเกิด {secs}s (ข้อมูลไม่พอประเมินซื้อเกิด)"),
+        _ => format!("บ้านโดนกดดัน — ยังประเมินซื้อเกิดไม่ได้ (เกิดเองใน {secs}s)"),
     }
 }
 
@@ -173,10 +189,10 @@ pub fn narrate_prompt(advice: &ReviveAdvice, tick: &crate::gsi::GameTick) -> Str
         .strip_prefix("npc_dota_hero_")
         .unwrap_or(&tick.hero)
         .replace('_', " ");
-    let action = if advice.recommend_buyback {
-        "แนะนำให้ซื้อเกิด (buyback)"
-    } else {
-        "ไม่ต้องซื้อเกิด รอเกิดปกติ"
+    let action = match advice.recommend_buyback {
+        Some(true) => "แนะนำให้ซื้อเกิด (buyback)",
+        Some(false) => "ไม่ต้องซื้อเกิด รอเกิดปกติ",
+        None => "ยังประเมินไม่ได้ ข้อมูลไม่พอสำหรับคำแนะนำซื้อเกิดหรือรอเกิด ห้ามเติมข้อสรุปว่าปลอดภัย",
     };
     format!(
         "คุณคือ Maiden ที่ปรึกษา Dota 2 บุคลิก Crystal Maiden — อ่อนโยน ฉลาด ไม่ตำหนิผู้เล่น \
@@ -203,8 +219,8 @@ mod tests {
             respawn_remaining: None,
             seconds_since_death: 0.0,
             wk_reincarnation_ally: false,
-            allies_alive: 4,
-            base_under_threat: false,
+            allies_alive: Some(4),
+            base_under_threat: Some(false),
             seconds_to_base_fall: None,
         }
     }
@@ -212,7 +228,7 @@ mod tests {
     #[test]
     fn safe_when_no_threat() {
         let a = advise_buyback(&base());
-        assert!(!a.recommend_buyback);
+        assert_eq!(a.recommend_buyback, Some(false));
         assert_eq!(a.urgency, Urgency::None);
         assert!(a.reason.contains("ปลอดภัย"));
     }
@@ -220,13 +236,13 @@ mod tests {
     #[test]
     fn strong_when_base_falls_and_no_defenders() {
         let ctx = DeathContext {
-            base_under_threat: true,
+            base_under_threat: Some(true),
             seconds_to_base_fall: Some(20.0), // < respawn(14)=48
-            allies_alive: 0,
+            allies_alive: Some(0),
             ..base()
         };
         let a = advise_buyback(&ctx);
-        assert!(a.recommend_buyback);
+        assert_eq!(a.recommend_buyback, Some(true));
         assert_eq!(a.urgency, Urgency::Strong);
         assert!(a.reason.contains("บ้านแตกแน่"));
     }
@@ -234,40 +250,40 @@ mod tests {
     #[test]
     fn consider_when_teammates_still_alive() {
         let ctx = DeathContext {
-            base_under_threat: true,
+            base_under_threat: Some(true),
             seconds_to_base_fall: Some(20.0),
-            allies_alive: 2,
+            allies_alive: Some(2),
             ..base()
         };
         let a = advise_buyback(&ctx);
-        assert!(a.recommend_buyback);
+        assert_eq!(a.recommend_buyback, Some(true));
         assert_eq!(a.urgency, Urgency::Consider);
     }
 
     #[test]
     fn no_buyback_when_respawn_arrives_in_time() {
         let ctx = DeathContext {
-            base_under_threat: true,
+            base_under_threat: Some(true),
             seconds_to_base_fall: Some(90.0), // > respawn(14)=48 → make it back
-            allies_alive: 0,
+            allies_alive: Some(0),
             ..base()
         };
         let a = advise_buyback(&ctx);
-        assert!(!a.recommend_buyback);
+        assert_eq!(a.recommend_buyback, Some(false));
         assert!(a.reason.contains("ทันป้องบ้าน"));
     }
 
     #[test]
     fn cant_afford_flags_but_does_not_recommend() {
         let ctx = DeathContext {
-            base_under_threat: true,
+            base_under_threat: Some(true),
             seconds_to_base_fall: Some(20.0),
             gold: 100,
             buyback_cost: Some(1500),
             ..base()
         };
         let a = advise_buyback(&ctx);
-        assert!(!a.recommend_buyback);
+        assert_eq!(a.recommend_buyback, Some(false));
         assert_eq!(a.affordable, Some(false));
         assert!(a.reason.contains("เงินไม่พอ"));
     }
@@ -310,9 +326,9 @@ mod tests {
     #[test]
     fn narrate_prompt_embeds_verdict_and_hero() {
         let ctx = DeathContext {
-            base_under_threat: true,
+            base_under_threat: Some(true),
             seconds_to_base_fall: Some(20.0),
-            allies_alive: 0,
+            allies_alive: Some(0),
             ..base()
         };
         let advice = advise_buyback(&ctx);
@@ -356,15 +372,66 @@ mod tests {
     }
 
     #[test]
+    fn gsi_only_does_not_claim_safety_or_advise_waiting() {
+        let tick = crate::gsi::GameTick {
+            gold: 1800,
+            buyback_cost: 1500,
+            respawn_seconds: 30,
+            ..Default::default()
+        };
+        let advice = advise_buyback(&DeathContext::from_tick(&tick));
+        assert_eq!(advice.recommend_buyback, None);
+        assert_eq!(advice.urgency, Urgency::Unknown);
+        assert_eq!(advice.base_under_threat, None);
+        assert_eq!(advice.allies_alive, None);
+        assert_eq!(advice.affordable, Some(true));
+        assert!(!advice.reason.contains("ปลอดภัย"), "{}", advice.reason);
+        assert!(!advice.reason.contains("เก็บเงินไว้ก่อน"), "{}", advice.reason);
+        let prompt = narrate_prompt(&advice, &tick);
+        assert!(!prompt.contains("ไม่ต้องซื้อเกิด รอเกิดปกติ"), "{prompt}");
+    }
+
+    #[test]
+    fn unknown_affordability_does_not_become_a_no_buyback_prompt() {
+        let tick = crate::gsi::GameTick::default();
+        let advice = advise_buyback(&DeathContext {
+            base_under_threat: Some(true),
+            seconds_to_base_fall: Some(20.0),
+            buyback_cost: None,
+            ..base()
+        });
+        assert_eq!(advice.recommend_buyback, None);
+        assert!(!narrate_prompt(&advice, &tick).contains("ไม่ต้องซื้อเกิด รอเกิดปกติ"));
+    }
+
+    #[test]
+    fn known_threat_retains_buyback_advice_without_inventing_defenders() {
+        let tick = crate::gsi::GameTick {
+            gold: 1800,
+            buyback_cost: 1500,
+            respawn_seconds: 30,
+            ..Default::default()
+        };
+        let mut ctx = DeathContext::from_tick(&tick);
+        ctx.base_under_threat = Some(true);
+        ctx.seconds_to_base_fall = Some(20.0);
+        let advice = advise_buyback(&ctx);
+        assert_eq!(advice.urgency, Urgency::Consider);
+        assert_eq!(advice.recommend_buyback, Some(true));
+        assert_eq!(advice.allies_alive, None);
+        assert!(!advice.reason.contains("เพื่อนยังอยู่"), "{}", advice.reason);
+    }
+
+    #[test]
     fn unknown_buyback_cost_degrades_gracefully() {
         let ctx = DeathContext {
-            base_under_threat: true,
+            base_under_threat: Some(true),
             seconds_to_base_fall: Some(20.0),
             buyback_cost: None,
             ..base()
         };
         let a = advise_buyback(&ctx);
-        assert!(!a.recommend_buyback);
+        assert_eq!(a.recommend_buyback, None);
         assert_eq!(a.affordable, None);
     }
 }

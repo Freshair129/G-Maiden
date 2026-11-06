@@ -2,8 +2,8 @@
 title: "FEAT-G-MASTER — Strategic & Financial Advisor"
 doc_id: "FEAT-G-MASTER"
 status: "active"
-version: "0.2.0"
-updated: "2026-10-10"
+version: "0.2.1"
+updated: "2026-11-06"
 owner: "Boss"
 source_of_truth: true
 complexity: "C-2"
@@ -52,7 +52,7 @@ on advise(tick) request:
   emit Advice { text, cached }
 ```
 
-- **Throttle:** flat 30s ต่อ request พร้อม cache คำตอบล่าสุด ([`THROTTLE`](file:///g:/G-Maiden/src-tauri/src/master.rs#L23), [`master.rs`](file:///g:/G-Maiden/src-tauri/src/master.rs)).
+- **Throttle:** flat 30s ต่อ request พร้อม cache คำตอบล่าสุด ([`THROTTLE`](file:///g:/G-Maiden/src-tauri/src/master.rs#L44), [`master.rs`](file:///g:/G-Maiden/src-tauri/src/master.rs)).
   *(planned: trigger ตาม gold change ±500 และ cap ≤2/min ยังไม่ได้ทำ)*
 - **Cloud backend:** `claude` CLI (Plan quota) หรือ Anthropic Messages API (`claude-haiku-4-5`)
   เมื่อผู้ใช้ตั้ง API key; ไม่มี Gemini และไม่มี "Template" tier.
@@ -61,7 +61,7 @@ on advise(tick) request:
   cached or in-flight responses.
 - **Meta dataset:** static dataset ของ counter-item builds ([`counter_advice.rs`](file:///g:/G-Maiden/src-tauri/src/counter_advice.rs)).
 - **Counter-item logic:** [`counter_advice.rs`](file:///g:/G-Maiden/src-tauri/src/counter_advice.rs) ต่อสายจริงแล้ว — [`request_advice`](file:///g:/G-Maiden/src-tauri/src/main.rs) (`main.rs:251`)
-  ป้อน [`runtime::known_enemies()`](file:///g:/G-Maiden/src-tauri/src/runtime.rs#L493) (รายชื่อฮีโร่ศัตรูที่ CV เห็นซ้ำจนข้ามเกณฑ์ confirm) เข้า
+  ป้อน [`runtime::known_enemies()`](file:///g:/G-Maiden/src-tauri/src/runtime.rs#L1456) (รายชื่อฮีโร่ศัตรูที่ CV เห็นซ้ำจนข้ามเกณฑ์ confirm) เข้า
   [`counter_advice_text()`](file:///g:/G-Maiden/src-tauri/src/counter_advice.rs#L11); ว่างเฉพาะตอนยังไม่มีศัตรูที่ CV ยืนยันแล้ว ไม่ใช่ hardcode ว่างตลอด.
 
 ## 4. Output
@@ -122,3 +122,4 @@ Advice {
 | --- | --- | --- |
 | — | 2026-07-19 | link/metadata sweep (G1.5): wikilink/symbol-link fixes only — no content change |
 | 0.2.0 | 2026-10-10 | Applied MVP-005 cloud-context opt-in and strict allowlist; separated local context from cloud payload and marked runtime enforcement evidence open. |
+| 0.2.1 | 2026-11-06 | relinked 2 code symbol anchor(s) to the symbol's current definition (or dropped the line anchor where the symbol no longer exists) — no content change |

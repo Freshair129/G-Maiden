@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
 import { useAuth } from "./auth";
+import { localAuthBlocked } from "./securitySession";
 
 export interface WalletSnapshot {
   shardBalance: number;
@@ -125,9 +126,21 @@ export function useWallet(): WalletSnapshot & {
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const [snapshot, setSnapshot] = useState<WalletSnapshot>(EMPTY_SNAPSHOT);
+  const [dataEpoch, setDataEpoch] = useState(0);
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const owner = useRef({ userId, epoch: 0 });
+  if (owner.current.userId !== userId) owner.current = { userId, epoch: owner.current.epoch + 1 };
+  const request = useRef({ seq: 0 });
+  const currentOwner = useCallback(() => owner.current.userId === userId && !localAuthBlocked(), [userId]);
+  const requireOwner = useCallback((epoch = owner.current.epoch) => {
+    if (!userId || !currentOwner() || owner.current.epoch !== epoch) throw new Error("account changed or not signed in");
+    return epoch;
+  }, [userId, currentOwner]);
 
   const load = useCallback(async () => {
+    if (!currentOwner()) return;
+    const epoch = owner.current.epoch;
+    const seq = ++request.current.seq;
     if (!userId) {
       setSnapshot(EMPTY_SNAPSHOT);
       return;
@@ -152,6 +165,8 @@ export function useWallet(): WalletSnapshot & {
         .gte("created_at", startOfTodayIso()),
     ]);
 
+    if (!currentOwner() || owner.current.epoch !== epoch || request.current.seq !== seq) return;
+
     const row = (walletRes.data as WalletRow | null) ?? null;
     const capValue = capRes.data?.value as number | string | null | undefined;
     const earnedToday = ((todayRes.data as { amount: number | string }[] | null) ?? []).reduce(
@@ -171,10 +186,15 @@ export function useWallet(): WalletSnapshot & {
       shardEarnedToday: earnedToday,
       loading: false,
     });
-  }, [userId]);
+  }, [userId, currentOwner]);
 
   useEffect(() => {
+    const lifetime = owner.current;
+    const requests = request.current;
+    setDataEpoch(owner.current.epoch);
+    setSnapshot(EMPTY_SNAPSHOT);
     void load();
+    return () => { requests.seq++; lifetime.epoch++; };
   }, [load]);
 
   // Realtime: keep balances live during top-up / purchase / tip (CR-003 §2.6)
@@ -204,23 +224,25 @@ export function useWallet(): WalletSnapshot & {
 
   const purchase = useCallback(
     async (itemId: string): Promise<void> => {
-      if (!userId) throw new Error("not signed in");
+      const epoch = requireOwner();
       const { error } = await supabase.rpc("purchase_item", { p_item_id: itemId });
+      requireOwner(epoch);
       if (error) throw error;
       await load();
     },
-    [userId, load],
+    [requireOwner, load],
   );
 
   const topup = useCallback(
     async (packageId: string, provider: "promptpay" | "truemoney"): Promise<TopupResult> => {
-      if (!userId) throw new Error("not signed in");
+      const epoch = requireOwner();
       const { data, error } = await supabase.functions.invoke<{
         order_id: string;
         qr_image_uri?: string;
         authorize_uri?: string;
         expires_at: string;
       }>("topup-create", { body: { package_id: packageId, provider } });
+      requireOwner(epoch);
       if (error) throw error;
       if (!data) throw new Error("topup-create returned no data");
       return {
@@ -230,51 +252,56 @@ export function useWallet(): WalletSnapshot & {
         expiresAt: data.expires_at,
       };
     },
-    [userId],
+    [requireOwner],
   );
 
   const redeem = useCallback(
     async (code: string): Promise<void> => {
-      if (!userId) throw new Error("not signed in");
+      const epoch = requireOwner();
       const { error } = await supabase.rpc("redeem_code", { p_code: code });
+      requireOwner(epoch);
       if (error) throw error;
       await load();
     },
-    [userId, load],
+    [requireOwner, load],
   );
 
   const tip = useCallback(
     async (toUserId: string, amount: number, currency: "shard" | "wallet"): Promise<void> => {
-      if (!userId) throw new Error("not signed in");
+      const epoch = requireOwner();
       const { error } = await supabase.rpc("tip", {
         p_to_user: toUserId,
         p_amount: amount,
         p_currency: currency,
       });
+      requireOwner(epoch);
       if (error) throw error;
       await load();
     },
-    [userId, load],
+    [requireOwner, load],
   );
 
   const shareMatch = useCallback(
     async (matchId: string): Promise<ShareMatchResult> => {
-      if (!userId) throw new Error("not signed in");
+      const epoch = requireOwner();
       const { data, error } = await supabase.functions.invoke<{ shard_minted: number; reason?: string }>(
         "match-share-submit",
         { body: { match_id: matchId } },
       );
+      requireOwner(epoch);
       if (error) throw error;
       if (!data) throw new Error("match-share-submit returned no data");
       await load();
+      requireOwner(epoch);
       return { shardMinted: data.shard_minted, reason: data.reason };
     },
-    [userId, load],
+    [requireOwner, load],
   );
 
   const ledger = useCallback(
     async (opts?: { currency?: "shard" | "wallet"; limit?: number; before?: string }): Promise<LedgerEntry[]> => {
       if (!userId) return [];
+      const epoch = requireOwner();
       let query = supabase
         .from("wallet_ledger")
         .select("id, currency, entry_type, amount, balance_after, ref_type, ref_id, note, created_at")
@@ -284,11 +311,13 @@ export function useWallet(): WalletSnapshot & {
       if (opts?.currency) query = query.eq("currency", opts.currency);
       if (opts?.before) query = query.lt("created_at", opts.before);
       const { data, error } = await query;
+      requireOwner(epoch);
       if (error) throw error;
       return ((data as LedgerRow[] | null) ?? []).map(toLedgerEntry);
     },
-    [userId],
+    [userId, requireOwner],
   );
 
-  return { ...snapshot, purchase, topup, redeem, tip, shareMatch, ledger, refresh: load };
+  const visible = dataEpoch === owner.current.epoch && !localAuthBlocked();
+  return { ...(visible ? snapshot : { ...EMPTY_SNAPSHOT, loading: !!userId }), purchase, topup, redeem, tip, shareMatch, ledger, refresh: load };
 }

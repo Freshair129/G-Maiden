@@ -1,0 +1,225 @@
+{
+  "snapshot": "e8bd6695c57fe842569dfe9d419528d13adda06e",
+  "measured_states": 30,
+  "pages": [
+    {
+      "id": "01-dashboard",
+      "title": "Dashboard",
+      "source": "src/src/deck/FungDashboard.tsx",
+      "kind": "measured-browser",
+      "boxes": 152
+    },
+    {
+      "id": "02-live",
+      "title": "Live / match",
+      "source": "src/src/CompanionPages.tsx",
+      "kind": "measured-browser",
+      "boxes": 136
+    },
+    {
+      "id": "03-build",
+      "title": "Live / build",
+      "source": "src/src/CompanionPages.tsx",
+      "kind": "measured-browser",
+      "boxes": 61
+    },
+    {
+      "id": "04-cv",
+      "title": "Live / CV heroes",
+      "source": "src/src/CompanionPages.tsx",
+      "kind": "measured-browser",
+      "boxes": 133
+    },
+    {
+      "id": "05-voice-offline",
+      "title": "Voice / backend unavailable",
+      "source": "src/src/VoiceInventory.tsx",
+      "kind": "measured-browser",
+      "boxes": 44
+    },
+    {
+      "id": "06-voice-items",
+      "title": "Voice / owned items",
+      "source": "src/src/InventoryTab.tsx",
+      "kind": "measured-browser",
+      "boxes": 47
+    },
+    {
+      "id": "07-store",
+      "title": "Store / catalog",
+      "source": "src/src/StorePage.tsx",
+      "kind": "measured-browser",
+      "boxes": 52
+    },
+    {
+      "id": "08-wallet",
+      "title": "Store / wallet",
+      "source": "src/src/WalletTab.tsx",
+      "kind": "measured-browser",
+      "boxes": 60
+    },
+    {
+      "id": "09-inventory",
+      "title": "Store / inventory",
+      "source": "src/src/InventoryTab.tsx",
+      "kind": "measured-browser",
+      "boxes": 48
+    },
+    {
+      "id": "10-ledger",
+      "title": "Store / ledger",
+      "source": "src/src/LedgerTab.tsx",
+      "kind": "measured-browser",
+      "boxes": 43
+    },
+    {
+      "id": "11-insights",
+      "title": "Insights / overview",
+      "source": "src/src/CompanionPages.tsx",
+      "kind": "measured-browser",
+      "boxes": 74
+    },
+    {
+      "id": "12-history",
+      "title": "Insights / history",
+      "source": "src/src/CompanionPages.tsx",
+      "kind": "measured-browser",
+      "boxes": 50
+    },
+    {
+      "id": "13-account",
+      "title": "Account / profile",
+      "source": "src/src/AccountPage.tsx",
+      "kind": "measured-browser",
+      "boxes": 63
+    },
+    {
+      "id": "14-account-wallet",
+      "title": "Account / wallet",
+      "source": "src/src/AccountPage.tsx",
+      "kind": "measured-browser",
+      "boxes": 61
+    },
+    {
+      "id": "15-account-ledger",
+      "title": "Account / ledger",
+      "source": "src/src/AccountPage.tsx",
+      "kind": "measured-browser",
+      "boxes": 53
+    },
+    {
+      "id": "16-security",
+      "title": "Account / security",
+      "source": "src/src/AccountPage.tsx",
+      "kind": "measured-browser",
+      "boxes": 47
+    },
+    {
+      "id": "17a-settings",
+      "title": "Settings / general",
+      "source": "src/src/CommandDeck.tsx",
+      "kind": "measured-browser",
+      "boxes": 116
+    },
+    {
+      "id": "17b-settings",
+      "title": "Settings / overlay",
+      "source": "src/src/app/Control.tsx",
+      "kind": "measured-browser",
+      "boxes": 235
+    },
+    {
+      "id": "17c-settings",
+      "title": "Settings / voice",
+      "source": "src/src/app/Control.tsx",
+      "kind": "measured-browser",
+      "boxes": 134
+    },
+    {
+      "id": "17d-settings",
+      "title": "Settings / AI",
+      "source": "src/src/app/Control.tsx",
+      "kind": "measured-browser",
+      "boxes": 113
+    },
+    {
+      "id": "17e-settings",
+      "title": "Settings / modules & CV",
+      "source": "src/src/app/Control.tsx",
+      "kind": "measured-browser",
+      "boxes": 125
+    },
+    {
+      "id": "17f-settings",
+      "title": "Settings / privacy",
+      "source": "src/src/app/Control.tsx",
+      "kind": "measured-browser",
+      "boxes": 83
+    },
+    {
+      "id": "17g-settings",
+      "title": "Settings / system",
+      "source": "src/src/app/Control.tsx",
+      "kind": "measured-browser",
+      "boxes": 97
+    },
+    {
+      "id": "18-editor-fullscreen",
+      "title": "Overlay editor / fullscreen",
+      "source": "src/src/overlay/OverlayLayoutEditor.tsx",
+      "kind": "measured-browser",
+      "boxes": 235
+    },
+    {
+      "id": "19-command",
+      "title": "Command palette",
+      "source": "src/src/MaidenLine.tsx",
+      "kind": "measured-browser",
+      "boxes": 209
+    },
+    {
+      "id": "20-shortcuts",
+      "title": "Keyboard shortcuts",
+      "source": "src/src/deck/ShortcutSheet.tsx",
+      "kind": "measured-browser",
+      "boxes": 215
+    },
+    {
+      "id": "21-profile-menu",
+      "title": "Profile menu",
+      "source": "src/src/CommandDeck.tsx",
+      "kind": "measured-browser",
+      "boxes": 160
+    },
+    {
+      "id": "22-power-menu",
+      "title": "Power menu",
+      "source": "src/src/CommandDeck.tsx",
+      "kind": "measured-browser",
+      "boxes": 152
+    },
+    {
+      "id": "23-voice-layout",
+      "title": "Voice / populated architecture",
+      "source": "src/src/VoiceInventory.tsx",
+      "kind": "measured-layout-fixture",
+      "boxes": 106
+    },
+    {
+      "id": "24-welcome",
+      "title": "First-run setup dialog",
+      "source": "src/src/app/cards/Welcome.tsx",
+      "kind": "measured-layout-fixture",
+      "boxes": 261
+    }
+  ],
+  "module_count": 19,
+  "hud_zone_count": 11,
+  "limitations": [
+    "Signed-out/offline baseline for account/store",
+    "Voice inventory: synthetic layout-only fixture",
+    "Browser font fallback, not native WebView2 acceptance",
+    "Payment/receipt/populated inventory: source schematic",
+    "Studio unmerged changes excluded"
+  ]
+}

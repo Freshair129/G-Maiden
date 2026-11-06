@@ -18,15 +18,13 @@ import type { CompanionData, CompanionTone } from "../companion";
 // one, change the other.
 function riskTier(gankActive: boolean, missingCount: number): 0 | 1 | 2 | 3 {
   if (gankActive) return 3;
-  if (missingCount >= 3) return 3;
-  if (missingCount >= 2) return 2;
   if (missingCount >= 1) return 1;
   return 0;
 }
 
 // Thai labels mirror the overlay's G_LEVELS exactly (same file/line as above).
-const RISK_LABELS = ["ปลอดภัย", "ระวัง", "เสี่ยง", "อันตราย"] as const;
-const RISK_TONES: readonly CompanionTone[] = ["good", "info", "warn", "danger"];
+const RISK_LABELS = ["ยังไม่มีสัญญาณเสี่ยง", "มองไม่เห็น", "เสี่ยง", "อันตราย"] as const;
+const RISK_TONES: readonly CompanionTone[] = ["info", "info", "warn", "danger"];
 
 /** How many G-Signal alerts are genuinely active right now.
  *
@@ -40,11 +38,11 @@ const RISK_TONES: readonly CompanionTone[] = ["good", "info", "warn", "danger"];
  * follows below. */
 export function countActiveAlerts(
   gank: SignalAlert | null,
-  missing: Map<string, number>,
+  _missing: Map<string, number>,
   sensorOk: boolean
 ): number | null {
   if (!sensorOk && gank === null) return null;
-  return missing.size + (gank !== null ? 1 : 0);
+  return gank !== null ? 1 : 0;
 }
 
 export function buildSignals(
@@ -71,8 +69,8 @@ export function buildSignals(
   const missingCount = missing.size;
 
   // D — Enemy Missing: real count of heroes currently in the missing map.
-  const enemyMissingTone: CompanionTone = missingCount === 0 ? "good" : missingCount === 1 ? "warn" : "danger";
-  const enemyMissingValue = missingCount === 0 ? "Clear" : `${missingCount} ${missingCount === 1 ? "hero" : "heroes"}`;
+  const enemyMissingTone: CompanionTone = "info";
+  const enemyMissingValue = missingCount === 0 ? "0 observed missing" : `${missingCount} ${missingCount === 1 ? "hero" : "heroes"}`;
   const enemyMissingBar = Math.min(100, missingCount * 20);
 
   // E — Gank Risk: real probability from the latest gank-alert. No alert →

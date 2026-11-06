@@ -2,13 +2,14 @@
 // `resource-stats` samples (governor.rs) instead of the baked MOCK numbers —
 // the overlay already reads these, the deck did not.
 //
-// The governor reports whole-app process-group CPU and host-process RAM (MB);
+// The governor reports whole-app CPU and aggregate full Working Set RAM (MB);
 // there is no GPU, VRAM, or temperature sensor behind it. If job containment or
-// accounting is unavailable, CPU stays at NO_SENSOR and the footer renders "—".
+// accounting is unavailable, the affected value stays at NO_SENSOR and renders "—".
 // It is pure and null-safe: `stats === null` (browser / no Tauri / before the first sample)
 // falls through to the full MOCK demo so the standalone deck still looks alive.
 import type { ResourceStats } from "./events";
 import type { CompanionData } from "../companion";
+import { RAM_BUDGET_MB } from "../app/resourceBudget";
 
 type Telemetry = CompanionData["telemetry"];
 
@@ -17,7 +18,8 @@ export const NO_SENSOR = -1;
 
 export function buildTelemetry(stats: ResourceStats | null, fallback: Telemetry): Telemetry {
   if (stats === null) return fallback; // demo / no backend — keep the full MOCK
-  const ramGb = stats.ram_mb / 1024;
+  const ramAvailable = Number.isFinite(stats.ram_mb) && stats.ram_mb >= 0;
+  const ramGb = ramAvailable ? stats.ram_mb / 1024 : NO_SENSOR;
   const round1 = (n: number) => Math.round(n * 10) / 10;
   const round2 = (n: number) => Math.round(n * 100) / 100;
   // GPU/VRAM are bridged from G-Telemetry; a negative value means the bridge
@@ -34,7 +36,7 @@ export function buildTelemetry(stats: ResourceStats | null, fallback: Telemetry)
     vramLoad: has(stats.vram_used_mb) ? round2(stats.vram_used_mb / 1024) : NO_SENSOR,
     vramTemp: NO_SENSOR,
     ramUsedGb: round2(ramGb),
-    ramTotalGb: 400 / 1024, // 400 MB RAM budget (CLAUDE.md NFR)
+    ramTotalGb: RAM_BUDGET_MB / 1024,
     vramUsedGb: has(stats.vram_used_mb) ? round2(stats.vram_used_mb / 1024) : NO_SENSOR,
     vramTotalGb: has(stats.vram_total_mb) ? round2(stats.vram_total_mb / 1024) : NO_SENSOR
   };

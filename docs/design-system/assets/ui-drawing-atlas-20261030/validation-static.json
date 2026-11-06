@@ -1,0 +1,259 @@
+{
+  "sheets": 36,
+  "errors": [],
+  "records": [
+    {
+      "id": "00-shell",
+      "title": "Shared shell / viewport scaling",
+      "kind": "measured-browser",
+      "source": "src/src/CommandDeck.tsx + deck/prefs.ts + styles.css",
+      "elements": 207
+    },
+    {
+      "id": "01-dashboard",
+      "title": "Dashboard",
+      "kind": "measured-browser",
+      "source": "src/src/deck/FungDashboard.tsx",
+      "elements": 239
+    },
+    {
+      "id": "02-live",
+      "title": "Live / match",
+      "kind": "measured-browser",
+      "source": "src/src/CompanionPages.tsx",
+      "elements": 218
+    },
+    {
+      "id": "03-build",
+      "title": "Live / build",
+      "kind": "measured-browser",
+      "source": "src/src/CompanionPages.tsx",
+      "elements": 218
+    },
+    {
+      "id": "04-cv",
+      "title": "Live / CV heroes",
+      "kind": "measured-browser",
+      "source": "src/src/CompanionPages.tsx",
+      "elements": 218
+    },
+    {
+      "id": "05-voice-offline",
+      "title": "Voice / backend unavailable",
+      "kind": "measured-browser",
+      "source": "src/src/VoiceInventory.tsx",
+      "elements": 210
+    },
+    {
+      "id": "06-voice-items",
+      "title": "Voice / owned items",
+      "kind": "measured-browser",
+      "source": "src/src/InventoryTab.tsx",
+      "elements": 210
+    },
+    {
+      "id": "07-store",
+      "title": "Store / catalog",
+      "kind": "measured-browser",
+      "source": "src/src/StorePage.tsx",
+      "elements": 212
+    },
+    {
+      "id": "08-wallet",
+      "title": "Store / wallet",
+      "kind": "measured-browser",
+      "source": "src/src/WalletTab.tsx",
+      "elements": 209
+    },
+    {
+      "id": "09-inventory",
+      "title": "Store / inventory",
+      "kind": "measured-browser",
+      "source": "src/src/InventoryTab.tsx",
+      "elements": 209
+    },
+    {
+      "id": "10-ledger",
+      "title": "Store / ledger",
+      "kind": "measured-browser",
+      "source": "src/src/LedgerTab.tsx",
+      "elements": 209
+    },
+    {
+      "id": "11-insights",
+      "title": "Insights / overview",
+      "kind": "measured-browser",
+      "source": "src/src/CompanionPages.tsx",
+      "elements": 215
+    },
+    {
+      "id": "12-history",
+      "title": "Insights / history",
+      "kind": "measured-browser",
+      "source": "src/src/CompanionPages.tsx",
+      "elements": 215
+    },
+    {
+      "id": "13-account",
+      "title": "Account / profile",
+      "kind": "measured-browser",
+      "source": "src/src/AccountPage.tsx",
+      "elements": 221
+    },
+    {
+      "id": "14-account-wallet",
+      "title": "Account / wallet",
+      "kind": "measured-browser",
+      "source": "src/src/AccountPage.tsx",
+      "elements": 210
+    },
+    {
+      "id": "15-account-ledger",
+      "title": "Account / ledger",
+      "kind": "measured-browser",
+      "source": "src/src/AccountPage.tsx",
+      "elements": 210
+    },
+    {
+      "id": "16-security",
+      "title": "Account / security",
+      "kind": "measured-browser",
+      "source": "src/src/AccountPage.tsx",
+      "elements": 213
+    },
+    {
+      "id": "17a-settings",
+      "title": "Settings / general",
+      "kind": "measured-browser",
+      "source": "src/src/CommandDeck.tsx",
+      "elements": 221
+    },
+    {
+      "id": "17b-settings",
+      "title": "Settings / overlay",
+      "kind": "measured-browser",
+      "source": "src/src/app/Control.tsx",
+      "elements": 218
+    },
+    {
+      "id": "17c-settings",
+      "title": "Settings / voice",
+      "kind": "measured-browser",
+      "source": "src/src/app/Control.tsx",
+      "elements": 221
+    },
+    {
+      "id": "17d-settings",
+      "title": "Settings / AI",
+      "kind": "measured-browser",
+      "source": "src/src/app/Control.tsx",
+      "elements": 215
+    },
+    {
+      "id": "17e-settings",
+      "title": "Settings / modules & CV",
+      "kind": "measured-browser",
+      "source": "src/src/app/Control.tsx",
+      "elements": 218
+    },
+    {
+      "id": "17f-settings",
+      "title": "Settings / privacy",
+      "kind": "measured-browser",
+      "source": "src/src/app/Control.tsx",
+      "elements": 215
+    },
+    {
+      "id": "17g-settings",
+      "title": "Settings / system",
+      "kind": "measured-browser",
+      "source": "src/src/app/Control.tsx",
+      "elements": 224
+    },
+    {
+      "id": "18-editor-fullscreen",
+      "title": "Overlay editor / fullscreen",
+      "kind": "measured-browser",
+      "source": "src/src/overlay/OverlayLayoutEditor.tsx",
+      "elements": 249
+    },
+    {
+      "id": "19-command",
+      "title": "Command palette",
+      "kind": "measured-browser",
+      "source": "src/src/MaidenLine.tsx",
+      "elements": 228
+    },
+    {
+      "id": "20-shortcuts",
+      "title": "Keyboard shortcuts",
+      "kind": "measured-browser",
+      "source": "src/src/deck/ShortcutSheet.tsx",
+      "elements": 243
+    },
+    {
+      "id": "21-profile-menu",
+      "title": "Profile menu",
+      "kind": "measured-browser",
+      "source": "src/src/CommandDeck.tsx",
+      "elements": 242
+    },
+    {
+      "id": "22-power-menu",
+      "title": "Power menu",
+      "kind": "measured-browser",
+      "source": "src/src/CommandDeck.tsx",
+      "elements": 245
+    },
+    {
+      "id": "23-voice-layout",
+      "title": "Voice / populated architecture",
+      "kind": "measured-layout-fixture",
+      "source": "src/src/VoiceInventory.tsx",
+      "elements": 229
+    },
+    {
+      "id": "24-welcome",
+      "title": "First-run setup dialog",
+      "kind": "measured-layout-fixture",
+      "source": "src/src/app/cards/Welcome.tsx",
+      "elements": 228
+    },
+    {
+      "id": "26-overlay",
+      "title": "In-game overlay / default placement",
+      "kind": "source-exact geometry",
+      "source": "overlay/modules.ts + layoutGeometry.ts",
+      "elements": 252
+    },
+    {
+      "id": "27-transactions",
+      "title": "Transaction dialogs / payment states",
+      "kind": "source schematic · unmeasured states",
+      "source": "TopupModal.tsx + LedgerTab.tsx + StorePage.tsx",
+      "elements": 189
+    },
+    {
+      "id": "28-inventory-populated",
+      "title": "Owned inventory / populated grid",
+      "kind": "source schematic · unmeasured states",
+      "source": "src/src/InventoryTab.tsx",
+      "elements": 203
+    },
+    {
+      "id": "29-responsive",
+      "title": "Viewport presets / scale rules",
+      "kind": "source schematic · unmeasured states",
+      "source": "CommandDeck.tsx + deck/prefs.ts + tauri.conf.json",
+      "elements": 122
+    },
+    {
+      "id": "30-controls",
+      "title": "Shared controls / shadow envelope",
+      "kind": "source schematic · unmeasured states",
+      "source": "styles.css + app/primitives.tsx",
+      "elements": 176
+    }
+  ],
+  "date": "2026-10-30"
+}

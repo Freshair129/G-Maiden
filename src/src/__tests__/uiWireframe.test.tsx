@@ -30,6 +30,7 @@ beforeEach(() => {
     author: "Synthetic fixture", description: "", path: "fixture-only", coveredEvents: 0,
     totalEvents: 0, clips: 0, availableClips: [], availableBanners: [], items: [],
     coverImage: "", coverImageUrl: null, builtIn: false,
+    installationId: null, announcerId: `fixture-${i}`, capabilities: { eventPreview: false },
   }));
   fixture = { rootDir: "fixture-only", packsDir: "fixture-only", cacheDir: "fixture-only",
     activePackId: packs[0].id, activePack: packs[0], packs, groups: [] };
@@ -74,7 +75,7 @@ it("clamps pagination after rescan removes the last page and handles an empty in
   expect(host.querySelector(".voice-pagination")?.textContent).toContain("1 / 1");
   fixture = { ...fixture, packs: [], activePack: null, activePackId: null };
   await click("Rescan");
-  expect(host.querySelector(".voice-empty")?.textContent).toContain("ยังไม่มีแพ็กเสียงที่ติดตั้งจาก Store");
+  expect(host.querySelector(".voice-empty")?.textContent).toContain("ยังไม่มีแพ็ก GANN");
 });
 
 it("provides an Account navigation action in the Insights teaching empty state", async () => {

@@ -13,7 +13,7 @@ use std::sync::Mutex;
 
 use tauri::Manager;
 use windows::core::{Error as WindowsError, PCWSTR};
-use windows::Win32::Foundation::{GetLastError, HLOCAL, LocalFree};
+use windows::Win32::Foundation::{GetLastError, LocalFree, HLOCAL};
 use windows::Win32::Security::Cryptography::{
     CryptProtectData, CryptUnprotectData, CRYPTPROTECT_UI_FORBIDDEN, CRYPT_INTEGER_BLOB,
 };
@@ -146,12 +146,24 @@ fn set_secret_in(base: &Path, name: &str, value: &str) -> Result<(), String> {
 
     let write_result = (|| -> Result<(), String> {
         {
-            let mut file = fs::File::create(&temp_path)
-                .map_err(|err| format!("failed to create temp secret file '{}': {err}", temp_path.display()))?;
-            file.write_all(&cipher)
-                .map_err(|err| format!("failed to write temp secret file '{}': {err}", temp_path.display()))?;
-            file.sync_all()
-                .map_err(|err| format!("failed to sync temp secret file '{}': {err}", temp_path.display()))?;
+            let mut file = fs::File::create(&temp_path).map_err(|err| {
+                format!(
+                    "failed to create temp secret file '{}': {err}",
+                    temp_path.display()
+                )
+            })?;
+            file.write_all(&cipher).map_err(|err| {
+                format!(
+                    "failed to write temp secret file '{}': {err}",
+                    temp_path.display()
+                )
+            })?;
+            file.sync_all().map_err(|err| {
+                format!(
+                    "failed to sync temp secret file '{}': {err}",
+                    temp_path.display()
+                )
+            })?;
         }
 
         fs::rename(&temp_path, &final_path).map_err(|err| {
@@ -292,7 +304,10 @@ mod tests {
         let rejected = ["", "..", "a/b", "a\\b", "a.b", "UPPER", "foo bar"];
 
         for name in rejected {
-            assert!(validate_name(name).is_err(), "name should be rejected: {name}");
+            assert!(
+                validate_name(name).is_err(),
+                "name should be rejected: {name}"
+            );
         }
     }
 

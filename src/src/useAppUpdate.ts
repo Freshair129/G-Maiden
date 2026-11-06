@@ -23,6 +23,7 @@ import { checkChannelUpdate, installPendingUpdate, type UpdateOffer } from "./up
 export type UpdatePhase = "idle" | "checking" | "downloading" | "uptodate" | "error";
 
 export interface AppUpdate {
+  error: string | null;
   /** The available update (version + notes), or null when none is pending. */
   available: { version: string; notes: string } | null;
   phase: UpdatePhase;
@@ -38,6 +39,8 @@ export function useAppUpdate(): AppUpdate {
   const pending = useRef<UpdateOffer | null>(null);
   const [available, setAvailable] = useState<{ version: string; notes: string } | null>(null);
   const [phase, setPhase] = useState<UpdatePhase>("idle");
+  const [error, setError] = useState<string | null>(null);
+  const installing = useRef(false);
 
   // Launch auto-check. Ask-first: only surfaces the prompt, never installs.
   // Silent on failure (offline, or nothing published on this channel yet).
@@ -56,6 +59,8 @@ export function useAppUpdate(): AppUpdate {
   }, []);
 
   const checkNow = useCallback(async () => {
+    if (installing.current) return;
+    setError(null);
     setPhase("checking");
     try {
       const offer = await checkChannelUpdate();
@@ -68,23 +73,29 @@ export function useAppUpdate(): AppUpdate {
         setAvailable(null);
         setPhase("uptodate");
       }
-    } catch {
+    } catch (cause) {
+      setError(String(cause));
       setPhase("error");
     }
   }, []);
 
   const install = useCallback(async () => {
-    if (!pending.current) return;
+    if (!pending.current || installing.current) return;
+    installing.current = true;
+    setError(null);
     setPhase("downloading");
     try {
       await installPendingUpdate();
       await relaunch();
-    } catch {
+    } catch (cause) {
+      setError(String(cause));
       setPhase("error");
+    } finally {
+      installing.current = false;
     }
   }, []);
 
   const dismiss = useCallback(() => setAvailable(null), []);
 
-  return { available, phase, checkNow, install, dismiss };
+  return { available, phase, error, checkNow, install, dismiss };
 }

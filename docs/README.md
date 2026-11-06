@@ -44,7 +44,7 @@ repo นี้มี**สองโปรดักต์**ที่มีเอ�
 
 | | G-Maiden (player app) | G-Orchestra (dev tool) |
 | --- | --- | --- |
-| เอกสาร | `docs/` | `orchestration/docs/` |
+| เอกสาร | `docs/` | `docs/` ใน repo [Freshair129/g-orchestra](https://github.com/Freshair129/g-orchestra) (แยกออกจาก repo นี้แล้ว, #134) |
 | สาย ADR | `ADR-10..16` | `ADR-O-001..006` |
 | **source of truth** | ไฟล์ `.md` แก้ตรงได้ (+ Changelog ท้ายเอกสารตาม SOP) | **`orchestration/gks/atoms*.json`** — ไฟล์ `.md`/backlog หลายตัวเป็น *derived* ถูก compile ทับได้ |
 | สะพานรวม | [[DOC-INDEX]] section `## Orchestration` มองเห็นทั้งสองฝั่ง | |
@@ -113,6 +113,17 @@ approved_date: "YYYY-MM-DD"          # คู่กับ approved_by เสม�
    - เอกสาร historical/archived ไม่นับเป็น active anchor สำหรับกัน orphan
    - ถ้าต้องการเก็บ doc ไว้โดยไม่มี implementation แล้วไม่ให้โดนมองเป็น orphan ต้องมี lifecycle อธิบายเหตุผลไว้ชัด
 
+## Change request numbering
+
+หมายเลข `CR-NNN` ระบุคำขอเปลี่ยนแปลงหนึ่งเรื่อง ไม่ใช่หนึ่งไฟล์ เอกสารย่อยของเรื่องเดียวกันใช้เลขเดิมต่อด้วยคำต่อท้ายที่บอกบทบาท (`-REVIEW-…`, `-Wave-C-…`, `-W1B-…`) เรื่องใหม่ใช้เลขถัดไปที่ยังว่าง ห้ามเปลี่ยนเลขหรือชื่อไฟล์เดิม เพราะ wikilink อ้างด้วยชื่อไฟล์
+
+| CR | ไฟล์ | หมายเหตุ |
+| --- | --- | --- |
+| CR-001 | `architecture/CR-001-dxgi-capture-migration`, `CR-001-REVIEW-and-execution-plan`, `CR-001-Wave-C-test-plan` | เรื่องเดียวกัน (DXGI) |
+| CR-003 | `CR-003-account-phase1-wallet-billing`, `CR-003-payment-golive-checklist` | เรื่องเดียวกัน (account/billing) |
+| CR-005 | `CR-005-W1B-thai-features-and-doc-encoding`, `CR-005-W1C-landing-analytics-git-integration`, `CR-005-landing-auth-social` | W1B/W1C คือ wave ย่อย ส่วน landing-auth-social เป็นเอกสารตั้งต้น |
+| CR-014 | `CR-014-document-impact-map-gmaiden-adapter`, `CR-014-g-overlay-lab-sync` | สองเรื่องที่ใช้เลขซ้ำมาแต่เดิม คงไว้ ห้ามเพิ่มซ้ำอีก |
+
 ## Changelog
 | Version | Date | Summary |
 | --- | --- | --- |
@@ -123,3 +134,5 @@ approved_date: "YYYY-MM-DD"          # คู่กับ approved_by เสม�
 | 0.4.1 | 2026-07-19 | link/metadata sweep (G15-T2): directory wikilinks (`docs/product/` etc.) and the cross-repo `SPEC--GOVIBE-INTEGRATION` link converted to plain backtick path text (non-doc-graph targets) |
 | 0.4.2 | 2026-07-24 | Added feature registration / supersede / archive guidance so feature-bearing specs declare active anchors or lifecycle intent instead of drifting into silent orphan state. |
 | 0.4.3 | 2026-10-16 | Remove retired local review integration and related dependencies. |
+| 0.4.4 | 2026-11-06 | Point the G-Orchestra column of the SSOT boundary table at the standalone `g-orchestra` repository (#134). |
+| 0.4.5 | 2026-11-06 | Added the change-request numbering rule and the list of numbers shared by several files (#134). |
