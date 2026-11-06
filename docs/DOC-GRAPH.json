@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-06T22:10:18.965Z",
+  "generatedAt": "2026-11-06T23:01:05.254Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -6760,13 +6760,13 @@
       "from": "docs/design-system/05-sitemap-ia.md",
       "to": "src-tauri/src/main.rs",
       "type": "symbol",
-      "line": 177
+      "line": 178
     },
     {
       "from": "docs/design-system/05-sitemap-ia.md",
       "to": "CLAUDE.md",
       "type": "symbol",
-      "line": 177
+      "line": 178
     },
     {
       "from": "docs/design-system/06-stack.md",
@@ -9922,7 +9922,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-06T22:10:28.145Z",
+    "generatedAt": "2026-11-06T23:01:10.288Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,

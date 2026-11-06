@@ -1,7 +1,7 @@
 ---
-version: "2.4.5"
+version: "2.4.6"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-10-19T00:00:00+07:00,Codex"
+last_update: "2026-11-07T00:00:00+07:00,Codex"
 status: "active"
 attributes:
   domain: "ui-ux"
@@ -9,7 +9,7 @@ attributes:
   language: "th/en"
 title: "05 — Sitemap & Information Architecture"
 doc_id: "05-sitemap-ia"
-updated: "2026-11-06"
+updated: "2026-11-07"
 owner: "Boss"
 ---
 
@@ -171,6 +171,7 @@ Voice Packs → เลือก pack → active → POST /announcer/install (:30
 | hotkey | action |
 | --- | --- |
 | Ctrl+Alt+S | ซ่อน/แสดง overlay |
+| Ctrl+Alt+V | G-Voice PTT (เปลี่ยนปุ่มได้ที่ Settings › เสียง & เตือน) |
 | Alt+↑ / Alt+↓ | เสียง +10% / −10% |
 | Alt+M | mute toggle |
 
@@ -186,3 +187,4 @@ Voice Packs → เลือก pack → active → POST /announcer/install (:30
 | 2.4.4-draft | 2026-10-19 | Clarified current entry, Store/update paths and the GSI-versus-minimap-CV boundary while retaining the sitemap as target UX. |
 | 2.4.4 | 2026-11-06 | status `draft` → `active`: referenced as the design SSOT (CLAUDE.md, code and sibling docs) and describes the shipped deck; not marked accepted because no owner approval is recorded |
 | 2.4.5 | 2026-11-06 | relinked 10 code symbol anchor(s) to the symbol's current definition (or dropped the line anchor where the symbol no longer exists) — no content change |
+| 2.4.6 | 2026-11-07 | Added the Ctrl+Alt+V G-Voice PTT hotkey and its remapping location in Settings. |
