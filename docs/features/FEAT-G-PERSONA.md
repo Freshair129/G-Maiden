@@ -1,3 +1,16 @@
+---
+title: "FEAT: G-Persona — Tone & Verbosity Presets"
+doc_id: "FEAT-G-PERSONA"
+status: "draft"
+version: "0.2.0"
+updated: "2026-11-06"
+owner: "Boss"
+source_of_truth: true
+complexity: "C-2"
+risk: "MEDIUM"
+related_docs: ["FEAT-G-MASTER", "FEAT-G-SIGNAL", "mvp-decisions"]
+---
+
 # FEAT-G-PERSONA — Tone & Verbosity Presets
 
 > **Module:** G-Persona · **Priority:** Companion P2 · **Phase:** 7–8
@@ -12,7 +25,8 @@
 
 ## 2. Preset Dimensions
 
-> **สถานะ (2026-07): §2/§4/§5 เป็น design-only (Phase 7-8) — ยังไม่ได้ wire.** backend ยัง
+> **สถานะ (2026-11): §2a/§2b/§4/§5 เป็น design-only; §2c คือขอบเขต v1 ที่อนุมัติแล้วแต่ยังไม่ implement**
+> **(เดิม 2026-07): §2/§4/§5 เป็น design-only (Phase 7-8) — ยังไม่ได้ wire.** backend ยัง
 > **ไม่มี** verbosity/tone preset, config `{persona:{...}}`, หรือ `apply_tone()` (grep ยืนยัน).
 > ส่วนที่ทำแล้วจริงคือ **§3 Immutable Behaviors** (Belief Revision + G-Signal interrupt).
 
@@ -32,6 +46,26 @@
 | 1 | **Serious** | Coach mode — stats-focused, minimal humor |
 | 2 | **Balanced** | Default — friendly + analytical |
 | 3 | **Playful** | Meme-heavy, more Nerf CM jokes, casual tone |
+
+### 2c. v1 scope — four presets (Owner-approved 2026-11-06)
+
+ตัวเลือกใน UI/`set_persona_preset` ปัจจุบันเป็น **preset เดียว 4 ค่า** (`coach` / `silent` / `caster` / `meme`) ไม่ใช่เมทริกซ์ verbosity × tone เต็ม v1 ต่อ preset เข้ากับพฤติกรรมจริงดังนี้ ส่วน §4 (config สองมิติ `verbosity`/`tone`/`custom_name`/`language`) และตัวกรองข้อความ `apply_tone()` ยังเป็น design-only นอก v1
+
+| Preset | แมปกับ §2 | พฤติกรรมของคำแนะนำ non-critical (G-Master) |
+| --- | --- | --- |
+| `coach` (default) | verbosity 3 · tone 1 | prompt เดิม แต่เน้นสถิติ ลด humor |
+| `silent` | verbosity 1 | **ไม่เรียกคำแนะนำอัตโนมัติ (proactive)** — คงพฤติกรรมเดิมที่ Overlay; ปุ่ม Ask ที่ผู้ใช้กดเองยังใช้ได้ (explicit intent) และใช้โทนเดียวกับ `coach` |
+| `caster` | verbosity 3 · tone 2 | สไตล์แคสเตอร์ สรุปสถานการณ์เป็นประโยคสั้น |
+| `meme` | verbosity 3 · tone 3 | เพิ่ม humor เรื่อง Nerf CM ตามบุคลิกหลัก |
+
+กติกา v1 (ต้องเป็นจริงทุกข้อ):
+
+1. Preset เปลี่ยนเฉพาะ **ข้อความ prompt ที่ส่งให้ G-Master** (ส่วนโทน) ส่วน `silent` ระงับเฉพาะคำแนะนำอัตโนมัติ — ไม่ใส่ข้อมูลเกมเพิ่ม ไม่ขยายข้อมูลที่ส่งออก cloud (ยังอยู่ใต้ allowlist ใน [[mvp-decisions]])
+2. **G-Signal ไม่อ่าน preset**: เสียงเตือน/Belief Revision/interrupt (§3) ทำงานเหมือนเดิมทุก preset รวมถึง `silent` และ G-Signal ยังเป็น Rust ล้วนไม่พึ่ง SLM/WebView
+3. Preset ที่ไม่รู้จักถือเป็น `coach`
+4. เปลี่ยน preset ระหว่างเกมมีผลกับคำแนะนำ **ถัดไป**: คำแนะนำที่ cache ไว้ภายใต้ preset อื่นต้องไม่ถูกนำมาใช้ซ้ำ
+5. การระงับคำแนะนำอัตโนมัติของ `silent` อยู่ที่ Overlay (จุดเดียวที่สร้าง trigger อัตโนมัติ) และคงไว้ตามเดิมใน v1; ไม่ย้ายเข้า backend เพราะ `request_advice` ไม่แยก auto/manual และการเรียกด้วยมือต้องใช้ได้เสมอ
+6. ไม่เพิ่มเวลาใน G-Signal critical path
 
 ## 3. Immutable Behaviors (ลบไม่ได้ไม่ว่า preset ใด) — **ทำแล้ว**
 
@@ -103,10 +137,29 @@ on event received (advice, narration, signal):
 
 ## 9. Acceptance Criteria
 
-- [ ] verbosity 1 (silent): เฉพาะ G-Signal alerts เท่านั้น *(planned)*
-- [ ] verbosity 4 (verbose): continuous narration ≥1 comment per 30s *(planned)*
-- [ ] tone 1 (serious): no humor in output *(planned)*
-- [ ] tone 3 (playful): Nerf CM jokes appear *(planned)*
+**v1 (4 presets — ต้องผ่านก่อนเปลี่ยนสถานะเป็น active):**
+
+- [ ] `silent`: คำแนะนำอัตโนมัติไม่ถูกเรียก (test เดิมของ Overlay ยังผ่าน); Ask ด้วยมือยังทำงาน; G-Signal ยังเตือนตามปกติ
+- [ ] `coach` / `caster` / `meme`: prompt ที่ส่ง G-Master ต่างกันตาม preset และยังมี persona หลักครบ (unit test บน builder ของ prompt)
+- [ ] preset ไม่รู้จัก → `coach` (unit test)
+- [ ] เปลี่ยน preset ทำให้ advice ที่ cache ไว้ภายใต้ preset เดิมไม่ถูกใช้ซ้ำ (unit test)
+- [ ] ไม่มีไฟล์ G-Signal อ่าน preset (grep/test ยืนยัน) และไม่มีการเปลี่ยนใน G-Signal latency path
+- [ ] hot-switch: เปลี่ยน preset ระหว่างเกมได้โดยไม่ restart
 - [x] Belief Revision ทำงาน (immutable — ทำแล้ว)
 - [x] G-Signal interrupt ทำงาน (immutable — ทำแล้ว)
-- [ ] hot-switch: เปลี่ยน preset ระหว่างเกมได้ทันที *(planned)*
+
+**ยังเป็น design-only (นอก v1):**
+
+- [ ] verbosity 4 (verbose): continuous narration ≥1 comment per 30s *(planned)*
+- [ ] tone 1 (serious): ตัวกรองตัด humor ทุกข้อความ *(planned)*
+- [ ] tone 3 (playful): Nerf CM jokes ในข้อความที่ไม่ได้มาจาก G-Master *(planned)*
+- [ ] config สองมิติตาม §4 *(planned)*
+
+Native/live acceptance (เสียงจริงใน Dota) แยกจากการตรวจ unit/source และยังไม่มีหลักฐาน
+
+## Changelog
+
+| Version | Date | Summary |
+| --- | --- | --- |
+| 0.1.0 | 2026-07 | Design-only draft of tone & verbosity presets; immutable behaviors implemented. |
+| 0.2.0 | 2026-11-06 | Add frontmatter; define v1 scope for the four shipped presets (G-Master prompt tone; `silent` keeps its existing Overlay suppression of proactive advice; G-Signal unaffected) and split v1 vs design-only acceptance (#134, Owner-approved). |
