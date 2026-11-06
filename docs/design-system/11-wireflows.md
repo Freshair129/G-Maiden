@@ -1,9 +1,9 @@
 ---
 title: "11 — Wireflows: Command Deck navigation and recovery"
 doc_id: "11-wireflows"
-status: "draft"
-version: "1.0.3"
-updated: "2026-10-19"
+status: "active"
+version: "1.0.4"
+updated: "2026-11-06"
 owner: "Boss"
 related_docs: ["10-wireframes", "12-user-flows", "05-sitemap-ia", "03-layout", "04-components", "mvp-decisions", "mvp-backlog", "07-combat-hud"]
 ---
@@ -226,3 +226,4 @@ Viewer สรุป lifecycle ใน ready/saving/saved/error; รายละ�
 | 1.0.1 | 2026-10-12 | Linked goal-based user flows and their decision/outcome view. |
 | 1.0.2 | 2026-10-16 | Remove retired local review integration and related dependencies. |
 | 1.0.3 | 2026-10-19 | ระบุ F04 เป็น target และบันทึก current-source purchase/top-up/match-share paths ที่ไม่ตรงกับภาพ disabled |
+| 1.0.4 | 2026-11-06 | status `draft` → `active`: referenced as the design SSOT (CLAUDE.md, code and sibling docs) and describes the shipped deck; not marked accepted because no owner approval is recorded |

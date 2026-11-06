@@ -1,5 +1,5 @@
 ---
-version: "0.3.6"
+version: "0.3.7"
 created_at: "2026-06-24T03:10:00+07:00,ATHER,pending"
 last_update: "2026-10-29,Codex (VRZO documentation)"
 status: "accepted"
@@ -186,7 +186,7 @@ Layout Editor.
 | `SensitivityPicker` | G-Signal danger threshold | Mirror → [`set_cv_signal_sensitivity`](file:///g:/G-Maiden/src-tauri/src/main.rs); thresholds 0.85 / 0.65 / 0.50 |
 | `MotionIntensity` | Motion control | Low / Medium / High + reduced-motion fallback |
 | `PerformanceGovernor` | Protect FPS/CPU/RAM | Degrades blur / particles / animation; quality tiers cinematic/balanced/eco |
-| `ExclusiveFullscreenWarning` | Detect + warn เมื่อ Dota อยู่ใน Exclusive | จาก [`exclusive_fullscreen_active()`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L72); แนะนำ Borderless (else Lite mode = ไม่มี CV) |
+| `ExclusiveFullscreenWarning` | Detect + warn เมื่อ Dota อยู่ใน Exclusive | จาก [`exclusive_fullscreen_active()`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L272); แนะนำ Borderless (else Lite mode = ไม่มี CV) |
 | `CalibrationToggle` | QA audit mode | Off by default; screenshot + GIF + `audit.jsonl` local only |
 
 > **Deck components** (nav rail, ON AIR utterance console, phase chip, DeckTabs, Maiden Line,
@@ -222,3 +222,4 @@ Layout Editor.
 | 0.3.4 | 2026-10-18 | accepted | Update the voice page boundary: players use Store-installed packs; authoring stays in G-AnnStudio, and remove the deleted AudioSettings.tsx reference. | pending | Codex |
 | 0.3.5 | 2026-10-29 | accepted | Document the VRZO variant preview and local muted visual lifecycle with native acceptance pending. | pending | Codex |
 | 0.3.6 | 2026-11-06 | accepted | Boss approved this document status (explicit "approve" reply, #134 session, 2026-11-06). Records document approval only; does not widen MVP scope, consent or data-flow boundaries. | — | Boss |
+| 0.3.7 | 2026-11-06 | accepted | relinked code symbol anchors to current definitions (or dropped the line anchor where the symbol no longer exists) — no content change | — | Claude |

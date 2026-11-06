@@ -1,15 +1,15 @@
 ---
 id: ADR-15
 title: "Command Deck HUD v2 — Subtract-glass shell + design-system SSOT"
-status: "accepted (design) · pending implementation"
+status: "historical"
 date: "2026-07-05"
 deciders: ["Boss (approver)", "Opus (design lead)"]
 supersedes_partial: "docs/architecture/design-system.md (Iceglass 0.1.0b — shell layout only)"
 relates_to: ["ADR-14 (GID/account)", "CR-004 (voice+browser)", "CR-005 (landing/auth/social)"]
 language: "th/en"
 doc_id: "ADR-15-command-deck-hud-v2-design-system"
-version: "+link-fix"
-updated: "2026-07-19"
+version: "+status"
+updated: "2026-11-06"
 owner: "Boss"
 ---
 
@@ -73,3 +73,4 @@ Boss ขับการ redesign ผ่าน Figma reference (Urban District Pl
 | --- | --- | --- |
 | +banner | 2026-07-19 | historical-status banner: geometry/migration statements superseded โดยโค้ดจริง (audit 2026-07-19) |
 | +link-fix | 2026-07-19 | link/metadata sweep (G15-T2): fixed unresolved wikilink slug `[[architecture/design-system]]` → `[[design-system]]` |
+| +status | 2026-11-06 | status `accepted (design) · pending implementation` → `historical`: implemented; geometry/migration parts already superseded per the banner. Not re-marked accepted (needs a fresh owner approval) |

@@ -2,8 +2,8 @@
 title: "FEAT-G-LOG — Feedback Loop & Local Analytics"
 doc_id: "FEAT-G-LOG"
 status: "active"
-version: "0.1.0"
-updated: "2026-10-04"
+version: "0.1.1"
+updated: "2026-11-06"
 owner: "Boss"
 source_of_truth: false
 complexity: "C-2"
@@ -51,7 +51,7 @@ risk: "LOW"
 { "ts": 1719900000123, "tick": { /* cleaned GameTick ที่ overlay ได้รับ */ } }
 ```
 
-**Typed event records** — เขียน time-aligned กับ tick stream ผ่าน [`note_event`](file:///g:/G-Maiden/src-tauri/src/log.rs#L205):
+**Typed event records** — เขียน time-aligned กับ tick stream ผ่าน [`note_event`](file:///g:/G-Maiden/src-tauri/src/log.rs):
 
 ```json
 { "type": "gank_signal", "ts": ..., "probability": 0.91, "missing_heroes": ["CM","SF"], "eta_ms": 2500 }
@@ -64,7 +64,7 @@ risk: "LOW"
 
 ## 4. Logic (ปัจจุบัน)
 
-[`note_tick`](file:///g:/G-Maiden/src-tauri/src/log.rs#L154) ตรวจ transition `in_game` เพื่อเปิด/ปิดไฟล์แมตช์ แล้วเขียน record ตามด้านล่าง.
+[`note_tick`](file:///g:/G-Maiden/src-tauri/src/log.rs#L240) ตรวจ transition `in_game` เพื่อเปิด/ปิดไฟล์แมตช์ แล้วเขียน record ตามด้านล่าง.
 ยังไม่มี outcome backfill หรือ metric ใด ๆ — บันทึกดิบเพื่อ join แบบ offline ทีหลัง.
 
 ```
@@ -76,8 +76,8 @@ during match:
   in_game flips false → close match file
 ```
 
-**การลบ/ความเป็นส่วนตัว:** [`delete_match`](file:///g:/G-Maiden/src-tauri/src/log.rs#L359) / [`delete_all`](file:///g:/G-Maiden/src-tauri/src/log.rs#L376) ลบไฟล์ที่ archive แล้ว แต่
-**กันไฟล์ที่กำลังบันทึกอยู่** (active match) ไว้เสมอ; [`open_log_dir`](file:///g:/G-Maiden/src-tauri/src/log.rs#L582) เปิดโฟลเดอร์ให้ผู้ใช้
+**การลบ/ความเป็นส่วนตัว:** [`delete_match`](file:///g:/G-Maiden/src-tauri/src/log.rs#L582) / [`delete_all`](file:///g:/G-Maiden/src-tauri/src/log.rs#L599) ลบไฟล์ที่ archive แล้ว แต่
+**กันไฟล์ที่กำลังบันทึกอยู่** (active match) ไว้เสมอ; [`open_log_dir`](file:///g:/G-Maiden/src-tauri/src/log.rs#L812) เปิดโฟลเดอร์ให้ผู้ใช้
 ตรวจสอบเองได้.
 
 ## 5. Output + Planned tuning loop
@@ -142,3 +142,4 @@ during match:
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.1.0 | 2026-10-04 | Reconciled the local FULL-only replay-to-next-match G-Motion tuning contract and its fail-closed boundaries. |
+| 0.1.1 | 2026-11-06 | relinked 5 code symbol anchor(s) to the symbol's current definition (or dropped the line anchor where the symbol no longer exists) — no content change |

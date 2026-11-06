@@ -2,7 +2,7 @@
 title: "G-Maiden — Engineering Spec"
 doc_id: "engineering-spec"
 status: "active"
-version: "0.3.6"
+version: "0.3.7"
 updated: 2026-11-06
 owner: "Boss"
 source_of_truth: false
@@ -274,7 +274,7 @@ Role ประกาศ `requires`; Provider ประกาศ `capabilities`.
 ### 7.6 Live Tauri events (command deck) & GID/account contract
 
 Command deck (CR-002 Phase 2a/2b, merged `170805b8`) subscribes to live Tauri events via
-[`useCompanionData`](file:///g:/G-Maiden/src/src/companion.ts#L941), feeding pure builders in `src/src/live/` that are merged over a MOCK
+[`useCompanionData`](file:///g:/G-Maiden/src/src/companion.ts#L1201), feeding pure builders in `src/src/live/` that are merged over a MOCK
 fallback (renders signed-out/offline). Events actually emitted: `game-tick`, `gsi-status`,
 `minimap-cv`, `enemy-missing`, `gank-alert`, `gank-clear`, `resource-stats`. Live builders อยู่ใน `src/src/live/` (เช่น [`buildTelemetry`](file:///g:/G-Maiden/src/src/live/buildTelemetry.ts)/[`buildWeekly`](file:///g:/G-Maiden/src/src/live/buildWeekly.ts)/[`buildInsights`](file:///g:/G-Maiden/src/src/live/buildInsights.ts)/[`buildHistory`](file:///g:/G-Maiden/src/src/live/buildHistory.ts)).
 
@@ -354,3 +354,4 @@ Local visual receipts distinguish warmed/cold, wait count, first nontransparent 
 | 0.3.4 | 2026-10-30 | Record revision4 paused decoder preparation, VP8 media and bounded natural-completion grace. |
 | 0.3.5 | 2026-11-06 | Align the Definition of Done RAM gate with the accepted 900,000,000-byte aggregate Working Set ceiling (MVP decision v0.5.0); it still read 400,000,000 bytes (#134). |
 | 0.3.6 | 2026-11-06 | Point the provider-registry ADR/spec/guide links at the G-Orchestra repository after `orchestration/` moved out of this repo (#134). |
+| 0.3.7 | 2026-11-06 | relinked 1 code symbol anchor(s) to the symbol's current definition (or dropped the line anchor where the symbol no longer exists) — no content change |

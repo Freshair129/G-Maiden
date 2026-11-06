@@ -1,9 +1,9 @@
 ---
 title: "12 — User Flows: Goals, decisions and outcomes"
 doc_id: "12-user-flows"
-status: "draft"
-version: "1.0.2"
-updated: "2026-10-19"
+status: "active"
+version: "1.0.3"
+updated: "2026-11-06"
 owner: "Boss"
 related_docs: ["05-sitemap-ia", "10-wireframes", "11-wireflows", "mvp-decisions", "07-combat-hud", "g-maiden-ui-sitemap-flow-board"]
 ---
@@ -150,3 +150,4 @@ Diagram model คือ `assets/wireframes/user-flows.js`; generator เดี�
 | 1.0.0 | 2026-10-12 | Added eight goal-based user flows with decisions, retry/cancel paths, outcomes, screen links and wireflow mapping. |
 | 1.0.1 | 2026-10-19 | แก้คำอธิบาย first-run gate และระบุ in-game update guard เป็น target ที่ยังไม่มีใน handler ปัจจุบัน |
 | 1.0.2 | 2026-10-19 | ลิงก์ source crosswalk UF01–UF08 ใน backlog เพื่อแยก user-flow target จาก implementation snapshot |
+| 1.0.3 | 2026-11-06 | status `draft` → `active`: referenced as the design SSOT (CLAUDE.md, code and sibling docs) and describes the shipped deck; not marked accepted because no owner approval is recorded |

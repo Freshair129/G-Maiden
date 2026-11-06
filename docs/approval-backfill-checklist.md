@@ -2,7 +2,7 @@
 title: "Approval Backfill Checklist — missing-approval violations without in-doc evidence"
 doc_id: approval-backfill-checklist
 status: draft
-version: 0.2.1
+version: 0.2.2
 updated: 2026-11-06
 owner: Boss
 ---
@@ -44,11 +44,11 @@ table above.)
 |0.1.0|2026-07-20|Initial checklist (G25-T3) — 7 `missing-approval` docs without in-doc sign-off evidence|
 |0.2.0|2026-11-06|Boss approved all 7 listed docs; rows removed, resolution recorded above|
 |0.2.1|2026-11-06|6 of 7 unmappable statuses normalized; ADR-15 left open|
+|0.2.2|2026-11-06|ADR-15 set to historical with CR-004 shelved; unmappable table cleared|
 
 ## Unmappable statuses (Boss decision needed — free-text ที่ map อัตโนมัติไม่ได้ตามกฎ no-guess)
-**Resolved 2026-11-06:** `CR-001-dxgi-capture-migration`, `CR-001-REVIEW-and-execution-plan`, `CR-001-Wave-C-test-plan`, `CR-002-Phase2-wire-backend`, `CR-003-payment-golive-checklist`, `CR-005-landing-auth-social` were normalized to the enum (historical / active / draft) on the recorded evidence; see each doc's changelog. `ADR-15-command-deck-hud-v2-design-system` stays open: mapping it to `accepted` needs a fresh owner approval, and marking it `historical` would drop its only active reference to CR-004 (orphan gate).
+**Resolved 2026-11-06:** `CR-001-dxgi-capture-migration`, `CR-001-REVIEW-and-execution-plan`, `CR-001-Wave-C-test-plan`, `CR-002-Phase2-wire-backend`, `CR-003-payment-golive-checklist`, `CR-005-landing-auth-social` were normalized to the enum (historical / active / draft) on the recorded evidence; see each doc's changelog. `ADR-15-command-deck-hud-v2-design-system` was set to `historical` on 2026-11-06 (implemented; geometry parts superseded per its banner) together with shelving `CR-004-voice-command-browser`, so no `accepted` approval was needed. The table below is now empty.
 
 
 |doc_id | current status (free-text) | suggested enum | เหตุผลที่ต้องคนตัดสิน |
 |--- | --- | --- | --- |
-|ADR-15-command-deck-hud-v2-design-system | accepted (design) · pending implementation | accepted | implementation เกิดแล้วจริง (แต่ doc ติด historical banner) |

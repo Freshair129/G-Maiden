@@ -1,9 +1,9 @@
 ---
 title: "10 — Wireframes: Command Deck 7 pages"
 doc_id: "10-wireframes"
-status: "draft"
-version: "1.0.1"
-updated: "2026-10-19"
+status: "active"
+version: "1.0.2"
+updated: "2026-11-06"
 owner: "Boss"
 related_docs: ["03-layout", "04-components", "05-sitemap-ia", "09-graphite-clarity", "11-wireflows", "mvp-decisions"]
 ---
@@ -222,3 +222,4 @@ node docs/design-system/assets/wireframes/build.mjs
 | --- | --- | --- |
 | 1.0.0 | 2026-10-12 | Wireframe 7 pages / 23 tabs and categories with state coverage, preserved shell/grid, source map, and linked viewer/wireflows. |
 | 1.0.1 | 2026-10-19 | เพิ่มขอบเขต target-vs-source สำหรับ voice editor, history, store/match-share side effects, settings consent และ update guard พร้อมลิงก์ crosswalk |
+| 1.0.2 | 2026-11-06 | status `draft` → `active`: referenced as the design SSOT (CLAUDE.md, code and sibling docs) and describes the shipped deck; not marked accepted because no owner approval is recorded |

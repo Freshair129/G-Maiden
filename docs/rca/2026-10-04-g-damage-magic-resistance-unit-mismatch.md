@@ -2,8 +2,8 @@
 title: "RCA: G-Damage Magic Resistance Unit Mismatch"
 doc_id: "RCA-2026-10-04-G-DAMAGE-MAGIC-RESISTANCE"
 status: "active"
-version: "1.0.1"
-updated: "2026-10-04"
+version: "1.0.2"
+updated: "2026-11-06"
 owner: "Boss"
 source_of_truth: true
 complexity: "C-2"
@@ -32,10 +32,10 @@ intended 25%:  magic_multiplier(25.0) = 1 - 25.0 / 100 = 0.75
 
 ## Evidence
 
-1. [`magic_multiplier`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L33) รับพารามิเตอร์ชื่อ `magic_resistance_pct` และคำนวณ `1.0 - magic_resistance_pct / 100.0` จึงใช้หน่วยเปอร์เซ็นต์ `[0, 100]`.
-2. [`BASELINE_TARGET_MAGIC_RES`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L456) ตั้งค่าเป็น `0.25` แต่ comment ระบุว่าเป็น “25% base magic resistance”.
-3. [`self_burst`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L465) ส่งค่า baseline นี้เข้า `burst_damage_with`, ซึ่งเรียก `magic_multiplier` ก่อนรวมผล damage.
-4. G-Master แสดงข้อความว่า combo damage คิดกับ “ต้านเวท 25%” ใน [`master.rs::build_prompt`](file:///g:/G-Maiden/src-tauri/src/master.rs#L51) จึงยืนยัน semantic intent ว่าต้องการ 25% ไม่ใช่ 0.25%.
+1. [`magic_multiplier`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L36) รับพารามิเตอร์ชื่อ `magic_resistance_pct` และคำนวณ `1.0 - magic_resistance_pct / 100.0` จึงใช้หน่วยเปอร์เซ็นต์ `[0, 100]`.
+2. [`BASELINE_TARGET_MAGIC_RES`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L692) ตั้งค่าเป็น `0.25` แต่ comment ระบุว่าเป็น “25% base magic resistance”.
+3. [`self_burst`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L695) ส่งค่า baseline นี้เข้า `burst_damage_with`, ซึ่งเรียก `magic_multiplier` ก่อนรวมผล damage.
+4. G-Master แสดงข้อความว่า combo damage คิดกับ “ต้านเวท 25%” ใน [`master.rs::build_prompt`](file:///g:/G-Maiden/src-tauri/src/master.rs#L289) จึงยืนยัน semantic intent ว่าต้องการ 25% ไม่ใช่ 0.25%.
 5. Existing unit coverage ทดสอบ `magic_multiplier(25.0) == 0.75` ที่ [`damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L519) แต่ไม่มี integration fixture ที่ตรวจ `self_burst` กับ baseline constant.
 
 ขอบเขตที่ยืนยันได้: ปัญหาอยู่ใน self-burst estimate ที่ป้อน G-Master. Target-side lethality (`can_i_kill`) ยังไม่ต่อเข้า runtime และจึงไม่ใช่ source ของอาการนี้ในเกมปัจจุบัน
@@ -95,3 +95,4 @@ Root cause นี้เป็น code/document contract defect ไม่ใช�
 | --- | --- | --- |
 | 1.0.0 | 2026-10-04 | Documented confirmed G-Damage magic-resistance unit mismatch, impact, escape path, and prevention. |
 | 1.0.1 | 2026-10-04 | Implemented the approved self-burst baseline fix and recorded RED/GREEN regression evidence. |
+| 1.0.2 | 2026-11-06 | relinked 4 code symbol anchor(s) to the symbol's current definition (or dropped the line anchor where the symbol no longer exists) — no content change |
