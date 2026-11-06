@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-06T20:20:26.577Z",
+  "generatedAt": "2026-11-06T23:01:05.254Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -623,6 +623,13 @@
       "type": "doc",
       "path": "docs/change request/CR-041-g-voice-ptt-turn-lifecycle.md",
       "title": "CR-041 — G-Voice Slice 1: PTT binding, remap and VoiceTurn lifecycle",
+      "status": "accepted"
+    },
+    {
+      "id": "docs/change request/CR-042-g-voice-ptt-settings-ui.md",
+      "type": "doc",
+      "path": "docs/change request/CR-042-g-voice-ptt-settings-ui.md",
+      "title": "CR-042 — G-Voice Slice 1b: PTT settings card",
       "status": "accepted"
     },
     {
@@ -5406,6 +5413,24 @@
       "line": 121
     },
     {
+      "from": "docs/change request/CR-042-g-voice-ptt-settings-ui.md",
+      "to": "docs/change request/CR-041-g-voice-ptt-turn-lifecycle.md",
+      "type": "wikilink",
+      "line": 18
+    },
+    {
+      "from": "docs/change request/CR-042-g-voice-ptt-settings-ui.md",
+      "to": "docs/design-system/05-sitemap-ia.md",
+      "type": "wikilink",
+      "line": 31
+    },
+    {
+      "from": "docs/change request/CR-042-g-voice-ptt-settings-ui.md",
+      "to": "docs/design-system/05-sitemap-ia.md",
+      "type": "wikilink",
+      "line": 93
+    },
+    {
       "from": "docs/change request/IMPL-PLAN-DXGI-migration.md",
       "to": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "type": "wikilink",
@@ -6735,13 +6760,13 @@
       "from": "docs/design-system/05-sitemap-ia.md",
       "to": "src-tauri/src/main.rs",
       "type": "symbol",
-      "line": 177
+      "line": 178
     },
     {
       "from": "docs/design-system/05-sitemap-ia.md",
       "to": "CLAUDE.md",
       "type": "symbol",
-      "line": 177
+      "line": 178
     },
     {
       "from": "docs/design-system/06-stack.md",
@@ -9897,7 +9922,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-06T20:20:31.680Z",
+    "generatedAt": "2026-11-06T23:01:10.288Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,
