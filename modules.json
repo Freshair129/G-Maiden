@@ -1,6 +1,6 @@
 {
   "$schema": "./docs/architecture/modules.schema.json",
-  "_comment": "Version manifest — maps the G-Maiden app release to the logical version of each G-module. Hand-maintained lightweight SBOM. Bump a module's `ver` (SemVer) when its behavior changes; record app↔module mapping per release in `history`. See docs/architecture/versioning-policy.md.",
+  "_comment": "Version manifest — maps the G-Maiden app release to the logical version of each G-module. Hand-maintained lightweight SBOM. Bump a module's `ver` (SemVer) when its behavior changes; record app↔module mapping per release in `history`. See docs/architecture/versioning-policy.md. NOT a release version source (see CLAUDE.md for the five) and not read by code; last reconciled at app 0.7.2 (2026-06-24), so module `ver`s and `history` may be stale. Feature status of record: docs/FEATURE-LEDGER.md.",
   "app": "0.7.2",
   "generated": "2026-06-24",
   "versioning": {
