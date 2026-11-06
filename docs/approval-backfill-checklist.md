@@ -2,7 +2,7 @@
 title: "Approval Backfill Checklist — missing-approval violations without in-doc evidence"
 doc_id: approval-backfill-checklist
 status: draft
-version: 0.2.0
+version: 0.2.1
 updated: 2026-11-06
 owner: Boss
 ---
@@ -43,15 +43,12 @@ table above.)
 |---|---|---|
 |0.1.0|2026-07-20|Initial checklist (G25-T3) — 7 `missing-approval` docs without in-doc sign-off evidence|
 |0.2.0|2026-11-06|Boss approved all 7 listed docs; rows removed, resolution recorded above|
+|0.2.1|2026-11-06|6 of 7 unmappable statuses normalized; ADR-15 left open|
 
 ## Unmappable statuses (Boss decision needed — free-text ที่ map อัตโนมัติไม่ได้ตามกฎ no-guess)
+**Resolved 2026-11-06:** `CR-001-dxgi-capture-migration`, `CR-001-REVIEW-and-execution-plan`, `CR-001-Wave-C-test-plan`, `CR-002-Phase2-wire-backend`, `CR-003-payment-golive-checklist`, `CR-005-landing-auth-social` were normalized to the enum (historical / active / draft) on the recorded evidence; see each doc's changelog. `ADR-15-command-deck-hud-v2-design-system` stays open: mapping it to `accepted` needs a fresh owner approval, and marking it `historical` would drop its only active reference to CR-004 (orphan gate).
+
 
 |doc_id | current status (free-text) | suggested enum | เหตุผลที่ต้องคนตัดสิน |
 |--- | --- | --- | --- |
-|CR-001-dxgi-capture-migration | Submitted | superseded? | งาน ship แล้ว (ADR-13/CR-001) — Submitted ไม่บอกstate ปัจจุบัน |
 |ADR-15-command-deck-hud-v2-design-system | accepted (design) · pending implementation | accepted | implementation เกิดแล้วจริง (แต่ doc ติด historical banner) |
-|CR-001-REVIEW-and-execution-plan | Wave A+B code-complete & gate-green (2026-06-29); Wave C in-game test pending Boss | historical | Wave C ค้างการเทสของ Boss — historical หรือ active? |
-|CR-001-Wave-C-test-plan | ready to execute | active | เทสยังไม่รัน — active จนกว่าจะรันหรือยกเลิก |
-|CR-002-Phase2-wire-backend | IMPLEMENTED — merged to main 170805b8 (2026-07-02) | historical | merge จบแล้ว = บันทึกประวัติศาสตร์ |
-|CR-003-payment-golive-checklist | Open — blocked on Phase 0 (legal/terms) + Phase 1 (Omise) | active | checklist ที่ยังเดินอยู่ |
-|CR-005-landing-auth-social | DRAFT — awaiting approval | draft | ตรง enum draft แต่มีโน้ต awaiting — ยืนยันว่า drop โน้ตได้ |

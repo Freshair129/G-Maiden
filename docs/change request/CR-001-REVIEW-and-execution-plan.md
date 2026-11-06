@@ -1,9 +1,9 @@
 ---
 title: "CR-001 Review & Corrected Multi-Agent Execution Plan (DXGI Migration)"
 doc_id: "CR-001-REVIEW-and-execution-plan"
-status: "Wave A+B code-complete & gate-green (2026-06-29); Wave C in-game test pending Boss"
-version: "0.1.0"
-updated: "2026-06-29"
+status: "historical"
+version: "0.1.1"
+updated: "2026-11-06"
 owner: "Boss"
 source_of_truth: true
 related_docs: ["ADR-13-dxgi-capture-migration", "IMPL-PLAN-DXGI-migration", "DXGI-task-assignment"]
@@ -140,3 +140,4 @@ related_docs: ["ADR-13-dxgi-capture-migration", "IMPL-PLAN-DXGI-migration", "DXG
 | 0.2.0 | 2026-06-29 | Boss resolved OQ-1/2/3 (both docs / 4-8-2 Hz / wgc feature-flag) → approved; Wave A execution started |
 | 0.3.0 | 2026-06-29 | **Wave A done**: dxgi.rs (windows 0.61, 1 fix: GetDesc by-value) + capture.rs DXGI refactor + capture_wgc.rs frozen rollback; gates green (cargo check default, clippy -D warnings default, cargo check --features wgc). **Wave B done** (parallel agents): App.tsx capture-mode badge+tooltip (tsc PASS), AGENTS.md+CLAUDE.md gotcha, modules.json g-sensory 1.1.0, perf_p7 comment. **Wave C (in-game) pending Boss.** |
 | 0.1.0 | 2026-07-19 | link/metadata sweep (G1.5) — reconcile frontmatter version with changelog |
+| 0.1.1 | 2026-11-06 | status normalized to enum `historical` (was "Wave A+B code-complete & gate-green (2026-06-29); Wave C in-game test pending Boss"): Wave A+B done; the pending Wave C test lives in CR-001-Wave-C-test-plan |
