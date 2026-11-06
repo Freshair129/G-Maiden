@@ -2,8 +2,8 @@
 title: G-AnnStudio original authoring and install contract
 doc_id: CR-009-gannstudio-authoring-install-contract
 status: superseded
-version: 0.2.0
-updated: 2026-10-31
+version: 0.2.1
+updated: 2026-11-06
 owner: G-Maiden
 ---
 
@@ -17,7 +17,7 @@ owner: G-Maiden
 - **Scope:** G-AnnStudio (`G-Suite/packages/ann-studio`) — the announcer-pack authoring tool. **No G-Maiden code is changed by this CR.** It exists to (a) record what shipped on the G-Ann side and (b) freeze the **interface contract** G-Ann relies on, so a concurrent G-Maiden backend-wire session doesn't break it silently.
 - **Related:** ADR-01 (G- naming), [[ADR-11-optin-data-contribution-flywheel|ADR-11]]/[[ADR-12-community-ai-marketplace|12]] (data/marketplace), [[CR-004-voice-command-browser|CR-004]] (voice), the shared event schema `G-Suite/schemas/gmaiden-events.json`.
 
-> ⚠️ **Read the "Integration contract" + "Coordination for the backend-wire session" below before touching [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs) `/announcer/install`, `audio::voice_cache_dir()`, [`voice_api.rs`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L3) (manifest reader / `image_mime` / `packs_dir`), or the event id set.** If any of those change, G-Ann's installers break until updated in `G-Suite`.
+> ⚠️ **Read the "Integration contract" + "Coordination for the backend-wire session" below before touching [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs) `/announcer/install`, `audio::voice_cache_dir()`, [`voice_api.rs`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs) (manifest reader / `image_mime` / `packs_dir`), or the event id set.** If any of those change, G-Ann's installers break until updated in `G-Suite`.
 
 ---
 
@@ -44,11 +44,11 @@ owner: G-Maiden
 ### 2.1 Activation endpoint
 - G-Ann POSTs, after writing the pack files: `POST http://localhost:3000/announcer/install`
   body `{"packId":"<id>"}` (legacy `{"pack":"<id>"}` still accepted), optional `{"activate":true}`.
-- G-Maiden handler: [`gsi.rs::announcer_install`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L268) → `parse_install_request` → `run_announcer_install` → [`voice_api::install_report(packId)`](file:///g:/G-Maiden/src-tauri/src/voice_api/mod.rs) + [`activate_if_exists`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L182). **No auth on `:3000`; the handler ONLY activates a pack already on disk — it never writes/moves/extracts files.** Response `{ok, ...}` with per-event counts.
+- G-Maiden handler: [`gsi.rs::announcer_install`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L268) → `parse_install_request` → `run_announcer_install` → [`voice_api::install_report(packId)`](file:///g:/G-Maiden/src-tauri/src/voice_api/mod.rs) + [`activate_if_exists`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs). **No auth on `:3000`; the handler ONLY activates a pack already on disk — it never writes/moves/extracts files.** Response `{ok, ...}` with per-event counts.
 - G-Ann call site: `install_gmaiden_pack` / `install_library_pack` / `install_pack` in `G-Suite/packages/ann-studio/src-tauri/src/lib.rs` (the `endpoint` arg, hardcoded to `http://localhost:3000/announcer/install` in the frontend `exportGmaidenPack.ts` / `actions.ts`).
 
 ### 2.2 Pack location (files written directly to disk by G-Ann)
-- G-Maiden reads packs from [`packs_dir()`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L17)` = voice_api::voice_root().join("packs")` = `audio::voice_cache_dir()/packs`.
+- G-Maiden reads packs from [`packs_dir()`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs)` = voice_api::voice_root().join("packs")` = `audio::voice_cache_dir()/packs`.
 - `voice_cache_dir()` (`audio.rs`): **`<exe_dir>/voice-cache` if it exists (built/installed), else cwd-relative `assets/voice-cache` (dev-source run).**
 - G-Ann mirrors this with `voice_cache_root(base)` in its `lib.rs`: `base/voice-cache` if it exists, else `base/assets/voice-cache`. `base` is resolved by `resolve_gmaiden_dir` (Settings path → `GMAIDEN_DIR` env → dev sibling repo → `detect_gmaiden_target`: repo `src-tauri/target/release` → `target/debug` → installed via Start-menu shortcut).
 - **Real targets on Boss's machine:** dev-source `G:\G-Maiden\assets\voice-cache`; release build `G:\G-Maiden\src-tauri\target\release\voice-cache` (Boss's usual test); installed `G:\GM\G-Maiden\voice-cache`.
@@ -69,7 +69,7 @@ owner: G-Maiden
 - Single source of truth: `G-Suite/schemas/gmaiden-events.json`, mirrored in G-Maiden `voice_api.rs` `EVENTS` and G-Ann `data/gmaiden-events.ts` (+ resolver `lib/honEventMap.ts`). Adding/renaming an event = update **all** mirrors.
 
 ### 2.5 Banner rendering
-- G-Maiden inlines the banner file as a `data:` URL (overlay CSP `img-src 'self' data:`) via [`voice_api::image_mime`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L206) → supports `png|jpg|jpeg|webp|gif|svg` (**no `apng`** → that's why G-Ann normalizes apng→png). Animated webp/gif animate in WebView2.
+- G-Maiden inlines the banner file as a `data:` URL (overlay CSP `img-src 'self' data:`) via [`voice_api::image_mime`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs) → supports `png|jpg|jpeg|webp|gif|svg` (**no `apng`** → that's why G-Ann normalizes apng→png). Animated webp/gif animate in WebView2.
 
 ---
 
@@ -78,9 +78,9 @@ owner: G-Maiden
 **If you change any of these, ping / update G-Ann in `G-Suite` in the same breath:**
 
 1. `/announcer/install` route, port `:3000`, or the `{packId}`/`{activate}` payload → update G-Ann's `endpoint` constant + `parse` expectations.
-2. `audio::voice_cache_dir()` or [`voice_api::packs_dir()`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L17) resolution (where packs are read) → update G-Ann `voice_cache_root()`.
-3. The manifest reader in [`voice_api.rs`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L3) (field names, `bannerAsset` path handling, `clips[]`) → update G-Ann's manifest writer in `install_gmaiden_pack` / `install_library_pack`.
-4. [`voice_api::image_mime`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L206) or the overlay `img-src` CSP → G-Ann's banner ext whitelist + apng-normalization assume the current set.
+2. `audio::voice_cache_dir()` or [`voice_api::packs_dir()`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs) resolution (where packs are read) → update G-Ann `voice_cache_root()`.
+3. The manifest reader in [`voice_api.rs`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs) (field names, `bannerAsset` path handling, `clips[]`) → update G-Ann's manifest writer in `install_gmaiden_pack` / `install_library_pack`.
+4. [`voice_api::image_mime`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs) or the overlay `img-src` CSP → G-Ann's banner ext whitelist + apng-normalization assume the current set.
 5. Any add/rename in the event id set → update the three mirrors (§2.4).
 
 **Heads-up / no action needed:**
@@ -114,3 +114,4 @@ owner: G-Maiden
 | --- | --- | --- |
 | — | 2026-07-19 | link/metadata sweep (G1.5): wikilink/symbol-link fixes only — no content change |
 | 0.2.0 | 2026-10-31 | Mark original manifest/flat-cache interface superseded by the GANN-only contract; preserve historical evidence. |
+| 0.2.1 | 2026-11-06 | Dropped stale `banner.rs` line anchors; the file was rewritten and the cited lines no longer exist. |

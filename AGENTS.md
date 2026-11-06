@@ -2,14 +2,23 @@
 title: "AGENTS.md"
 doc_id: "agents"
 status: active
-version: "0.4.14"
-updated: "2026-11-01"
+version: "0.4.16"
+updated: "2026-11-06"
 owner: "G-Maiden"
 ---
 # AGENTS.md
 
 > Context and governance for AI coding agents (Codex, Claude Code, Copilot, etc.)
 > working on the G-Maiden codebase. Read this before touching any file.
+
+## Git, Worktree & Multi-Agent Lifecycle
+
+- For Git/worktree operations read the relevant sections of [the local lifecycle policy](docs/engineering/GIT-WORKTREE-POLICY.md); it extends the existing Git & GitHub rules without duplicating them.
+- Reuse an appropriate owned checkout/branch first. One active writer owns each mutable worktree; serialize shared generators and writer handoffs. Read-only subagents may share the checkout.
+- Active implementation, native/runtime and test sessions are protected. Verify ownership before writes; unknown ownership requires a patch/handoff, not a branch switch or new worktree to bypass it.
+- Preserve explicit `origin` selection, Conventional Commits/agent attribution, protected-main PR gates, exact-head CI, owner merge authority and Windows/Tauri acceptance boundaries.
+- Record dependency/UAT/decision blockers and final disposition in existing task/PR/session records. Complete valid backlog work or explicitly retire obsolete work with preserved evidence.
+- Cleanup is separate: MERGED never implies VERIFIED_SAFE. Require current owner release, dependency/runtime checks and verified recovery of unique tracked/untracked/ignored/unpushed work before an authorized removal.
 
 ---
 
@@ -77,7 +86,7 @@ follow `g-party-social-operations` for configuration, retention and ticket-aware
 | TTS | **Windows SAPI** (PowerShell, planned: Piper ONNX) | Thai voice, latency fallback chain |
 | Cloud advice | **Claude CLI / Anthropic API** (`claude-haiku-4-5`) | Non-critical G-Master advice only under MVP-005 separate opt-in/own-stat allowlist; runtime enforcement acceptance remains open |
 | Local SLM | **Ollama** (HTTP, model chosen in UI) | Local non-critical advice fallback; G-Voice must keep its transcript local and G-Signal never depends on any SLM |
-| GPU telemetry | **`gpu-feeder/`** sidecar (nvidia-smi → POST /telemetry) | GPU/VRAM/temp in the deck footer; keeps nvidia-smi out of the main process |
+| GPU telemetry | **`gpu-feeder/`** sidecar (NVML → POST /telemetry) | GPU/VRAM/temp in the deck footer; keeps GPU polling out of the main process |
 
 ---
 
@@ -107,7 +116,7 @@ G-Maiden/
 |  |- research/           # Concept notes and competitive analysis
 |  `- superpowers/        # GID pipeline plans and specs
 ├── models/                # ONNX models + labels (bundled in release)
-├── gpu-feeder/            # Headless nvidia-smi sidecar (zero-dep crate) → POST /telemetry
+├── gpu-feeder/            # Headless NVML sidecar (zero-dep crate) → POST /telemetry
 ├── src/                   # Frontend (React/Vite)
 │   ├── package.json
 │   └── src/               # App.tsx (Overlay+Control), CommandDeck.tsx + companion.ts + live/*.ts (deck),
@@ -117,7 +126,7 @@ G-Maiden/
 │   ├── tauri.conf.json
 │   └── src/
 │       ├── main.rs        # Entry point, Tauri commands, module registry
-│       ├── gsi.rs         # GSI HTTP server (axum :3000): /gsi, /telemetry, /announcer/install, /auth/callback + watchdog
+│       ├── gsi.rs         # GSI HTTP server (axum :3000–3010): /gsi, /telemetry, /announcer/install, /auth/callback + watchdog
 │       ├── damage.rs      # G-Damage: burst damage calculator + hero DB
 │       ├── audio.rs       # rodio playback (dedicated thread + mpsc channel)
 │       ├── tts.rs         # Windows SAPI TTS (PowerShell, base64 Thai)
@@ -448,10 +457,10 @@ cache `voiceRootId` and `containerSha256`; local integrity never grants Store en
 Keep Rust event detection, safety priority, session fences and non-event dynamic advice.
 Native injected-GSI evidence is separate from live-match/acoustic/resource acceptance.
 
-## Current State (v0.13.2 shipping)
+## Current State (source v0.13.6; latest dated release 0.13.4)
 
 ### What works
-- GSI server receives Dota 2 game state on `:3000`
+- GSI server receives Dota 2 game state on `:3000` (falls back through `:3010` when occupied)
 - Transparent overlay with glassmorphism HUD (position: top/left/right/custom)
 - HP danger alerts with voice (rising-edge, 8s throttle, belief revision)
 - Minimap CV pipeline: DXGI capture → color prefilter → ONNX detector → G-Sentry → G-Motion → G-Signal (borderless-fullscreen required; GSI-only Lite-mode fallback on capture-init failure — ADR-13/CR-001)
@@ -488,7 +497,7 @@ Native injected-GSI evidence is separate from live-match/acoustic/resource accep
 
 - **Deck panels live-wired (Phase 2c)**: telemetry footer, weeklyReport, insights, history,
   agentSector.status now use real data (resource-stats / OpenDota / G-Log / GSI); buildAdvisor still MOCK
-- **GPU/VRAM/temp telemetry**: bundled headless `gpu-feeder` sidecar (nvidia-smi → POST /telemetry);
+- **GPU/VRAM/temp telemetry**: bundled headless `gpu-feeder` sidecar (NVML → POST /telemetry);
   deck footer shows real GPU or "—" when the feeder isn't running
 - In-app updater (GitHub Releases + minisign)
 - GSI config auto-installer + Dota watchdog
@@ -566,3 +575,5 @@ These are **functional requirements**, not flavor text. Maiden must:
 | 0.4.12 | 2026-10-31 | Record owner-directed GANN-only event source, cache identity and verification boundaries. |
 | 0.4.13 | 2026-11-01 | Record separate owner-directed G-Party consent/own-stat route while retaining AI/raw-data restrictions and pending native/live acceptance. |
 | 0.4.14 | 2026-11-01 | Record CR-038 optional Friends/account/relay privacy, consent, lifecycle and map constraints with separate operational/live acceptance. |
+| 0.4.15 | 2026-11-04 | Add early lifecycle-policy navigation, reuse-first ownership and protected runtime/dependency cleanup boundaries. |
+| 0.4.16 | 2026-11-06 | Align stale state references with the code: source version 0.13.6, NVML-based GPU feeder, and GSI port fallback 3000–3010 (#134). |

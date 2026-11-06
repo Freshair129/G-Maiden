@@ -2,15 +2,15 @@
 title: "G-Maiden — Native RAM Budget Decision Proposal"
 doc_id: "PROPOSAL-RAM-BUDGET-20261027"
 status: accepted
-version: "0.3.1"
-updated: "2026-10-28"
+version: "0.3.2"
+updated: "2026-11-06"
 owner: "G-Maiden"
 related_docs: ["mvp-decisions", "PLAN-P1-REMEDIATION-20261027", "AUDIT-P1-REMEDIATION-RESULTS-20261027"]
 ---
 
 # ทางเลือกหลังวัด RAM จาก native build
 
-**Current MVP decision:900,000,000bytes aggregate Working Set** per owner instruction and [[mvp-decisions]] v0.5.0. Earlier400/800MB statements below are historical; no old result is reclassified as900MB acceptance. Continue event corrections per [[PLAN-MVP-EVENT-CORRECTIONS-20261028]].
+**Current MVP decision:900,000,000bytes aggregate Working Set** per owner instruction and [[mvp-decisions]] v0.5.0. Earlier400/800MB statements below are historical; no old result is reclassified as900MB acceptance. Continue event corrections per [[2026-10-28-mvp-event-corrections-plan]].
 
 **มติ800MBก่อนหน้า 2026-10-28: Owner สั่ง “เพิ่มramจาก400เป็น 800”.** ใช้ peak aggregate full Working Set **800,000,000 bytes** รวมทุก process ที่ใช้จริง ตาม [[mvp-decisions]] v0.4.0. มตินี้แทนการคง400MBของ2026-10-27; ไม่ใช่การอนุมัติ1,000MBในทางเลือก B. ผล400MBด้านล่างเป็นหลักฐานย้อนหลัง ไม่ใช่ acceptance ของ800MB.
 
@@ -36,3 +36,4 @@ related_docs: ["mvp-decisions", "PLAN-P1-REMEDIATION-20261027", "AUDIT-P1-REMEDI
 | 0.2.0 | 2026-10-27 | Owner explicitly selected unchanged400MB; proceed measured memory remediation. |
 | 0.3.0 | 2026-10-28 | Owner explicitly chose800MB; supersede the earlier400MB decision without approving1000MB or reclassifying old measurements. |
 | 0.3.1 | 2026-10-28 | Record current900MB MVP decision; preserve historical400/800MB results without acceptance claims. |
+| 0.3.2 | 2026-11-06 | Repointed wikilinks to file-name slugs so they resolve. |

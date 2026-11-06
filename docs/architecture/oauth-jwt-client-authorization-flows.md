@@ -1,5 +1,5 @@
 ---
-version: "0.3.4b"
+version: "0.3.5b"
 created_at: "2026-07-21T18:30:56+07:00,ATHER"
 last_update: "2026-07-21T23:10:00+07:00,ATHER"
 status: "active"
@@ -228,11 +228,11 @@ SEC-001.
 
 | Version | Date | Status | Summary | Agent |
 | --- | --- | --- | --- | --- |
-| 0.3.5b | 2026-10-18 | beta | Clarified optional desktop account use and server authorization for protected account actions. | Codex |
 | 0.1.0b | 2026-07-21 | candidate | Initial C-3/HIGH multi-client OAuth 2.0, PKCE, JWT, Device Authorization, and future mobile connection design. | ATHER |
 | 0.2.0b | 2026-07-21 | beta | Recorded Boss's high-assurance decision: ADR-17 Supabase OAuth Server transaction boundary; legacy social login remains until hosted capability and security gates pass. | ATHER |
 | 0.2.1b | 2026-07-21 | beta | Corrected residual broker terminology to issuer/Supabase OAuth Server terminology. | ATHER |
 | 0.3.0b | 2026-07-21 | beta | Applied the ADR-17 RFC 8252 Desktop fixed-loopback and future Mobile claimed-HTTPS redirect decisions. | ATHER |
 | 0.3.1b | 2026-07-21 | beta | Documented the implemented legacy Desktop issuer-state binding and callback fail-closed behavior. | ATHER |
-| 0.3.3b | 2026-07-21 | beta | Replaced unnecessary reader-facing GMAD naming with G-Maiden while preserving technical identifiers and API names. | ATHER |
 | 0.3.2b | 2026-07-21 | beta | Added bounded-state verification evidence and kept hosted OAuth Server capability work explicitly open. | ATHER |
+| 0.3.3b | 2026-07-21 | beta | Replaced unnecessary reader-facing GMAD naming with G-Maiden while preserving technical identifiers and API names. | ATHER |
+| 0.3.5b | 2026-10-18 | beta | Clarified optional desktop account use and server authorization for protected account actions. | Codex |

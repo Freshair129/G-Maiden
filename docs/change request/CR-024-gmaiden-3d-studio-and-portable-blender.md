@@ -167,12 +167,12 @@ publish/deploy tool is permitted.
 
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
-| 0.8.1b | 2026-07-21 | accepted | Added the pinned doc-graph `updated` and approval metadata and mapped the approved beta lifecycle to canonical `accepted`; no requirement changed. | null | ATHER |
-| 0.8.0b | 2026-07-21 | beta | Stored a generated semi-realistic concept reference under the G: Studio source-reference boundary; it has no export, deployment, or production approval. | null | ATHER |
-| 0.7.0b | 2026-07-21 | beta | Approved the semi-realistic cinematic source-prototype iteration while retaining all review, export, and deployment controls. | null | ATHER |
-| 0.6.0b | 2026-07-21 | beta | Generated and visually inspected the first review-pending original character prototype and preview in the G: Studio workspace; export and publish remain disabled. | null | ATHER |
-| 0.5.0b | 2026-07-21 | beta | Added a workspace-bounded local project catalogue to the Studio and verified its frontend build plus Rust typecheck; no preview render, GLB export, or publish action is enabled. | null | ATHER |
-| 0.4.0b | 2026-07-21 | beta | Created the first review-pending G: Studio project and verified its Blender blockout source scene; the asset remains non-production and non-exported. | null | ATHER |
-| 0.3.0b | 2026-07-21 | beta | Installed Blender 4.5.12 portable on G:, verified SHA-256, and bootstrapped/build-verified the isolated Tauri Studio MVP. | null | ATHER |
-| 0.2.0b | 2026-07-21 | beta | Execution approved: install portable Blender on G: and bootstrap the isolated Studio workspace. | null | ATHER |
 | 0.1.0b | 2026-07-21 | candidate | Proposed portable Blender toolchain and separate safe Tauri 3D Studio for original asset work and future agent tools. | null | ATHER |
+| 0.2.0b | 2026-07-21 | beta | Execution approved: install portable Blender on G: and bootstrap the isolated Studio workspace. | null | ATHER |
+| 0.3.0b | 2026-07-21 | beta | Installed Blender 4.5.12 portable on G:, verified SHA-256, and bootstrapped/build-verified the isolated Tauri Studio MVP. | null | ATHER |
+| 0.4.0b | 2026-07-21 | beta | Created the first review-pending G: Studio project and verified its Blender blockout source scene; the asset remains non-production and non-exported. | null | ATHER |
+| 0.5.0b | 2026-07-21 | beta | Added a workspace-bounded local project catalogue to the Studio and verified its frontend build plus Rust typecheck; no preview render, GLB export, or publish action is enabled. | null | ATHER |
+| 0.6.0b | 2026-07-21 | beta | Generated and visually inspected the first review-pending original character prototype and preview in the G: Studio workspace; export and publish remain disabled. | null | ATHER |
+| 0.7.0b | 2026-07-21 | beta | Approved the semi-realistic cinematic source-prototype iteration while retaining all review, export, and deployment controls. | null | ATHER |
+| 0.8.0b | 2026-07-21 | beta | Stored a generated semi-realistic concept reference under the G: Studio source-reference boundary; it has no export, deployment, or production approval. | null | ATHER |
+| 0.8.1b | 2026-07-21 | accepted | Added the pinned doc-graph `updated` and approval metadata and mapped the approved beta lifecycle to canonical `accepted`; no requirement changed. | null | ATHER |

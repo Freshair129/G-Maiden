@@ -249,5 +249,5 @@ approved, because it changes repository merge authority and can block all contri
 
 | Version | Date | Summary |
 | --- | --- | --- |
-| 0.2.0b | 2026-07-23 | Recorded approval and first deterministic implementation pass: workflow, rule engine, tests, and optional advisory review token path. |
 | 0.1.0b | 2026-07-23 | Initial C-3/HIGH proposal for a required-status PR gate agent with optional advisory review output. |
+| 0.2.0b | 2026-07-23 | Recorded approval and first deterministic implementation pass: workflow, rule engine, tests, and optional advisory review token path. |

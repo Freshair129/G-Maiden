@@ -2,15 +2,19 @@
 title: "CLAUDE.md"
 doc_id: "claude"
 status: active
-version: "0.4.12"
-updated: "2026-11-01"
+version: "0.4.14"
+updated: "2026-11-06"
 owner: "G-Maiden"
 ---
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Status: implemented (v0.13.2), shipping via in-app updater
+## Git, Worktree & Multi-Agent Lifecycle
+
+For Git/worktree operations read the relevant sections of [the local lifecycle policy](docs/engineering/GIT-WORKTREE-POLICY.md). It preserves this primary working guide, protected-main/review/release rules and native acceptance; workspaces actively owned by another session, or with unknown ownership, require a patch/handoff. Reuse owned allocations and serialize writers.
+
+## Status: implemented (source v0.13.6; latest dated release 0.13.4), shipping via in-app updater
 
 The project is scaffolded and shipping — **Tauri v2 + React/Vite + Rust**. For the current
 implementation state, module status, repo layout, and coding rules see **AGENTS.md**. The two
@@ -168,15 +172,15 @@ follow `g-party-social-operations` for configuration, retention and ticket-aware
 
 ### Key external interfaces
 
-- **Dota 2 GSI** → local HTTP POST on **port 3000**, JSON payloads from the player's own machine.
+- **Dota 2 GSI** → local HTTP POST on **port 3000** (falls back through 3010 when occupied), JSON payloads from the player's own machine.
   The same :3000 server also accepts `POST /telemetry` (GPU feeder, below) and `POST /announcer/install`.
 - **Cloud cognitive engine** → Gemini was the original design target, but the **shipped** cloud path
   is the **Claude CLI / Anthropic Messages API** (`claude-haiku-4-5`) with an **Ollama** local-SLM
   fallback (`src-tauri/src/master.rs`, backends `Auto | Claude | Ollama`). Gemini is not wired.
 - **TTS module** → text-to-speech tuned for a live-caster vocal style (Windows SAPI via PowerShell
-  today; Piper local-ONNX TTS is planned but not the default).
-- **GPU telemetry** → a bundled headless sidecar `gpu-feeder/` (repo-root, zero-dep crate) runs
-  `nvidia-smi` in its own process and `POST`s to `/telemetry`; the main app never spawns nvidia-smi,
+  today; Piper local-ONNX TTS is used instead only when `piper.exe` and a `models/piper/` model are found).
+- **GPU telemetry** → a bundled headless sidecar `gpu-feeder/` (repo-root, zero-dep crate)
+  reads GPU0 via the driver NVML ABI in its own process and `POST`s to `/telemetry`; the main app never queries the GPU itself,
   so the NFR budgets stay about its own work. Governor merges it into `resource-stats` (deck footer);
   shows "—" when the feeder isn't running (30s staleness).
 
@@ -222,7 +226,7 @@ bounded verified cache lives under `voice-cache/packs/ann_<UUID>/`.
 ## Global hotkeys
 
 All hotkeys are registered as global shortcuts (work even when Dota 2 is focused).
-Defined in `src-tauri/src/main.rs` via `tauri_plugin_global_shortcut`.
+Registered in `src-tauri/src/lib.rs` via `tauri_plugin_global_shortcut`.
 
 | Hotkey | Action |
 | --- | --- |
@@ -359,3 +363,5 @@ G-AnnStudio opens the same container through its package panel or a file argumen
 | 0.4.10 | 2026-10-31 | Replace announcer fallback routes with verified GANN-only event media and bound activation. |
 | 0.4.11 | 2026-11-01 | Add separately consented G-Party own-stat sharing guidance without widening AI/raw-data permissions or claiming native/live acceptance. |
 | 0.4.12 | 2026-11-01 | Document optional G-Friends social authorization separately from guest sharing and AI; preserve native/live/deployment evidence boundaries. |
+| 0.4.13 | 2026-11-04 | Reference the shared lifecycle policy without changing release or native acceptance authority. |
+| 0.4.14 | 2026-11-06 | Align stale state references with the code: source version 0.13.6, GSI port fallback 3000–3010, optional Piper TTS, NVML-based GPU feeder, and hotkey registration in `lib.rs` (#134). |

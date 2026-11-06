@@ -1657,7 +1657,7 @@ pub fn run() {
 
             // G7.2: resource governor — poll RAM/CPU every second, emit resource-stats.
             governor::start(app.handle().clone());
-            // Headless GPU feeder sidecar → pushes nvidia-smi metrics to
+            // Headless GPU feeder sidecar → pushes NVML GPU metrics to
             // POST /telemetry. Startup reaches this point only after the host joined
             // its Job Object, so the feeder inherits membership by default. Normal
             // exit also stops/waits the exact owned child; a feeder left by an older

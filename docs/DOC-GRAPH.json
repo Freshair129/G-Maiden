@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-02T22:55:09.121Z",
+  "generatedAt": "2026-11-06T01:29:24.237Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -740,6 +740,13 @@
       "path": "docs/design-system/landing_page_prompt.md"
     },
     {
+      "id": "docs/engineering/GIT-WORKTREE-POLICY.md",
+      "type": "doc",
+      "path": "docs/engineering/GIT-WORKTREE-POLICY.md",
+      "title": "Git and Worktree Lifecycle Policy",
+      "status": "active"
+    },
+    {
       "id": "docs/features/FEAT-G-COACH.md",
       "type": "doc",
       "path": "docs/features/FEAT-G-COACH.md",
@@ -805,7 +812,9 @@
     {
       "id": "docs/features/FEAT-G-PERSONA.md",
       "type": "doc",
-      "path": "docs/features/FEAT-G-PERSONA.md"
+      "path": "docs/features/FEAT-G-PERSONA.md",
+      "title": "FEAT: G-Persona — Tone & Verbosity Presets",
+      "status": "draft"
     },
     {
       "id": "docs/features/FEAT-G-REVIVE.md",
@@ -1108,9 +1117,9 @@
       "status": "active"
     },
     {
-      "id": "docs/superpowers/plans/2026-10-29-vrzo-synced-banner.md",
+      "id": "docs/superpowers/plans/2026-10-29-vrzo-synced-banner-plan.md",
       "type": "doc",
-      "path": "docs/superpowers/plans/2026-10-29-vrzo-synced-banner.md",
+      "path": "docs/superpowers/plans/2026-10-29-vrzo-synced-banner-plan.md",
       "title": "VRZO synchronized banner implementation plan",
       "status": "active"
     },
@@ -1283,21 +1292,6 @@
       "id": "src-tauri/src/master.rs",
       "type": "code",
       "path": "src-tauri/src/master.rs"
-    },
-    {
-      "id": "orchestration/providers.mjs",
-      "type": "code",
-      "path": "orchestration/providers.mjs"
-    },
-    {
-      "id": "orchestration/config.json",
-      "type": "code",
-      "path": "orchestration/config.json"
-    },
-    {
-      "id": "orchestration/engine.mjs",
-      "type": "code",
-      "path": "orchestration/engine.mjs"
     },
     {
       "id": "src/src/live/buildTelemetry.ts",
@@ -1745,11 +1739,6 @@
       "path": "src/src/main.tsx"
     },
     {
-      "id": "orchestration",
-      "type": "code",
-      "path": "orchestration"
-    },
-    {
       "id": "src-tauri/src/voice_api/path_safety.rs",
       "type": "code",
       "path": "src-tauri/src/voice_api/path_safety.rs"
@@ -1950,61 +1939,61 @@
       "from": "docs/DOC-INDEX.md",
       "to": "docs/features/README.md",
       "type": "wikilink",
-      "line": 142
+      "line": 133
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "type": "wikilink",
-      "line": 144
+      "line": 135
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/features/FEAT-G-PARTY.md",
       "type": "wikilink",
-      "line": 146
+      "line": 137
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/features/FEAT-G-FRIENDS.md",
       "type": "wikilink",
-      "line": 148
+      "line": 139
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/operations/g-party-social-operations.md",
       "type": "wikilink",
-      "line": 169
+      "line": 160
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/scaffold-setup.md",
       "type": "wikilink",
-      "line": 188
+      "line": 179
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/small-model-prompting.md",
       "type": "wikilink",
-      "line": 190
+      "line": 181
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/research/concepts/subagent-context-scoping.md",
       "type": "wikilink",
-      "line": 195
+      "line": 186
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
       "type": "wikilink",
-      "line": 206
+      "line": 197
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/superpowers/plans/2026-11-01-g-party-friends.md",
       "type": "wikilink",
-      "line": 208
+      "line": 199
     },
     {
       "from": "docs/README.md",
@@ -2800,24 +2789,6 @@
     },
     {
       "from": "docs/architecture/engineering-spec.md",
-      "to": "orchestration/providers.mjs",
-      "type": "symbol",
-      "line": 272
-    },
-    {
-      "from": "docs/architecture/engineering-spec.md",
-      "to": "orchestration/config.json",
-      "type": "symbol",
-      "line": 272
-    },
-    {
-      "from": "docs/architecture/engineering-spec.md",
-      "to": "orchestration/engine.mjs",
-      "type": "symbol",
-      "line": 272
-    },
-    {
-      "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/companion.ts",
       "type": "symbol",
       "line": 277
@@ -3610,13 +3581,31 @@
     },
     {
       "from": "docs/audits/2026-10-27-400mb-remediation-plan.md",
+      "to": "docs/audits/2026-10-28-mvp-event-corrections-plan.md",
+      "type": "wikilink",
+      "line": 14
+    },
+    {
+      "from": "docs/audits/2026-10-27-400mb-remediation-plan.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
       "line": 16
     },
     {
+      "from": "docs/audits/2026-10-27-feature-logic-audit.md",
+      "to": "docs/audits/2026-10-28-audit-completion-results.md",
+      "type": "wikilink",
+      "line": 13
+    },
+    {
       "from": "docs/audits/2026-10-27-memory-budget-decision-proposal.md",
       "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 13
+    },
+    {
+      "from": "docs/audits/2026-10-27-memory-budget-decision-proposal.md",
+      "to": "docs/audits/2026-10-28-mvp-event-corrections-plan.md",
       "type": "wikilink",
       "line": 13
     },
@@ -3634,9 +3623,27 @@
     },
     {
       "from": "docs/audits/2026-10-27-p1-remediation-results.md",
+      "to": "docs/audits/2026-10-28-mvp-event-corrections-plan.md",
+      "type": "wikilink",
+      "line": 13
+    },
+    {
+      "from": "docs/audits/2026-10-27-p1-remediation-results.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
       "line": 15
+    },
+    {
+      "from": "docs/audits/2026-10-28-audit-completion-results.md",
+      "to": "docs/audits/2026-10-27-p1-remediation-results.md",
+      "type": "wikilink",
+      "line": 35
+    },
+    {
+      "from": "docs/audits/2026-10-28-audit-completion-results.md",
+      "to": "docs/audits/2026-10-28-mvp-event-corrections-results.md",
+      "type": "wikilink",
+      "line": 35
     },
     {
       "from": "docs/audits/2026-10-28-mvp-event-corrections-results.md",
@@ -4366,6 +4373,18 @@
     },
     {
       "from": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 99
+    },
+    {
+      "from": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 102
+    },
+    {
+      "from": "docs/change request/CR-007-frostline-deck-refresh.md",
       "to": "src-tauri/src/voice_api/mod.rs",
       "type": "symbol",
       "line": 118
@@ -4662,7 +4681,19 @@
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/voice_api/banner.rs",
       "type": "symbol",
+      "line": 47
+    },
+    {
+      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
       "line": 51
+    },
+    {
+      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 72
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
@@ -4675,6 +4706,12 @@
       "to": "src-tauri/src/voice_api/banner.rs",
       "type": "symbol",
       "line": 82
+    },
+    {
+      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 83
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
@@ -7452,7 +7489,7 @@
       "from": "docs/features/FEAT-G-DAMAGE.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 287
+      "line": 296
     },
     {
       "from": "docs/features/FEAT-G-FRIENDS.md",
@@ -7650,13 +7687,13 @@
       "from": "docs/features/FEAT-G-MIND.md",
       "to": "docs/product/product-requirements.md",
       "type": "wikilink",
-      "line": 19
+      "line": 21
     },
     {
       "from": "docs/features/FEAT-G-MIND.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 19
+      "line": 21
     },
     {
       "from": "docs/features/FEAT-G-MOTION.md",
@@ -7794,31 +7831,37 @@
       "from": "docs/features/FEAT-G-PERSONA.md",
       "to": "docs/product/product-requirements.md",
       "type": "wikilink",
-      "line": 4
+      "line": 17
     },
     {
       "from": "docs/features/FEAT-G-PERSONA.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 4
+      "line": 17
+    },
+    {
+      "from": "docs/features/FEAT-G-PERSONA.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 63
     },
     {
       "from": "docs/features/FEAT-G-PERSONA.md",
       "to": "src-tauri/src/signal.rs",
       "type": "symbol",
-      "line": 38
+      "line": 72
     },
     {
       "from": "docs/features/FEAT-G-PERSONA.md",
       "to": "src-tauri/src/capture.rs",
       "type": "symbol",
-      "line": 39
+      "line": 73
     },
     {
       "from": "docs/features/FEAT-G-PERSONA.md",
       "to": "src-tauri/src/tts.rs",
       "type": "symbol",
-      "line": 39
+      "line": 73
     },
     {
       "from": "docs/features/FEAT-G-REVIVE.md",
@@ -8587,12 +8630,6 @@
       "to": "src/src/index.css",
       "type": "symbol",
       "line": 35
-    },
-    {
-      "from": "docs/guides/small-model-prompting.md",
-      "to": "orchestration",
-      "type": "symbol",
-      "line": 72
     },
     {
       "from": "docs/operations/g-party-social-operations.md",
@@ -9400,6 +9437,12 @@
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 21
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/voice_api/pack_io.rs",
       "type": "symbol",
       "line": 23
@@ -9421,6 +9464,12 @@
       "to": "src-tauri/src/voice_api/pack_io.rs",
       "type": "symbol",
       "line": 25
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 26
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
@@ -9493,6 +9542,24 @@
       "to": "src-tauri/src/voice_api/commands.rs",
       "type": "symbol",
       "line": 60
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 61
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 61
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 61
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
@@ -9641,19 +9708,7 @@
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 135,
-      "reason": "glob-slug",
-      "slug": "SPEC--*"
-    },
-    {
-      "file": "docs/DOC-INDEX.md",
-      "line": 137,
-      "reason": "glob-slug",
-      "slug": "ADR-O-*"
-    },
-    {
-      "file": "docs/DOC-INDEX.md",
-      "line": 150,
+      "line": 141,
       "reason": "glob-slug",
       "slug": "FEAT-G-*"
     },
@@ -9735,13 +9790,6 @@
       "symbol": "rs:L422"
     },
     {
-      "file": "docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.4.3b",
-      "changelog": "0.4.2b"
-    },
-    {
       "file": "docs/architecture/assets/design-references/README.md",
       "line": null,
       "reason": "no-metadata"
@@ -9768,13 +9816,6 @@
       "reason": "missing-approval",
       "severity": "error",
       "status": "accepted"
-    },
-    {
-      "file": "docs/architecture/oauth-jwt-client-authorization-flows.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.3.4b",
-      "changelog": "0.3.2b"
     },
     {
       "file": "docs/architecture/spikes/S-1-minimap-cv.md",
@@ -9804,42 +9845,6 @@
       "target": "src-tauri/src/voice_api/commands.rs",
       "anchor": 13,
       "symbol": "sanitize_file_name"
-    },
-    {
-      "file": "docs/audits/2026-10-27-400mb-remediation-plan.md",
-      "line": 14,
-      "reason": "unresolved",
-      "slug": "PLAN-MVP-EVENT-CORRECTIONS-20261028"
-    },
-    {
-      "file": "docs/audits/2026-10-27-feature-logic-audit.md",
-      "line": 13,
-      "reason": "unresolved",
-      "slug": "RESULTS-AUDIT-COMPLETION-20261028"
-    },
-    {
-      "file": "docs/audits/2026-10-27-memory-budget-decision-proposal.md",
-      "line": 13,
-      "reason": "unresolved",
-      "slug": "PLAN-MVP-EVENT-CORRECTIONS-20261028"
-    },
-    {
-      "file": "docs/audits/2026-10-27-p1-remediation-results.md",
-      "line": 13,
-      "reason": "unresolved",
-      "slug": "PLAN-MVP-EVENT-CORRECTIONS-20261028"
-    },
-    {
-      "file": "docs/audits/2026-10-28-audit-completion-results.md",
-      "line": 35,
-      "reason": "unresolved",
-      "slug": "AUDIT-P1-REMEDIATION-RESULTS-20261027"
-    },
-    {
-      "file": "docs/audits/2026-10-28-audit-completion-results.md",
-      "line": 35,
-      "reason": "unresolved",
-      "slug": "RESULTS-MVP-EVENT-CORRECTIONS-20261028"
     },
     {
       "file": "docs/change request/CR-001-REVIEW-and-execution-plan.md",
@@ -9904,58 +9909,6 @@
       "target": "src-tauri/src/gsi.rs",
       "anchor": 268,
       "symbol": "announcer_install"
-    },
-    {
-      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "line": 99,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src-tauri/src/voice_api/banner.rs",
-      "anchor": 182,
-      "symbol": "activate_if_exists"
-    },
-    {
-      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "line": 99,
-      "reason": "bad-anchor",
-      "target": "src-tauri/src/voice_api/banner.rs"
-    },
-    {
-      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "line": 102,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src-tauri/src/voice_api/banner.rs",
-      "anchor": 128,
-      "symbol": "install_report"
-    },
-    {
-      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "line": 102,
-      "reason": "bad-anchor",
-      "target": "src-tauri/src/voice_api/banner.rs"
-    },
-    {
-      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "line": 123,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src-tauri/src/voice_api/banner.rs",
-      "anchor": 3,
-      "symbol": "rs"
-    },
-    {
-      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "line": 124,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src-tauri/src/voice_api/banner.rs",
-      "anchor": 60,
-      "symbol": "fired_banner_from"
-    },
-    {
-      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "line": 125,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src-tauri/src/voice_api/banner.rs",
-      "anchor": 100,
-      "symbol": "preview_clip"
     },
     {
       "file": "docs/change request/CR-007-frostline-deck-refresh.md",
@@ -10049,85 +10002,11 @@
     },
     {
       "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 20,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src-tauri/src/voice_api/banner.rs",
-      "anchor": 3,
-      "symbol": "rs"
-    },
-    {
-      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "line": 47,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/gsi.rs",
       "anchor": 268,
       "symbol": "announcer_install"
-    },
-    {
-      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 47,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src-tauri/src/voice_api/banner.rs",
-      "anchor": 182,
-      "symbol": "activate_if_exists"
-    },
-    {
-      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 47,
-      "reason": "bad-anchor",
-      "target": "src-tauri/src/voice_api/banner.rs"
-    },
-    {
-      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 51,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src-tauri/src/voice_api/banner.rs",
-      "anchor": 17,
-      "symbol": "packs_dir"
-    },
-    {
-      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 72,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src-tauri/src/voice_api/banner.rs",
-      "anchor": 206,
-      "symbol": "image_mime"
-    },
-    {
-      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 72,
-      "reason": "bad-anchor",
-      "target": "src-tauri/src/voice_api/banner.rs"
-    },
-    {
-      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 81,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src-tauri/src/voice_api/banner.rs",
-      "anchor": 17,
-      "symbol": "packs_dir"
-    },
-    {
-      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 82,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src-tauri/src/voice_api/banner.rs",
-      "anchor": 3,
-      "symbol": "rs"
-    },
-    {
-      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 83,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src-tauri/src/voice_api/banner.rs",
-      "anchor": 206,
-      "symbol": "image_mime"
-    },
-    {
-      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 83,
-      "reason": "bad-anchor",
-      "target": "src-tauri/src/voice_api/banner.rs"
     },
     {
       "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
@@ -10159,62 +10038,6 @@
       "file": "docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/change request/CR-014-document-impact-map-gmaiden-adapter.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.2.0b",
-      "changelog": "0.1.0b"
-    },
-    {
-      "file": "docs/change request/CR-017-gstore-migration-history-reconciliation.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.2.0b",
-      "changelog": "0.1.0b"
-    },
-    {
-      "file": "docs/change request/CR-019-owner-role-and-operator-delegation.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.3.1b",
-      "changelog": "0.1.0b"
-    },
-    {
-      "file": "docs/change request/CR-023-gmaiden-original-3d-hero-scroll-narrative.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.7.2b",
-      "changelog": "0.1.0b"
-    },
-    {
-      "file": "docs/change request/CR-024-gmaiden-3d-studio-and-portable-blender.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.8.1b",
-      "changelog": "0.1.0b"
-    },
-    {
-      "file": "docs/change request/CR-026-mpfb2-character-authoring-and-guarded-image-to-3d-import.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.3.1b",
-      "changelog": "0.1.0b"
-    },
-    {
-      "file": "docs/change request/CR-028-gmaiden-3d-hero-production-handoff.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "2.0.0b",
-      "changelog": "0.1.0b"
-    },
-    {
-      "file": "docs/change request/CR-033-pr-gate-agent-required-status-review-gate.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.2.0b",
-      "changelog": "0.1.0b"
     },
     {
       "file": "docs/design-system/02-tokens.md",
@@ -10950,11 +10773,6 @@
       "symbol": "record"
     },
     {
-      "file": "docs/features/FEAT-G-PERSONA.md",
-      "line": null,
-      "reason": "no-metadata"
-    },
-    {
       "file": "docs/features/FEAT-G-REVIVE.md",
       "line": 98,
       "reason": "anchor-symbol-mismatch",
@@ -11071,14 +10889,6 @@
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 9,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src-tauri/src/voice_api/banner.rs",
-      "anchor": 47,
-      "symbol": "fired_banner"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "line": 10,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/pack_io.rs",
@@ -11111,28 +10921,6 @@
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 20,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src-tauri/src/voice_api/banner.rs",
-      "anchor": 60,
-      "symbol": "fired_banner_from"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 21,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src-tauri/src/voice_api/banner.rs",
-      "anchor": 194,
-      "symbol": "read_banner_data_url"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 21,
-      "reason": "bad-anchor",
-      "target": "src-tauri/src/voice_api/banner.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "line": 23,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/pack_io.rs",
@@ -11162,20 +10950,6 @@
       "target": "src-tauri/src/voice_api/pack_io.rs",
       "anchor": 66,
       "symbol": "build_pack"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 26,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src-tauri/src/voice_api/banner.rs",
-      "anchor": 194,
-      "symbol": "read_banner_data_url"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 26,
-      "reason": "bad-anchor",
-      "target": "src-tauri/src/voice_api/banner.rs"
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
@@ -11237,39 +11011,9 @@
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "line": 61,
       "reason": "anchor-symbol-mismatch",
-      "target": "src-tauri/src/voice_api/banner.rs",
-      "anchor": 60,
-      "symbol": "fired_banner_from"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 61,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src-tauri/src/voice_api/banner.rs",
-      "anchor": 100,
-      "symbol": "preview_clip"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 61,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src-tauri/src/voice_api/banner.rs",
-      "anchor": 128,
-      "symbol": "install_report"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 61,
-      "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/pack_io.rs",
       "anchor": 66,
       "symbol": "build_pack"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 61,
-      "reason": "bad-anchor",
-      "target": "src-tauri/src/voice_api/banner.rs"
     },
     {
       "file": "docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md",
@@ -11334,29 +11078,11 @@
       "file": "docs/superpowers/plans/2026-08-09-gid-pipeline-phase2-annstudio.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/superpowers/plans/2026-10-29-vrzo-synced-banner.md",
-      "line": null,
-      "reason": "duplicate-slug",
-      "slug": "2026-10-29-vrzo-synced-banner",
-      "siblings": [
-        "docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md"
-      ]
-    },
-    {
-      "file": "docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md",
-      "line": null,
-      "reason": "duplicate-slug",
-      "slug": "2026-10-29-vrzo-synced-banner",
-      "siblings": [
-        "docs/superpowers/plans/2026-10-29-vrzo-synced-banner.md"
-      ]
     }
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-02T22:55:14.372Z",
+    "generatedAt": "2026-11-06T01:29:26.697Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,

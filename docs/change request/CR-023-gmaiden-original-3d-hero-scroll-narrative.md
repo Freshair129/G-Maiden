@@ -159,12 +159,12 @@ existing 3 MB GLB / 2 MB texture transfer limits through baked maps and restrain
 
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
+| 0.1.0b | 2026-07-21 | candidate | Initial C-3 contract for an original G-Maiden Ice Mage 3D Hero, scroll narrative, performance and fallback rules. | null | ATHER |
+| 0.2.0b | 2026-07-21 | beta | Direction approved; moved to original-character concept and rights gate before 3D implementation. | null | ATHER |
+| 0.3.0b | 2026-07-21 | beta | Stored the approved model sheet in the G: Studio workspace and generated a review-pending Blender blockout with a minimal armature; no production asset or landing integration is claimed. | null | ATHER |
+| 0.4.0b | 2026-07-21 | beta | Generated and visually inspected a review-pending original G-Maiden art prototype plus preview render; it is not a production mesh, rig, export, or landing asset. | null | ATHER |
+| 0.5.0b | 2026-07-21 | beta | Approved semi-realistic cinematic art direction for a new review-pending prototype while preserving original-asset, performance, and export gates. | null | ATHER |
+| 0.6.0b | 2026-07-21 | beta | Created and stored a semi-realistic cinematic concept reference for the approved original direction; explicitly kept it as non-shipping 2D reference material. | null | ATHER |
+| 0.7.0b | 2026-07-21 | beta | Recorded that the first cinematic base assembly is an editable technical study but does not meet the semi-realistic quality gate; blocked export and landing use pending an approved character-authoring route. | null | ATHER |
 | 0.7.1b | 2026-07-21 | accepted | Added the pinned doc-graph `updated` and approval metadata and mapped the approved document lifecycle to canonical `accepted`; no requirement changed. | null | ATHER |
 | 0.7.2b | 2026-10-18 | accepted | Replaced the retired launch countdown and access CTA with the current public-demo scope. | null | Codex |
-| 0.7.0b | 2026-07-21 | beta | Recorded that the first cinematic base assembly is an editable technical study but does not meet the semi-realistic quality gate; blocked export and landing use pending an approved character-authoring route. | null | ATHER |
-| 0.6.0b | 2026-07-21 | beta | Created and stored a semi-realistic cinematic concept reference for the approved original direction; explicitly kept it as non-shipping 2D reference material. | null | ATHER |
-| 0.5.0b | 2026-07-21 | beta | Approved semi-realistic cinematic art direction for a new review-pending prototype while preserving original-asset, performance, and export gates. | null | ATHER |
-| 0.4.0b | 2026-07-21 | beta | Generated and visually inspected a review-pending original G-Maiden art prototype plus preview render; it is not a production mesh, rig, export, or landing asset. | null | ATHER |
-| 0.3.0b | 2026-07-21 | beta | Stored the approved model sheet in the G: Studio workspace and generated a review-pending Blender blockout with a minimal armature; no production asset or landing integration is claimed. | null | ATHER |
-| 0.2.0b | 2026-07-21 | beta | Direction approved; moved to original-character concept and rights gate before 3D implementation. | null | ATHER |
-| 0.1.0b | 2026-07-21 | candidate | Initial C-3 contract for an original G-Maiden Ice Mage 3D Hero, scroll narrative, performance and fallback rules. | null | ATHER |

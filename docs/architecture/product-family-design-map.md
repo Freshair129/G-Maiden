@@ -1,5 +1,5 @@
 ---
-version: "0.5.0b"
+version: "0.5.1b"
 created_at: "2026-06-24T00:00:00+07:00,ATHER,pending"
 last_update: "2026-07-19T00:00:00+07:00,Claude"
 status: "draft"
@@ -10,7 +10,7 @@ attributes:
   language: "th"
 title: "G-Maiden + G-Orchestra Product Family Design Map"
 doc_id: "product-family-design-map"
-updated: "2026-07-19"
+updated: "2026-11-06"
 owner: "Boss"
 ---
 
@@ -42,7 +42,7 @@ Use these child documents for product-specific sitemap, user flow, screen direct
 | Product | Doc | Wikilink |
 | --- | --- | --- |
 | `G-Maiden` | [g-maiden-ui-sitemap-flow-board.md](g-maiden-ui-sitemap-flow-board.md) | `[[g-maiden-ui-sitemap-flow-board]]` |
-| `G-Orchestra` | [../../orchestration/docs/g-orchestra-ui-sitemap-flow-board.md](../../orchestration/docs/g-orchestra-ui-sitemap-flow-board.md) | `[[g-orchestra-ui-sitemap-flow-board]]` |
+| `G-Orchestra` | [g-orchestra/docs/g-orchestra-ui-sitemap-flow-board.md](https://github.com/Freshair129/g-orchestra/blob/main/docs/g-orchestra-ui-sitemap-flow-board.md) | `[[g-orchestra-ui-sitemap-flow-board]]` |
 
 ## 3. Product Boundary
 
@@ -129,3 +129,4 @@ Use these child documents for product-specific sitemap, user flow, screen direct
 | --- | --- | --- |
 | +banner | 2026-07-19 | reference-only banner — ไม่ใช่ spec สำหรับ implement (audit 2026-07-19) |
 | 0.5.0b | 2026-07-19 | link/metadata sweep (G1.5) — reconcile frontmatter version with changelog |
+| 0.5.1b | 2026-11-06 | candidate | Updated the G-Orchestra child-doc link to the standalone `Freshair129/g-orchestra` repository (moved out of `orchestration/`, #134). | pending | claude |

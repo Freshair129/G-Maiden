@@ -38,7 +38,7 @@ G-AnnStudio; configure `G_ANNSTUDIO_ALLOWED_EMAILS` as a server-side comma-separ
 - **React 18** + **Vite** frontend (TypeScript)
 - **Rust** backend with DXGI screen capture and GSI/cloud integration
 - **Claude API** (Anthropic) for cloud reasoning; **Ollama** for resilient local inference
-- **Windows SAPI** for text-to-speech (Piper ONNX planned)
+- **Windows SAPI** for text-to-speech (local Piper ONNX is used instead when `piper.exe` and a model are present)
 
 ## Build & Test
 
