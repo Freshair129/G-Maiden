@@ -3,7 +3,7 @@
 # FEATURE-ORPHAN-REPORT
 
 > **GENERATED — do not hand-edit; re-run tools/doc-graph/orphan-report.mjs**  
-> Generated `2026-11-06T15:01:03.020Z` · candidates=18
+> Generated `2026-11-06T20:20:31.986Z` · candidates=18
 
 ## Summary
 
@@ -38,5 +38,5 @@
 | FEAT-G-SENTRY | docs/features/FEAT-G-SENTRY.md | planned | planned | feature-ledger, code-evidence, features-readme, project-feature-map | docs/features/README.md | — | Document is explicitly planned and remains visible in active registry/docs. |
 | FEAT-G-SIGNAL | docs/features/FEAT-G-SIGNAL.md | active | anchored | feature-ledger, code-evidence, features-readme, project-feature-map | docs/architecture/design-system.md, docs/features/FEAT-G-DAMAGE.md, docs/features/FEAT-G-MOTION.md, docs/features/FEAT-G-REVIVE.md, docs/features/README.md | — | At least one strong anchor exists (registry and/or code evidence). |
 | FEAT-G-STREAM | docs/features/FEAT-G-STREAM.md | active | planned | feature-ledger, features-readme, project-feature-map | docs/features/README.md, docs/features/G-SERIES-DATA-LINEAGE.md | — | Document is explicitly planned and remains visible in active registry/docs. |
-| FEAT-G-VOICE | docs/features/FEAT-G-VOICE.md | active | planned | feature-ledger, features-readme, project-feature-map | docs/architecture/spikes/MVP-038-local-stt-evaluation.md, docs/features/README.md, docs/product/mvp-backlog.md, docs/product/roadmap.md, docs/features/G-SERIES-DATA-LINEAGE.md | — | Document is explicitly planned and remains visible in active registry/docs. |
+| FEAT-G-VOICE | docs/features/FEAT-G-VOICE.md | active | planned | feature-ledger, features-readme, project-feature-map | docs/architecture/spikes/MVP-038-local-stt-evaluation.md, docs/change request/CR-041-g-voice-ptt-turn-lifecycle.md, docs/features/README.md, docs/product/mvp-backlog.md, docs/product/roadmap.md, docs/features/G-SERIES-DATA-LINEAGE.md | — | Document is explicitly planned and remains visible in active registry/docs. |
 

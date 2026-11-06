@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-06T15:01:00.107Z",
+  "generatedAt": "2026-11-06T20:20:26.577Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -617,6 +617,13 @@
       "path": "docs/change request/CR-038-party-friends-presence-invitations.md",
       "title": "CR-038 — G-Party Friends, presence และคำเชิญเข้าปาร์ตี้",
       "status": "active"
+    },
+    {
+      "id": "docs/change request/CR-041-g-voice-ptt-turn-lifecycle.md",
+      "type": "doc",
+      "path": "docs/change request/CR-041-g-voice-ptt-turn-lifecycle.md",
+      "title": "CR-041 — G-Voice Slice 1: PTT binding, remap and VoiceTurn lifecycle",
+      "status": "accepted"
     },
     {
       "id": "docs/change request/DXGI-task-assignment.md",
@@ -3042,6 +3049,12 @@
     },
     {
       "from": "docs/architecture/spikes/MVP-038-local-stt-evaluation.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 82
+    },
+    {
+      "from": "docs/architecture/spikes/MVP-038-local-stt-evaluation.md",
       "to": "docs/product/mvp-backlog.md",
       "type": "wikilink",
       "line": 115
@@ -5367,6 +5380,30 @@
       "to": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
       "type": "wikilink",
       "line": 39
+    },
+    {
+      "from": "docs/change request/CR-041-g-voice-ptt-turn-lifecycle.md",
+      "to": "docs/features/FEAT-G-VOICE.md",
+      "type": "wikilink",
+      "line": 23
+    },
+    {
+      "from": "docs/change request/CR-041-g-voice-ptt-turn-lifecycle.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 23
+    },
+    {
+      "from": "docs/change request/CR-041-g-voice-ptt-turn-lifecycle.md",
+      "to": "docs/architecture/spikes/MVP-038-local-stt-evaluation.md",
+      "type": "wikilink",
+      "line": 24
+    },
+    {
+      "from": "docs/change request/CR-041-g-voice-ptt-turn-lifecycle.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 121
     },
     {
       "from": "docs/change request/IMPL-PLAN-DXGI-migration.md",
@@ -8238,15 +8275,21 @@
     },
     {
       "from": "docs/features/FEAT-G-VOICE.md",
+      "to": "docs/change request/CR-041-g-voice-ptt-turn-lifecycle.md",
+      "type": "wikilink",
+      "line": 33
+    },
+    {
+      "from": "docs/features/FEAT-G-VOICE.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 116
+      "line": 118
     },
     {
       "from": "docs/features/FEAT-G-VOICE.md",
       "to": "src-tauri/src/tts.rs",
       "type": "symbol",
-      "line": 59
+      "line": 61
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
@@ -9854,7 +9897,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-06T15:01:02.805Z",
+    "generatedAt": "2026-11-06T20:20:31.680Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,
