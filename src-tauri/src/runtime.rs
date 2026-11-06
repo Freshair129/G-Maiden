@@ -787,8 +787,12 @@ pub fn match_epoch() -> u64 {
     MATCH_EPOCH.load(Ordering::Relaxed)
 }
 
+/// A real change bumps the G-Master generation: advice cached or in flight under
+/// the previous preset's tone must not be reused or published.
 pub fn set_persona_preset(val: u8) {
-    PERSONA_PRESET.store(val, Ordering::Relaxed);
+    if PERSONA_PRESET.swap(val, Ordering::Relaxed) != val {
+        update_master_config(|_| true);
+    }
 }
 
 pub fn persona_preset() -> u8 {

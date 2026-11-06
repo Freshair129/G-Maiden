@@ -24,6 +24,23 @@ const PERSONA_PROMPT: &str = r#"คุณคือ "Maiden" — ที่ปร�
 สไตล์: สุภาพ ฉลาด มี humor เกี่ยวกับ Nerf CM. ตอบเป็นไทย สั้นกระชับ (1-2 ประโยค) เน้นคำแนะนำเชิงปฏิบัติทันที
 สำหรับสถานการณ์ที่ให้. ห้ามทักทาย ห้ามสรุป — ตอบคำแนะนำตรง ๆ."#;
 
+/// Tone line appended to [`PERSONA_PROMPT`] per G-Persona preset
+/// (`runtime::persona_preset()`: 0=Coach, 1=Silent, 2=Caster, 3=Meme).
+/// Static text only — no game data — so it never widens what leaves the machine.
+/// `Silent` suppresses proactive advice upstream (Overlay); an explicit Ask
+/// under `Silent` uses the Coach tone. Unknown codes fall back to Coach.
+fn persona_tone(preset: u8) -> &'static str {
+    match preset {
+        2 => "โทนเสริม: แคสเตอร์สบาย ๆ พากย์สถานการณ์เป็นประโยคสั้นกระชับ",
+        3 => "โทนเสริม: แทรกมุกเบา ๆ เรื่อง Nerf CM ได้หนึ่งประโยค แต่ยังสุภาพไม่ก้าวร้าว",
+        _ => "โทนเสริม: จริงจังแบบโค้ช เน้นตัวเลขและเหตุผล ลดมุกตลก",
+    }
+}
+
+fn persona_prompt(preset: u8) -> String {
+    format!("{PERSONA_PROMPT}\n{}", persona_tone(preset))
+}
+
 const THROTTLE: Duration = Duration::from_secs(30);
 
 struct CachedAdvice {
@@ -270,6 +287,10 @@ fn hero_thai(raw: &str) -> String {
 }
 
 fn build_prompt(tick: &GameTick, enemies: &[String]) -> String {
+    build_prompt_with(tick, enemies, &persona_prompt(crate::runtime::persona_preset()))
+}
+
+fn build_prompt_with(tick: &GameTick, enemies: &[String], persona: &str) -> String {
     let phase = if tick.clock_time < 0 {
         "ก่อนเข้าเลน"
     } else if tick.clock_time < 600 {
@@ -310,7 +331,7 @@ fn build_prompt(tick: &GameTick, enemies: &[String]) -> String {
          คำแนะนำ: {advice}\n\
          {burst}\n\
          แนะนำสั้น ๆ ว่าควรทำอะไรต่อ (ซื้อของ/ขึ้นสกิล/positioning).",
-        persona = PERSONA_PROMPT,
+        persona = persona,
         phase = phase,
         clock = tick.clock_time,
         hero = hero_thai(&tick.hero),
@@ -388,10 +409,14 @@ fn cloud_advice_context(tick: &GameTick) -> CloudAdviceContext {
 }
 
 fn build_cloud_prompt(tick: &GameTick) -> String {
+    build_cloud_prompt_with(tick, &persona_prompt(crate::runtime::persona_preset()))
+}
+
+fn build_cloud_prompt_with(tick: &GameTick, persona: &str) -> String {
     let context = cloud_advice_context(tick);
     format!(
         "{persona}\n\nสถานการณ์โดยสรุป ({phase}): ฮีโร่ของผู้เล่น {hero} เลเวล {level}, KDA {kills}/{deaths}/{assists}, net worth {net_worth}, gold {gold}, HP {hp}%, mana {mana}%, score {radiant}:{dire}.\nแนะนำสั้น ๆ ว่าควรทำอะไรต่อ โดยอ้างอิงเฉพาะข้อมูลที่ให้มา.",
-        persona = PERSONA_PROMPT,
+        persona = persona,
         phase = context.phase,
         hero = context.own_hero,
         level = context.own_level,
@@ -1294,6 +1319,70 @@ mod tests {
             last_victim_slot: 7,
             item_names: vec!["item_dagon".into()],
             combat_items: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn persona_tone_differs_per_preset_and_keeps_core_persona() {
+        let coach = persona_prompt(0);
+        let caster = persona_prompt(2);
+        let meme = persona_prompt(3);
+        assert_ne!(coach, caster);
+        assert_ne!(coach, meme);
+        assert_ne!(caster, meme);
+        for p in [&coach, &caster, &meme] {
+            assert!(p.contains("Maiden"), "core persona missing: {p}");
+            assert!(p.contains("สุภาพ"), "gentle core tone missing: {p}");
+        }
+        // Silent's explicit Ask and unknown codes use the Coach tone.
+        assert_eq!(persona_prompt(1), coach);
+        assert_eq!(persona_prompt(200), coach);
+    }
+
+    #[test]
+    fn persona_tone_reaches_local_and_cloud_prompts_without_new_data() {
+        let tick = fake_tick();
+        let coach_local = build_prompt_with(&tick, &[], &persona_prompt(0));
+        let meme_local = build_prompt_with(&tick, &[], &persona_prompt(3));
+        assert_ne!(coach_local, meme_local);
+        let coach_cloud = build_cloud_prompt_with(&tick, &persona_prompt(0));
+        let meme_cloud = build_cloud_prompt_with(&tick, &persona_prompt(3));
+        assert_ne!(coach_cloud, meme_cloud);
+        // Only the static tone line differs: same game context either way.
+        let strip = |p: &str, preset: u8| p.replace(persona_tone(preset), "");
+        assert_eq!(strip(&coach_cloud, 0), strip(&meme_cloud, 3));
+    }
+
+    #[test]
+    fn changing_persona_preset_invalidates_advice_generation() {
+        let _serial = MASTER_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        crate::runtime::set_persona_preset(0);
+        let before = crate::runtime::master_cloud_context_generation();
+        crate::runtime::set_persona_preset(0);
+        assert_eq!(
+            before,
+            crate::runtime::master_cloud_context_generation(),
+            "re-selecting the same preset must not invalidate advice"
+        );
+        crate::runtime::set_persona_preset(3);
+        assert_ne!(
+            before,
+            crate::runtime::master_cloud_context_generation(),
+            "a preset change must invalidate cached/in-flight advice"
+        );
+        crate::runtime::set_persona_preset(0);
+    }
+
+    #[test]
+    fn g_signal_sources_do_not_read_persona_preset() {
+        for (name, src) in [
+            ("signal.rs", include_str!("signal.rs")),
+            ("capture.rs", include_str!("capture.rs")),
+        ] {
+            assert!(
+                !src.contains("persona_preset"),
+                "{name} must not read the G-Persona preset (G-Signal is immutable)"
+            );
         }
     }
 
