@@ -239,13 +239,37 @@ mod backend {
         classifier: bool,
         throttled: bool,
         dota_foreground: bool,
+        awaiting_fresh_frame: bool,
         frame_age_ms: u64,
     ) -> bool {
         backend != "lite"
             && classifier
             && !throttled
             && dota_foreground
+            && !awaiting_fresh_frame
             && frame_age_ms <= STALE_FRAME_MS
+    }
+
+    /// A background frame-clock reset keeps the capture loop from reporting a
+    /// stall while it is intentionally suspended. After a live-match focus loss,
+    /// require a genuinely new valid frame before health can return to true.
+    #[derive(Default)]
+    struct ForegroundFrameGate {
+        awaiting_fresh_frame: bool,
+    }
+
+    impl ForegroundFrameGate {
+        fn observe_cycle(&mut self, dota_foreground: bool, in_game: bool) {
+            if !in_game {
+                self.awaiting_fresh_frame = false;
+            } else if !dota_foreground {
+                self.awaiting_fresh_frame = true;
+            }
+        }
+
+        fn frame_received(&mut self) {
+            self.awaiting_fresh_frame = false;
+        }
     }
 
     impl SensorHealth {
@@ -324,6 +348,9 @@ mod backend {
         preview_desktop_origin: [i32; 2],
         /// Last frame that reached `process_frame`. Drives `frame_age_ms`.
         last_frame_ok: Instant,
+        /// After an in-match focus loss, health stays false until capture receives
+        /// a new valid frame; a background clock reset alone is not evidence.
+        foreground_frame_gate: ForegroundFrameGate,
         cycle_started: Instant,
         frames: super::schedule::FrameGate,
         next_cycle_due: Instant,
@@ -410,6 +437,7 @@ mod backend {
                 preview_display_id: 0,
                 preview_desktop_origin: [0, 0],
                 last_frame_ok: now,
+                foreground_frame_gate: ForegroundFrameGate::default(),
                 cycle_started: now,
                 frames: super::schedule::FrameGate::default(),
                 next_cycle_due: now,
@@ -595,6 +623,7 @@ mod backend {
                     classifier,
                     throttled,
                     dota_foreground,
+                    self.foreground_frame_gate.awaiting_fresh_frame,
                     frame_age_ms,
                 ),
             };
@@ -798,6 +827,8 @@ mod backend {
             // A fresh frame age is not evidence of a visible game: the background
             // branch deliberately refreshes last_frame_ok to avoid a stale-loop.
             let dota_foreground = crate::dxgi::dota_is_foreground();
+            let in_game = crate::runtime::in_game();
+            state.foreground_frame_gate.observe_cycle(dota_foreground, in_game);
             state.emit_health(dxgi.backend(), dota_foreground);
             if state.warning_frame_ms.is_some()
                 && state.last_frame_ok.elapsed().as_millis() > u128::from(STALE_FRAME_MS)
@@ -938,7 +969,7 @@ mod backend {
                 continue;
             }
             // Gate to live matches — no CV work at the menu (idle-CPU saver).
-            if !crate::runtime::in_game() {
+            if !in_game {
                 // Hold the frame clock at "just now" while we're deliberately
                 // not capturing, so entering a match doesn't start out looking
                 // like a 40-minute-old stall. `frame_age_ms` is only meaningful
@@ -1440,6 +1471,9 @@ mod backend {
         let suspicious = !state.sentry.missing(now_ms).is_empty();
 
         if let Some(f) = Frame::from_bgra(w, h, cropped) {
+            // Only a valid newly acquired frame after focus returns re-opens
+            // the health gate; a background clock reset cannot.
+            state.foreground_frame_gate.frame_received();
             let candidates = prefilter_candidates(
                 &f,
                 state.icon,
@@ -1834,13 +1868,35 @@ mod backend {
 
         #[test]
         fn foreground_eligibility_withdraws_health_during_alt_tab() {
-            assert!(sensor_is_healthy("dxgi", true, false, true, 20));
-            assert!(!sensor_is_healthy("dxgi", true, false, false, 0));
-            assert!(!sensor_is_healthy("gdi", true, false, false, 0));
-            assert!(!sensor_is_healthy("lite", true, false, true, 0));
-            assert!(!sensor_is_healthy("dxgi", false, false, true, 0));
-            assert!(!sensor_is_healthy("dxgi", true, true, true, 0));
-            assert!(!sensor_is_healthy("dxgi", true, false, true, STALE_FRAME_MS + 1));
+            assert!(sensor_is_healthy("dxgi", true, false, true, false, 20));
+            assert!(!sensor_is_healthy("dxgi", true, false, false, false, 0));
+            assert!(!sensor_is_healthy("gdi", true, false, false, false, 0));
+            assert!(!sensor_is_healthy("lite", true, false, true, false, 0));
+            assert!(!sensor_is_healthy("dxgi", false, false, true, false, 0));
+            assert!(!sensor_is_healthy("dxgi", true, true, true, false, 0));
+            assert!(!sensor_is_healthy("dxgi", true, false, true, false, STALE_FRAME_MS + 1));
+        }
+
+        #[test]
+        fn foreground_recovery_waits_for_a_new_frame() {
+            let mut gate = ForegroundFrameGate::default();
+
+            gate.observe_cycle(false, true);
+            assert!(gate.awaiting_fresh_frame);
+            assert!(!sensor_is_healthy("dxgi", true, false, true, gate.awaiting_fresh_frame, 0));
+
+            // Foreground has returned, but no frame has yet reached the CV pipeline.
+            gate.observe_cycle(true, true);
+            assert!(gate.awaiting_fresh_frame);
+            assert!(!sensor_is_healthy("dxgi", true, false, true, gate.awaiting_fresh_frame, 0));
+
+            gate.frame_received();
+            assert!(!gate.awaiting_fresh_frame);
+            assert!(sensor_is_healthy("dxgi", true, false, true, gate.awaiting_fresh_frame, 0));
+
+            // Leaving the match clears the recovery gate; menu health remains independent.
+            gate.observe_cycle(false, false);
+            assert!(!gate.awaiting_fresh_frame);
         }
 
         #[test]
