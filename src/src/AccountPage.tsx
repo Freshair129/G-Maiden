@@ -81,57 +81,59 @@ export default function AccountPage({ entryMode, entryNonce }: { entryMode?: Acc
         ))}
       </div>
 
-      {mode === "account" ? (
-        <div className="account-grid">
-          <section className="account-card">
-            <h3 className="account-h3">G-Maiden account</h3>
-            <AuthPanel />
-          </section>
+      <div className="account-content" role="region" aria-label="เนื้อหาบัญชี" tabIndex={0}>
+        {mode === "account" ? (
+          <div className="account-grid">
+            <section className="account-card">
+              <h3 className="account-h3">G-Maiden account</h3>
+              <AuthPanel />
+            </section>
 
-          <section className="account-card">
-            <h3 className="account-h3">Steam</h3>
-            <SteamLink />
-            {identity ? (
-              <div className="account-note">Deck loads OpenDota for account #{identity.accountId}.</div>
-            ) : (
-              <div className="account-note">Link Steam so the deck can load your OpenDota profile.</div>
-            )}
-          </section>
+            <section className="account-card">
+              <h3 className="account-h3">Steam</h3>
+              <SteamLink />
+              {identity ? (
+                <div className="account-note">Deck loads OpenDota for account #{identity.accountId}.</div>
+              ) : (
+                <div className="account-note">Link Steam so the deck can load your OpenDota profile.</div>
+              )}
+            </section>
 
-          <section className={`account-card${user ? "" : " muted"}`}>
-            <h3 className="account-h3">Profile</h3>
-            {user ? (
-              <>
-                <label className="account-field-label">Display name</label>
-                <input
-                  className="account-input"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Your name in G-Maiden"
-                  spellCheck={false}
-                />
-                <button
-                  type="button"
-                  className="account-save"
-                  onClick={() => void saveName()}
-                  disabled={saving || name.trim() === displayName}
-                >
-                  {saving ? "Saving…" : "Save"}
-                </button>
-                {msg ? <div className="account-msg">{msg}</div> : null}
-              </>
-            ) : (
-              <p className="account-hint">Sign in to set your display name and sync your profile.</p>
-            )}
-          </section>
-        </div>
-      ) : mode === "security" ? (
-        <AccountSecurity />
-      ) : mode === "wallet" ? (
-        <WalletTab onViewAllTransactions={() => setMode("ledger")} />
-      ) : (
-        <LedgerTab />
-      )}
+            <section className={`account-card${user ? "" : " muted"}`}>
+              <h3 className="account-h3">Profile</h3>
+              {user ? (
+                <>
+                  <label className="account-field-label">Display name</label>
+                  <input
+                    className="account-input"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your name in G-Maiden"
+                    spellCheck={false}
+                  />
+                  <button
+                    type="button"
+                    className="account-save"
+                    onClick={() => void saveName()}
+                    disabled={saving || name.trim() === displayName}
+                  >
+                    {saving ? "Saving…" : "Save"}
+                  </button>
+                  {msg ? <div className="account-msg">{msg}</div> : null}
+                </>
+              ) : (
+                <p className="account-hint">Sign in to set your display name and sync your profile.</p>
+              )}
+            </section>
+          </div>
+        ) : mode === "security" ? (
+          <AccountSecurity />
+        ) : mode === "wallet" ? (
+          <WalletTab onViewAllTransactions={() => setMode("ledger")} />
+        ) : (
+          <LedgerTab />
+        )}
+      </div>
     </div>
   );
 }

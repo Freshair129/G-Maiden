@@ -38,6 +38,13 @@ let browserAudio: ReturnType<typeof vi.fn>
 
 beforeEach(async () => {
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+  vi.stubGlobal('ResizeObserver', class {
+    constructor(private callback: () => void) {}
+    observe() { this.callback() }
+    disconnect() {}
+  })
+  vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(424)
+  vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(500)
   const original = pack('original', 'Original')
   const state: VoiceState = {
     rootDir: 'C:\\voice-cache', packsDir: 'C:\\voice-cache\\packs', cacheDir: 'C:\\voice-cache',

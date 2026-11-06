@@ -1,11 +1,21 @@
 // @vitest-environment jsdom
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
-import { expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import VoiceInventory from '../VoiceInventory'
 const { invoke, open } = vi.hoisted(() => ({ invoke: vi.fn(), open: vi.fn() }))
 vi.mock('@tauri-apps/plugin-dialog', () => ({ open }))
 vi.mock('@tauri-apps/api/core', () => ({ invoke }))
+beforeEach(() => {
+  vi.stubGlobal('ResizeObserver', class {
+    constructor(private callback: () => void) {}
+    observe() { this.callback() }
+    disconnect() {}
+  })
+  vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(424)
+  vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(500)
+})
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals() })
 it('does not offer embedded variants for a legacy pack', async () => {
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
   const pack = { id:'legacy', announcerId:'legacy', installationId:null, capabilities:{eventPreview:false}, name:'Legacy', version:'1', locale:'th', author:'', description:'', path:'', coveredEvents:0, totalEvents:24, clips:0, availableClips:[], availableBanners:[], coverImage:'', coverImageUrl:null, builtIn:false, items:[] }

@@ -1,0 +1,1406 @@
+[
+  {
+    "regions": [
+      {
+        "bg": "none",
+        "c": "g-deck-stage",
+        "clientH": 760,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 642.2535400390625,
+        "overflow": "visible",
+        "scrollH": 760,
+        "shadow": "none",
+        "w": 1200,
+        "x": 0,
+        "y": 68.87322998046875
+      },
+      {
+        "bg": "radial-gradient(circle at 72% 12%, rgba(72, 116, 190, 0.22), rgba(0, 0, 0, 0) 38%), linear-gradient(155deg, rgb(24, 32, 50), rgb(7, 12, 20))",
+        "c": "g-deck-panel",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 608.45068359375,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "rgba(0, 0, 0, 0.42) 0px 28px 60px 0px, rgba(255, 255, 255, 0.08) 0px 1px 0px 0px inset",
+        "w": 1081.6900634765625,
+        "x": 10.14084529876709,
+        "y": 79.01407623291016
+      },
+      {
+        "bg": "none",
+        "c": "surface page-dashboard",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 608.45068359375,
+        "overflow": "visible",
+        "scrollH": 720,
+        "shadow": "none",
+        "w": 1081.6900634765625,
+        "x": 10.14084529876709,
+        "y": 79.01407623291016
+      }
+    ],
+    "root": {
+      "h": 780,
+      "w": 1200
+    },
+    "viewport": {
+      "h": 780,
+      "w": 1200
+    },
+    "page": "dashboard"
+  },
+  {
+    "regions": [
+      {
+        "bg": "none",
+        "c": "g-deck-stage",
+        "clientH": 760,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 642.2535400390625,
+        "overflow": "visible",
+        "scrollH": 760,
+        "shadow": "none",
+        "w": 1200,
+        "x": 0,
+        "y": 68.87322998046875
+      },
+      {
+        "bg": "radial-gradient(circle at 72% 12%, rgba(72, 116, 190, 0.22), rgba(0, 0, 0, 0) 38%), linear-gradient(155deg, rgb(24, 32, 50), rgb(7, 12, 20))",
+        "c": "g-deck-panel",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 608.45068359375,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "rgba(0, 0, 0, 0.42) 0px 28px 60px 0px, rgba(255, 255, 255, 0.08) 0px 1px 0px 0px inset",
+        "w": 1081.6900634765625,
+        "x": 10.14084529876709,
+        "y": 79.01407623291016
+      },
+      {
+        "bg": "none",
+        "c": "surface page-live",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 608.45068359375,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "none",
+        "w": 1081.6900634765625,
+        "x": 10.14084529876709,
+        "y": 79.01407623291016
+      },
+      {
+        "bg": "linear-gradient(rgba(11, 20, 39, 0.94), rgba(8, 14, 28, 0.94))",
+        "c": "card-shell page-hero",
+        "clientH": 99,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 85.35211181640625,
+        "overflow": "visible",
+        "scrollH": 99,
+        "shadow": "rgba(0, 0, 0, 0.24) 0px 18px 40px 0px",
+        "w": 970.140869140625,
+        "x": 98.02816772460938,
+        "y": 185.49295043945312
+      },
+      {
+        "bg": "linear-gradient(rgba(11, 20, 39, 0.94), rgba(8, 14, 28, 0.94))",
+        "c": "card-shell domain-card",
+        "clientH": 453,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 384.507080078125,
+        "overflow": "visible",
+        "scrollH": 453,
+        "shadow": "rgba(0, 0, 0, 0.24) 0px 18px 40px 0px",
+        "w": 479.1549377441406,
+        "x": 98.02816772460938,
+        "y": 282.676025390625
+      },
+      {
+        "bg": "linear-gradient(rgba(11, 20, 39, 0.94), rgba(8, 14, 28, 0.94))",
+        "c": "card-shell domain-card",
+        "clientH": 453,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 384.507080078125,
+        "overflow": "visible",
+        "scrollH": 453,
+        "shadow": "rgba(0, 0, 0, 0.24) 0px 18px 40px 0px",
+        "w": 479.1549682617187,
+        "x": 589.0140991210938,
+        "y": 282.676025390625
+      }
+    ],
+    "root": {
+      "h": 780,
+      "w": 1200
+    },
+    "viewport": {
+      "h": 780,
+      "w": 1200
+    },
+    "page": "live"
+  },
+  {
+    "regions": [
+      {
+        "bg": "none",
+        "c": "g-deck-stage",
+        "clientH": 760,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 642.2535400390625,
+        "overflow": "visible",
+        "scrollH": 760,
+        "shadow": "none",
+        "w": 1200,
+        "x": 0,
+        "y": 68.87322998046875
+      },
+      {
+        "bg": "radial-gradient(circle at 72% 12%, rgba(72, 116, 190, 0.22), rgba(0, 0, 0, 0) 38%), linear-gradient(155deg, rgb(24, 32, 50), rgb(7, 12, 20))",
+        "c": "g-deck-panel",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 608.45068359375,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "rgba(0, 0, 0, 0.42) 0px 28px 60px 0px, rgba(255, 255, 255, 0.08) 0px 1px 0px 0px inset",
+        "w": 1081.6900634765625,
+        "x": 10.14084529876709,
+        "y": 79.01407623291016
+      },
+      {
+        "bg": "none",
+        "c": "surface page-voice",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 608.45068359375,
+        "overflow": "auto",
+        "scrollH": 1612,
+        "shadow": "none",
+        "w": 1081.6900634765625,
+        "x": 10.14084529876709,
+        "y": 79.01407623291016
+      },
+      {
+        "bg": "none",
+        "c": "gm-packs-body",
+        "clientH": 1448,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 1223.45068359375,
+        "overflow": "visible",
+        "scrollH": 1448,
+        "shadow": "none",
+        "w": 963.3802490234376,
+        "x": 101.408447265625,
+        "y": 193.9436492919922
+      }
+    ],
+    "root": {
+      "h": 780,
+      "w": 1200
+    },
+    "viewport": {
+      "h": 780,
+      "w": 1200
+    },
+    "page": "voice"
+  },
+  {
+    "regions": [
+      {
+        "bg": "none",
+        "c": "g-deck-stage",
+        "clientH": 760,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 642.2535400390625,
+        "overflow": "visible",
+        "scrollH": 760,
+        "shadow": "none",
+        "w": 1200,
+        "x": 0,
+        "y": 68.87322998046875
+      },
+      {
+        "bg": "radial-gradient(circle at 72% 12%, rgba(72, 116, 190, 0.22), rgba(0, 0, 0, 0) 38%), linear-gradient(155deg, rgb(24, 32, 50), rgb(7, 12, 20))",
+        "c": "g-deck-panel",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 608.45068359375,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "rgba(0, 0, 0, 0.42) 0px 28px 60px 0px, rgba(255, 255, 255, 0.08) 0px 1px 0px 0px inset",
+        "w": 1081.6900634765625,
+        "x": 10.14084529876709,
+        "y": 79.01407623291016
+      },
+      {
+        "bg": "none",
+        "c": "surface page-store",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 608.45068359375,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "none",
+        "w": 1081.6900634765625,
+        "x": 10.14084529876709,
+        "y": 79.01407623291016
+      }
+    ],
+    "root": {
+      "h": 780,
+      "w": 1200
+    },
+    "viewport": {
+      "h": 780,
+      "w": 1200
+    },
+    "page": "store"
+  },
+  {
+    "regions": [
+      {
+        "bg": "none",
+        "c": "g-deck-stage",
+        "clientH": 760,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 642.2535400390625,
+        "overflow": "visible",
+        "scrollH": 760,
+        "shadow": "none",
+        "w": 1200,
+        "x": 0,
+        "y": 68.87322998046875
+      },
+      {
+        "bg": "radial-gradient(circle at 72% 12%, rgba(72, 116, 190, 0.22), rgba(0, 0, 0, 0) 38%), linear-gradient(155deg, rgb(24, 32, 50), rgb(7, 12, 20))",
+        "c": "g-deck-panel",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 608.45068359375,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "rgba(0, 0, 0, 0.42) 0px 28px 60px 0px, rgba(255, 255, 255, 0.08) 0px 1px 0px 0px inset",
+        "w": 1081.6900634765625,
+        "x": 10.14084529876709,
+        "y": 79.01407623291016
+      },
+      {
+        "bg": "none",
+        "c": "surface page-insights",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 608.45068359375,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "none",
+        "w": 1081.6900634765625,
+        "x": 10.14084529876709,
+        "y": 79.01407623291016
+      },
+      {
+        "bg": "linear-gradient(rgba(11, 20, 39, 0.94), rgba(8, 14, 28, 0.94))",
+        "c": "card-shell page-hero",
+        "clientH": 99,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 85.35211181640625,
+        "overflow": "visible",
+        "scrollH": 99,
+        "shadow": "rgba(0, 0, 0, 0.24) 0px 18px 40px 0px",
+        "w": 970.140869140625,
+        "x": 98.02816772460938,
+        "y": 185.49295043945312
+      },
+      {
+        "bg": "linear-gradient(rgba(11, 20, 39, 0.94), rgba(8, 14, 28, 0.94))",
+        "c": "card-shell domain-card",
+        "clientH": 453,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 384.507080078125,
+        "overflow": "visible",
+        "scrollH": 453,
+        "shadow": "rgba(0, 0, 0, 0.24) 0px 18px 40px 0px",
+        "w": 970.140869140625,
+        "x": 98.02816772460938,
+        "y": 282.676025390625
+      }
+    ],
+    "root": {
+      "h": 780,
+      "w": 1200
+    },
+    "viewport": {
+      "h": 780,
+      "w": 1200
+    },
+    "page": "insights"
+  },
+  {
+    "regions": [
+      {
+        "bg": "none",
+        "c": "g-deck-stage",
+        "clientH": 760,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 642.2535400390625,
+        "overflow": "visible",
+        "scrollH": 760,
+        "shadow": "none",
+        "w": 1200,
+        "x": 0,
+        "y": 68.87322998046875
+      },
+      {
+        "bg": "radial-gradient(circle at 72% 12%, rgba(72, 116, 190, 0.22), rgba(0, 0, 0, 0) 38%), linear-gradient(155deg, rgb(24, 32, 50), rgb(7, 12, 20))",
+        "c": "g-deck-panel",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 608.45068359375,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "rgba(0, 0, 0, 0.42) 0px 28px 60px 0px, rgba(255, 255, 255, 0.08) 0px 1px 0px 0px inset",
+        "w": 1081.6900634765625,
+        "x": 10.14084529876709,
+        "y": 79.01407623291016
+      },
+      {
+        "bg": "none",
+        "c": "surface page-account",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 608.45068359375,
+        "overflow": "auto",
+        "scrollH": 720,
+        "shadow": "none",
+        "w": 1081.6900634765625,
+        "x": 10.14084529876709,
+        "y": 79.01407623291016
+      },
+      {
+        "bg": "none",
+        "c": "account-page",
+        "clientH": 622,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 525.6337890625,
+        "overflow": "auto",
+        "scrollH": 622,
+        "shadow": "none",
+        "w": 970.140869140625,
+        "x": 98.02816772460938,
+        "y": 141.54928588867188
+      }
+    ],
+    "root": {
+      "h": 780,
+      "w": 1200
+    },
+    "viewport": {
+      "h": 780,
+      "w": 1200
+    },
+    "page": "account"
+  },
+  {
+    "regions": [
+      {
+        "bg": "none",
+        "c": "g-deck-stage",
+        "clientH": 760,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 642.2535400390625,
+        "overflow": "visible",
+        "scrollH": 760,
+        "shadow": "none",
+        "w": 1200,
+        "x": 0,
+        "y": 68.87322998046875
+      },
+      {
+        "bg": "radial-gradient(circle at 72% 12%, rgba(72, 116, 190, 0.22), rgba(0, 0, 0, 0) 38%), linear-gradient(155deg, rgb(24, 32, 50), rgb(7, 12, 20))",
+        "c": "g-deck-panel",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 608.45068359375,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "rgba(0, 0, 0, 0.42) 0px 28px 60px 0px, rgba(255, 255, 255, 0.08) 0px 1px 0px 0px inset",
+        "w": 1081.6900634765625,
+        "x": 10.14084529876709,
+        "y": 79.01407623291016
+      },
+      {
+        "bg": "none",
+        "c": "surface page-settings settings-split-mode",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 608.45068359375,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "none",
+        "w": 1081.6900634765625,
+        "x": 10.14084529876709,
+        "y": 79.01407623291016
+      },
+      {
+        "bg": "none",
+        "c": "settings-detail-body",
+        "clientH": 622,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 525.6337890625,
+        "overflow": "auto",
+        "scrollH": 622,
+        "shadow": "none",
+        "w": 755.4930419921875,
+        "x": 312.6760559082031,
+        "y": 141.54928588867188
+      }
+    ],
+    "root": {
+      "h": 780,
+      "w": 1200
+    },
+    "viewport": {
+      "h": 780,
+      "w": 1200
+    },
+    "page": "settings"
+  },
+  {
+    "regions": [
+      {
+        "bg": "none",
+        "c": "g-deck-stage",
+        "clientH": 760,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 677.042236328125,
+        "overflow": "visible",
+        "scrollH": 760,
+        "shadow": "none",
+        "w": 1265,
+        "x": 0,
+        "y": 69.9788818359375
+      },
+      {
+        "bg": "radial-gradient(circle at 72% 12%, rgba(72, 116, 190, 0.22), rgba(0, 0, 0, 0) 38%), linear-gradient(155deg, rgb(24, 32, 50), rgb(7, 12, 20))",
+        "c": "g-deck-panel",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 641.408447265625,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "rgba(0, 0, 0, 0.42) 0px 28px 60px 0px, rgba(255, 255, 255, 0.08) 0px 1px 0px 0px inset",
+        "w": 1140.2816162109375,
+        "x": 10.690140724182127,
+        "y": 80.66902160644531
+      },
+      {
+        "bg": "none",
+        "c": "surface page-dashboard",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 641.408447265625,
+        "overflow": "visible",
+        "scrollH": 720,
+        "shadow": "none",
+        "w": 1140.2816162109375,
+        "x": 10.690140724182127,
+        "y": 80.66902160644531
+      }
+    ],
+    "root": {
+      "h": 817,
+      "w": 1265
+    },
+    "viewport": {
+      "h": 817,
+      "w": 1265
+    },
+    "page": "dashboard"
+  },
+  {
+    "regions": [
+      {
+        "bg": "none",
+        "c": "g-deck-stage",
+        "clientH": 760,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 677.042236328125,
+        "overflow": "visible",
+        "scrollH": 760,
+        "shadow": "none",
+        "w": 1265,
+        "x": 0,
+        "y": 69.9788818359375
+      },
+      {
+        "bg": "radial-gradient(circle at 72% 12%, rgba(72, 116, 190, 0.22), rgba(0, 0, 0, 0) 38%), linear-gradient(155deg, rgb(24, 32, 50), rgb(7, 12, 20))",
+        "c": "g-deck-panel",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 641.408447265625,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "rgba(0, 0, 0, 0.42) 0px 28px 60px 0px, rgba(255, 255, 255, 0.08) 0px 1px 0px 0px inset",
+        "w": 1140.2816162109375,
+        "x": 10.690140724182127,
+        "y": 80.66902160644531
+      },
+      {
+        "bg": "none",
+        "c": "surface page-live",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 641.408447265625,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "none",
+        "w": 1140.2816162109375,
+        "x": 10.690140724182127,
+        "y": 80.66902160644531
+      },
+      {
+        "bg": "linear-gradient(rgba(11, 20, 39, 0.94), rgba(8, 14, 28, 0.94))",
+        "c": "card-shell page-hero",
+        "clientH": 99,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 89.97537231445312,
+        "overflow": "visible",
+        "scrollH": 99,
+        "shadow": "rgba(0, 0, 0, 0.24) 0px 18px 40px 0px",
+        "w": 1022.690185546875,
+        "x": 103.33802795410156,
+        "y": 192.91549682617188
+      },
+      {
+        "bg": "linear-gradient(rgba(11, 20, 39, 0.94), rgba(8, 14, 28, 0.94))",
+        "c": "card-shell domain-card",
+        "clientH": 453,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 405.33453369140625,
+        "overflow": "visible",
+        "scrollH": 453,
+        "shadow": "rgba(0, 0, 0, 0.24) 0px 18px 40px 0px",
+        "w": 505.1091918945313,
+        "x": 103.33802795410156,
+        "y": 295.3626708984375
+      },
+      {
+        "bg": "linear-gradient(rgba(11, 20, 39, 0.94), rgba(8, 14, 28, 0.94))",
+        "c": "card-shell domain-card",
+        "clientH": 453,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 405.33453369140625,
+        "overflow": "visible",
+        "scrollH": 453,
+        "shadow": "rgba(0, 0, 0, 0.24) 0px 18px 40px 0px",
+        "w": 505.1091918945313,
+        "x": 620.9190063476562,
+        "y": 295.3626708984375
+      }
+    ],
+    "root": {
+      "h": 817,
+      "w": 1265
+    },
+    "viewport": {
+      "h": 817,
+      "w": 1265
+    },
+    "page": "live"
+  },
+  {
+    "regions": [
+      {
+        "bg": "none",
+        "c": "g-deck-stage",
+        "clientH": 760,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 677.042236328125,
+        "overflow": "visible",
+        "scrollH": 760,
+        "shadow": "none",
+        "w": 1265,
+        "x": 0,
+        "y": 69.9788818359375
+      },
+      {
+        "bg": "radial-gradient(circle at 72% 12%, rgba(72, 116, 190, 0.22), rgba(0, 0, 0, 0) 38%), linear-gradient(155deg, rgb(24, 32, 50), rgb(7, 12, 20))",
+        "c": "g-deck-panel",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 641.408447265625,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "rgba(0, 0, 0, 0.42) 0px 28px 60px 0px, rgba(255, 255, 255, 0.08) 0px 1px 0px 0px inset",
+        "w": 1140.2816162109375,
+        "x": 10.690140724182127,
+        "y": 80.66902160644531
+      },
+      {
+        "bg": "none",
+        "c": "surface page-voice",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 641.408447265625,
+        "overflow": "auto",
+        "scrollH": 1225,
+        "shadow": "none",
+        "w": 1140.2816162109375,
+        "x": 10.690140724182127,
+        "y": 80.66902160644531
+      },
+      {
+        "bg": "none",
+        "c": "gm-packs-body",
+        "clientH": 1061,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 945.5762939453124,
+        "overflow": "visible",
+        "scrollH": 1061,
+        "shadow": "none",
+        "w": 1015.5632934570312,
+        "x": 106.90140533447266,
+        "y": 201.82394409179688
+      }
+    ],
+    "root": {
+      "h": 817,
+      "w": 1265
+    },
+    "viewport": {
+      "h": 817,
+      "w": 1265
+    },
+    "page": "voice"
+  },
+  {
+    "regions": [
+      {
+        "bg": "none",
+        "c": "g-deck-stage",
+        "clientH": 760,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 677.042236328125,
+        "overflow": "visible",
+        "scrollH": 760,
+        "shadow": "none",
+        "w": 1265,
+        "x": 0,
+        "y": 69.9788818359375
+      },
+      {
+        "bg": "radial-gradient(circle at 72% 12%, rgba(72, 116, 190, 0.22), rgba(0, 0, 0, 0) 38%), linear-gradient(155deg, rgb(24, 32, 50), rgb(7, 12, 20))",
+        "c": "g-deck-panel",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 641.408447265625,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "rgba(0, 0, 0, 0.42) 0px 28px 60px 0px, rgba(255, 255, 255, 0.08) 0px 1px 0px 0px inset",
+        "w": 1140.2816162109375,
+        "x": 10.690140724182127,
+        "y": 80.66902160644531
+      },
+      {
+        "bg": "none",
+        "c": "surface page-store",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 641.408447265625,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "none",
+        "w": 1140.2816162109375,
+        "x": 10.690140724182127,
+        "y": 80.66902160644531
+      }
+    ],
+    "root": {
+      "h": 817,
+      "w": 1265
+    },
+    "viewport": {
+      "h": 817,
+      "w": 1265
+    },
+    "page": "store"
+  },
+  {
+    "regions": [
+      {
+        "bg": "none",
+        "c": "g-deck-stage",
+        "clientH": 760,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 677.042236328125,
+        "overflow": "visible",
+        "scrollH": 760,
+        "shadow": "none",
+        "w": 1265,
+        "x": 0,
+        "y": 69.9788818359375
+      },
+      {
+        "bg": "radial-gradient(circle at 72% 12%, rgba(72, 116, 190, 0.22), rgba(0, 0, 0, 0) 38%), linear-gradient(155deg, rgb(24, 32, 50), rgb(7, 12, 20))",
+        "c": "g-deck-panel",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 641.408447265625,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "rgba(0, 0, 0, 0.42) 0px 28px 60px 0px, rgba(255, 255, 255, 0.08) 0px 1px 0px 0px inset",
+        "w": 1140.2816162109375,
+        "x": 10.690140724182127,
+        "y": 80.66902160644531
+      },
+      {
+        "bg": "none",
+        "c": "surface page-insights",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 641.408447265625,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "none",
+        "w": 1140.2816162109375,
+        "x": 10.690140724182127,
+        "y": 80.66902160644531
+      },
+      {
+        "bg": "linear-gradient(rgba(11, 20, 39, 0.94), rgba(8, 14, 28, 0.94))",
+        "c": "card-shell page-hero",
+        "clientH": 99,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 89.97537231445312,
+        "overflow": "visible",
+        "scrollH": 99,
+        "shadow": "rgba(0, 0, 0, 0.24) 0px 18px 40px 0px",
+        "w": 1022.690185546875,
+        "x": 103.33802795410156,
+        "y": 192.91549682617188
+      },
+      {
+        "bg": "linear-gradient(rgba(11, 20, 39, 0.94), rgba(8, 14, 28, 0.94))",
+        "c": "card-shell domain-card",
+        "clientH": 453,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 405.33453369140625,
+        "overflow": "visible",
+        "scrollH": 453,
+        "shadow": "rgba(0, 0, 0, 0.24) 0px 18px 40px 0px",
+        "w": 1022.690185546875,
+        "x": 103.33802795410156,
+        "y": 295.3626708984375
+      }
+    ],
+    "root": {
+      "h": 817,
+      "w": 1265
+    },
+    "viewport": {
+      "h": 817,
+      "w": 1265
+    },
+    "page": "insights"
+  },
+  {
+    "regions": [
+      {
+        "bg": "none",
+        "c": "g-deck-stage",
+        "clientH": 760,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 677.042236328125,
+        "overflow": "visible",
+        "scrollH": 760,
+        "shadow": "none",
+        "w": 1265,
+        "x": 0,
+        "y": 69.9788818359375
+      },
+      {
+        "bg": "radial-gradient(circle at 72% 12%, rgba(72, 116, 190, 0.22), rgba(0, 0, 0, 0) 38%), linear-gradient(155deg, rgb(24, 32, 50), rgb(7, 12, 20))",
+        "c": "g-deck-panel",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 641.408447265625,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "rgba(0, 0, 0, 0.42) 0px 28px 60px 0px, rgba(255, 255, 255, 0.08) 0px 1px 0px 0px inset",
+        "w": 1140.2816162109375,
+        "x": 10.690140724182127,
+        "y": 80.66902160644531
+      },
+      {
+        "bg": "none",
+        "c": "surface page-account",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 641.408447265625,
+        "overflow": "auto",
+        "scrollH": 720,
+        "shadow": "none",
+        "w": 1140.2816162109375,
+        "x": 10.690140724182127,
+        "y": 80.66902160644531
+      },
+      {
+        "bg": "none",
+        "c": "account-page",
+        "clientH": 622,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 554.1056518554688,
+        "overflow": "auto",
+        "scrollH": 622,
+        "shadow": "none",
+        "w": 1022.690185546875,
+        "x": 103.33802795410156,
+        "y": 146.591552734375
+      }
+    ],
+    "root": {
+      "h": 817,
+      "w": 1265
+    },
+    "viewport": {
+      "h": 817,
+      "w": 1265
+    },
+    "page": "account"
+  },
+  {
+    "regions": [
+      {
+        "bg": "none",
+        "c": "g-deck-stage",
+        "clientH": 760,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 677.042236328125,
+        "overflow": "visible",
+        "scrollH": 760,
+        "shadow": "none",
+        "w": 1265,
+        "x": 0,
+        "y": 69.9788818359375
+      },
+      {
+        "bg": "radial-gradient(circle at 72% 12%, rgba(72, 116, 190, 0.22), rgba(0, 0, 0, 0) 38%), linear-gradient(155deg, rgb(24, 32, 50), rgb(7, 12, 20))",
+        "c": "g-deck-panel",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 641.408447265625,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "rgba(0, 0, 0, 0.42) 0px 28px 60px 0px, rgba(255, 255, 255, 0.08) 0px 1px 0px 0px inset",
+        "w": 1140.2816162109375,
+        "x": 10.690140724182127,
+        "y": 80.66902160644531
+      },
+      {
+        "bg": "none",
+        "c": "surface page-settings settings-split-mode",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 641.408447265625,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "none",
+        "w": 1140.2816162109375,
+        "x": 10.690140724182127,
+        "y": 80.66902160644531
+      },
+      {
+        "bg": "none",
+        "c": "settings-detail-body",
+        "clientH": 622,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 554.1056518554688,
+        "overflow": "auto",
+        "scrollH": 622,
+        "shadow": "none",
+        "w": 796.41552734375,
+        "x": 329.6126708984375,
+        "y": 146.591552734375
+      }
+    ],
+    "root": {
+      "h": 817,
+      "w": 1265
+    },
+    "viewport": {
+      "h": 817,
+      "w": 1265
+    },
+    "page": "settings"
+  },
+  {
+    "regions": [
+      {
+        "bg": "none",
+        "c": "g-deck-stage",
+        "clientH": 760,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 1026,
+        "overflow": "visible",
+        "scrollH": 760,
+        "shadow": "none",
+        "w": 1917,
+        "x": 1.5,
+        "y": 27
+      },
+      {
+        "bg": "radial-gradient(circle at 72% 12%, rgba(72, 116, 190, 0.22), rgba(0, 0, 0, 0) 38%), linear-gradient(155deg, rgb(24, 32, 50), rgb(7, 12, 20))",
+        "c": "g-deck-panel",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 972,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "rgba(0, 0, 0, 0.42) 0px 28px 60px 0px, rgba(255, 255, 255, 0.08) 0px 1px 0px 0px inset",
+        "w": 1728.0001220703125,
+        "x": 17.700000762939453,
+        "y": 43.20000076293945
+      },
+      {
+        "bg": "none",
+        "c": "surface page-dashboard",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 972,
+        "overflow": "visible",
+        "scrollH": 720,
+        "shadow": "none",
+        "w": 1728.0001220703125,
+        "x": 17.700000762939453,
+        "y": 43.20000076293945
+      }
+    ],
+    "root": {
+      "h": 1080,
+      "w": 1920
+    },
+    "viewport": {
+      "h": 1080,
+      "w": 1920
+    },
+    "page": "dashboard"
+  },
+  {
+    "regions": [
+      {
+        "bg": "none",
+        "c": "g-deck-stage",
+        "clientH": 760,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 1026,
+        "overflow": "visible",
+        "scrollH": 760,
+        "shadow": "none",
+        "w": 1917,
+        "x": 1.5,
+        "y": 27
+      },
+      {
+        "bg": "radial-gradient(circle at 72% 12%, rgba(72, 116, 190, 0.22), rgba(0, 0, 0, 0) 38%), linear-gradient(155deg, rgb(24, 32, 50), rgb(7, 12, 20))",
+        "c": "g-deck-panel",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 972,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "rgba(0, 0, 0, 0.42) 0px 28px 60px 0px, rgba(255, 255, 255, 0.08) 0px 1px 0px 0px inset",
+        "w": 1728.0001220703125,
+        "x": 17.700000762939453,
+        "y": 43.20000076293945
+      },
+      {
+        "bg": "none",
+        "c": "surface page-live",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 972,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "none",
+        "w": 1728.0001220703125,
+        "x": 17.700000762939453,
+        "y": 43.20000076293945
+      },
+      {
+        "bg": "linear-gradient(rgba(11, 20, 39, 0.94), rgba(8, 14, 28, 0.94))",
+        "c": "card-shell page-hero",
+        "clientH": 99,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 136.34999084472656,
+        "overflow": "visible",
+        "scrollH": 99,
+        "shadow": "rgba(0, 0, 0, 0.24) 0px 18px 40px 0px",
+        "w": 1549.800048828125,
+        "x": 158.10000610351562,
+        "y": 213.3000030517578
+      },
+      {
+        "bg": "linear-gradient(rgba(11, 20, 39, 0.94), rgba(8, 14, 28, 0.94))",
+        "c": "card-shell domain-card",
+        "clientH": 453,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 614.25,
+        "overflow": "visible",
+        "scrollH": 453,
+        "shadow": "rgba(0, 0, 0, 0.24) 0px 18px 40px 0px",
+        "w": 765.449951171875,
+        "x": 158.10000610351562,
+        "y": 368.5500183105469
+      },
+      {
+        "bg": "linear-gradient(rgba(11, 20, 39, 0.94), rgba(8, 14, 28, 0.94))",
+        "c": "card-shell domain-card",
+        "clientH": 453,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 614.25,
+        "overflow": "visible",
+        "scrollH": 453,
+        "shadow": "rgba(0, 0, 0, 0.24) 0px 18px 40px 0px",
+        "w": 765.4500122070312,
+        "x": 942.4500122070312,
+        "y": 368.5500183105469
+      }
+    ],
+    "root": {
+      "h": 1080,
+      "w": 1920
+    },
+    "viewport": {
+      "h": 1080,
+      "w": 1920
+    },
+    "page": "live"
+  },
+  {
+    "regions": [
+      {
+        "bg": "none",
+        "c": "g-deck-stage",
+        "clientH": 760,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 1026,
+        "overflow": "visible",
+        "scrollH": 760,
+        "shadow": "none",
+        "w": 1917,
+        "x": 1.5,
+        "y": 27
+      },
+      {
+        "bg": "radial-gradient(circle at 72% 12%, rgba(72, 116, 190, 0.22), rgba(0, 0, 0, 0) 38%), linear-gradient(155deg, rgb(24, 32, 50), rgb(7, 12, 20))",
+        "c": "g-deck-panel",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 972,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "rgba(0, 0, 0, 0.42) 0px 28px 60px 0px, rgba(255, 255, 255, 0.08) 0px 1px 0px 0px inset",
+        "w": 1728.0001220703125,
+        "x": 17.700000762939453,
+        "y": 43.20000076293945
+      },
+      {
+        "bg": "none",
+        "c": "surface page-voice",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 972,
+        "overflow": "auto",
+        "scrollH": 1225,
+        "shadow": "none",
+        "w": 1728.0001220703125,
+        "x": 17.700000762939453,
+        "y": 43.20000076293945
+      },
+      {
+        "bg": "none",
+        "c": "gm-packs-body",
+        "clientH": 1061,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 1432.9405517578125,
+        "overflow": "visible",
+        "scrollH": 1061,
+        "shadow": "none",
+        "w": 1539,
+        "x": 163.5,
+        "y": 226.8000030517578
+      }
+    ],
+    "root": {
+      "h": 1080,
+      "w": 1920
+    },
+    "viewport": {
+      "h": 1080,
+      "w": 1920
+    },
+    "page": "voice"
+  },
+  {
+    "regions": [
+      {
+        "bg": "none",
+        "c": "g-deck-stage",
+        "clientH": 760,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 1026,
+        "overflow": "visible",
+        "scrollH": 760,
+        "shadow": "none",
+        "w": 1917,
+        "x": 1.5,
+        "y": 27
+      },
+      {
+        "bg": "radial-gradient(circle at 72% 12%, rgba(72, 116, 190, 0.22), rgba(0, 0, 0, 0) 38%), linear-gradient(155deg, rgb(24, 32, 50), rgb(7, 12, 20))",
+        "c": "g-deck-panel",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 972,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "rgba(0, 0, 0, 0.42) 0px 28px 60px 0px, rgba(255, 255, 255, 0.08) 0px 1px 0px 0px inset",
+        "w": 1728.0001220703125,
+        "x": 17.700000762939453,
+        "y": 43.20000076293945
+      },
+      {
+        "bg": "none",
+        "c": "surface page-store",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 972,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "none",
+        "w": 1728.0001220703125,
+        "x": 17.700000762939453,
+        "y": 43.20000076293945
+      }
+    ],
+    "root": {
+      "h": 1080,
+      "w": 1920
+    },
+    "viewport": {
+      "h": 1080,
+      "w": 1920
+    },
+    "page": "store"
+  },
+  {
+    "regions": [
+      {
+        "bg": "none",
+        "c": "g-deck-stage",
+        "clientH": 760,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 1026,
+        "overflow": "visible",
+        "scrollH": 760,
+        "shadow": "none",
+        "w": 1917,
+        "x": 1.5,
+        "y": 27
+      },
+      {
+        "bg": "radial-gradient(circle at 72% 12%, rgba(72, 116, 190, 0.22), rgba(0, 0, 0, 0) 38%), linear-gradient(155deg, rgb(24, 32, 50), rgb(7, 12, 20))",
+        "c": "g-deck-panel",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 972,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "rgba(0, 0, 0, 0.42) 0px 28px 60px 0px, rgba(255, 255, 255, 0.08) 0px 1px 0px 0px inset",
+        "w": 1728.0001220703125,
+        "x": 17.700000762939453,
+        "y": 43.20000076293945
+      },
+      {
+        "bg": "none",
+        "c": "surface page-insights",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 972,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "none",
+        "w": 1728.0001220703125,
+        "x": 17.700000762939453,
+        "y": 43.20000076293945
+      },
+      {
+        "bg": "linear-gradient(rgba(11, 20, 39, 0.94), rgba(8, 14, 28, 0.94))",
+        "c": "card-shell page-hero",
+        "clientH": 99,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 136.34999084472656,
+        "overflow": "visible",
+        "scrollH": 99,
+        "shadow": "rgba(0, 0, 0, 0.24) 0px 18px 40px 0px",
+        "w": 1549.800048828125,
+        "x": 158.10000610351562,
+        "y": 213.3000030517578
+      },
+      {
+        "bg": "linear-gradient(rgba(11, 20, 39, 0.94), rgba(8, 14, 28, 0.94))",
+        "c": "card-shell domain-card",
+        "clientH": 453,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 614.25,
+        "overflow": "visible",
+        "scrollH": 453,
+        "shadow": "rgba(0, 0, 0, 0.24) 0px 18px 40px 0px",
+        "w": 1549.800048828125,
+        "x": 158.10000610351562,
+        "y": 368.5500183105469
+      }
+    ],
+    "root": {
+      "h": 1080,
+      "w": 1920
+    },
+    "viewport": {
+      "h": 1080,
+      "w": 1920
+    },
+    "page": "insights"
+  },
+  {
+    "regions": [
+      {
+        "bg": "none",
+        "c": "g-deck-stage",
+        "clientH": 760,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 1026,
+        "overflow": "visible",
+        "scrollH": 760,
+        "shadow": "none",
+        "w": 1917,
+        "x": 1.5,
+        "y": 27
+      },
+      {
+        "bg": "radial-gradient(circle at 72% 12%, rgba(72, 116, 190, 0.22), rgba(0, 0, 0, 0) 38%), linear-gradient(155deg, rgb(24, 32, 50), rgb(7, 12, 20))",
+        "c": "g-deck-panel",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 972,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "rgba(0, 0, 0, 0.42) 0px 28px 60px 0px, rgba(255, 255, 255, 0.08) 0px 1px 0px 0px inset",
+        "w": 1728.0001220703125,
+        "x": 17.700000762939453,
+        "y": 43.20000076293945
+      },
+      {
+        "bg": "none",
+        "c": "surface page-account",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 972,
+        "overflow": "auto",
+        "scrollH": 720,
+        "shadow": "none",
+        "w": 1728.0001220703125,
+        "x": 17.700000762939453,
+        "y": 43.20000076293945
+      },
+      {
+        "bg": "none",
+        "c": "account-page",
+        "clientH": 622,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 839.699951171875,
+        "overflow": "auto",
+        "scrollH": 622,
+        "shadow": "none",
+        "w": 1549.800048828125,
+        "x": 158.10000610351562,
+        "y": 143.10000610351562
+      }
+    ],
+    "root": {
+      "h": 1080,
+      "w": 1920
+    },
+    "viewport": {
+      "h": 1080,
+      "w": 1920
+    },
+    "page": "account"
+  },
+  {
+    "regions": [
+      {
+        "bg": "none",
+        "c": "g-deck-stage",
+        "clientH": 760,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 1026,
+        "overflow": "visible",
+        "scrollH": 760,
+        "shadow": "none",
+        "w": 1917,
+        "x": 1.5,
+        "y": 27
+      },
+      {
+        "bg": "radial-gradient(circle at 72% 12%, rgba(72, 116, 190, 0.22), rgba(0, 0, 0, 0) 38%), linear-gradient(155deg, rgb(24, 32, 50), rgb(7, 12, 20))",
+        "c": "g-deck-panel",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 972,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "rgba(0, 0, 0, 0.42) 0px 28px 60px 0px, rgba(255, 255, 255, 0.08) 0px 1px 0px 0px inset",
+        "w": 1728.0001220703125,
+        "x": 17.700000762939453,
+        "y": 43.20000076293945
+      },
+      {
+        "bg": "none",
+        "c": "surface page-settings settings-split-mode",
+        "clientH": 720,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 972,
+        "overflow": "hidden",
+        "scrollH": 720,
+        "shadow": "none",
+        "w": 1728.0001220703125,
+        "x": 17.700000762939453,
+        "y": 43.20000076293945
+      },
+      {
+        "bg": "none",
+        "c": "settings-detail-body",
+        "clientH": 622,
+        "font": "\"IBM Plex Sans Thai Looped\", \"IBM Plex Sans\", \"Segoe UI\", system-ui, sans-serif",
+        "h": 839.699951171875,
+        "overflow": "auto",
+        "scrollH": 622,
+        "shadow": "none",
+        "w": 1206.9000244140625,
+        "x": 501,
+        "y": 143.10000610351562
+      }
+    ],
+    "root": {
+      "h": 1080,
+      "w": 1920
+    },
+    "viewport": {
+      "h": 1080,
+      "w": 1920
+    },
+    "page": "settings"
+  }
+]

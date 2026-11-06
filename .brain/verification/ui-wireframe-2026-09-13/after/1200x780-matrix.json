@@ -1,0 +1,1036 @@
+{
+  "dashboard": {
+    "cards": [],
+    "region": {
+      ".account-content": null,
+      ".account-page": null,
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": null,
+      ".settings-detail-body": null,
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "visible",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "live": {
+    "cards": [
+      {
+        "background": "rgb(11, 14, 22) none repeat scroll 0% 0% / auto padding-box border-box",
+        "blur": "none",
+        "shadow": "none"
+      },
+      {
+        "background": "rgb(11, 14, 22) none repeat scroll 0% 0% / auto padding-box border-box",
+        "blur": "none",
+        "shadow": "none"
+      },
+      {
+        "background": "rgb(11, 14, 22) none repeat scroll 0% 0% / auto padding-box border-box",
+        "blur": "none",
+        "shadow": "none"
+      }
+    ],
+    "region": {
+      ".account-content": null,
+      ".account-page": null,
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": null,
+      ".settings-detail-body": null,
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "voice": {
+    "cards": [],
+    "region": {
+      ".account-content": null,
+      ".account-page": null,
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": {
+        "bottom": 667.1830749511719,
+        "height": 622,
+        "overflow": "visible",
+        "scroll": 622,
+        "top": 141.54928588867188
+      },
+      ".settings-detail-body": null,
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": {
+        "bottom": 660.4225463867188,
+        "height": 470,
+        "overflow": "hidden",
+        "scroll": 470,
+        "top": 261.5492858886719
+      },
+      ".voice-grid": {
+        "bottom": 619.859130859375,
+        "height": 424,
+        "overflow": "hidden",
+        "scroll": 424,
+        "top": 261.5492858886719
+      },
+      ".voice-inventory": {
+        "bottom": 663.8027801513672,
+        "height": 556,
+        "overflow": "visible",
+        "scroll": 556,
+        "top": 193.9436492919922
+      },
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "store": {
+    "cards": [],
+    "region": {
+      ".account-content": null,
+      ".account-page": null,
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": null,
+      ".settings-detail-body": null,
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "insights": {
+    "cards": [
+      {
+        "background": "rgb(11, 14, 22) none repeat scroll 0% 0% / auto padding-box border-box",
+        "blur": "none",
+        "shadow": "none"
+      },
+      {
+        "background": "rgb(11, 14, 22) none repeat scroll 0% 0% / auto padding-box border-box",
+        "blur": "none",
+        "shadow": "none"
+      },
+      {
+        "background": "rgb(11, 14, 22) none repeat scroll 0% 0% / auto padding-box border-box",
+        "blur": "none",
+        "shadow": "none"
+      },
+      {
+        "background": "rgb(11, 14, 22) none repeat scroll 0% 0% / auto padding-box border-box",
+        "blur": "none",
+        "shadow": "none"
+      },
+      {
+        "background": "rgb(11, 14, 22) none repeat scroll 0% 0% / auto padding-box border-box",
+        "blur": "none",
+        "shadow": "none"
+      },
+      {
+        "background": "rgb(11, 14, 22) none repeat scroll 0% 0% / auto padding-box border-box",
+        "blur": "none",
+        "shadow": "none"
+      }
+    ],
+    "region": {
+      ".account-content": null,
+      ".account-page": null,
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": null,
+      ".settings-detail-body": null,
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "account": {
+    "cards": [],
+    "region": {
+      ".account-content": {
+        "bottom": 663.8027954101562,
+        "height": 415,
+        "overflow": "auto",
+        "scroll": 415,
+        "top": 312.8873291015625
+      },
+      ".account-page": {
+        "bottom": 667.1830749511719,
+        "height": 622,
+        "overflow": "hidden",
+        "scroll": 622,
+        "top": 141.54928588867188
+      },
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": null,
+      ".settings-detail-body": null,
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "settings": {
+    "cards": [],
+    "region": {
+      ".account-content": null,
+      ".account-page": null,
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": null,
+      ".settings-detail-body": {
+        "bottom": 667.1830749511719,
+        "height": 622,
+        "overflow": "auto",
+        "scroll": 622,
+        "top": 141.54928588867188
+      },
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "build": {
+    "cards": [
+      {
+        "background": "rgb(11, 14, 22) none repeat scroll 0% 0% / auto padding-box border-box",
+        "blur": "none",
+        "shadow": "none"
+      },
+      {
+        "background": "rgb(11, 14, 22) none repeat scroll 0% 0% / auto padding-box border-box",
+        "blur": "none",
+        "shadow": "none"
+      },
+      {
+        "background": "rgb(11, 14, 22) none repeat scroll 0% 0% / auto padding-box border-box",
+        "blur": "none",
+        "shadow": "none"
+      }
+    ],
+    "region": {
+      ".account-content": null,
+      ".account-page": null,
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": null,
+      ".settings-detail-body": null,
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "voice-items": {
+    "cards": [],
+    "region": {
+      ".account-content": null,
+      ".account-page": null,
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": {
+        "bottom": 667.1830749511719,
+        "height": 622,
+        "overflow": "visible",
+        "scroll": 622,
+        "top": 141.54928588867188
+      },
+      ".settings-detail-body": null,
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "voice-editor-install": {
+    "cards": [],
+    "region": {
+      ".account-content": null,
+      ".account-page": null,
+      ".audio-grid": null,
+      ".audio-page": {
+        "bottom": 663.8027801513672,
+        "height": 556,
+        "overflow": "hidden",
+        "scroll": 556,
+        "top": 193.9436492919922
+      },
+      ".audio-tools-grid": {
+        "bottom": 663.8027954101562,
+        "height": 355,
+        "overflow": "visible",
+        "scroll": 355,
+        "top": 364.0140686035156
+      },
+      ".gm-packs-page": {
+        "bottom": 667.1830749511719,
+        "height": 622,
+        "overflow": "visible",
+        "scroll": 622,
+        "top": 141.54928588867188
+      },
+      ".settings-detail-body": null,
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "voice-editor-details": {
+    "cards": [],
+    "region": {
+      ".account-content": null,
+      ".account-page": null,
+      ".audio-grid": null,
+      ".audio-page": {
+        "bottom": 663.8027801513672,
+        "height": 556,
+        "overflow": "hidden",
+        "scroll": 556,
+        "top": 193.9436492919922
+      },
+      ".audio-tools-grid": {
+        "bottom": 663.8027954101562,
+        "height": 355,
+        "overflow": "visible",
+        "scroll": 355,
+        "top": 364.0140686035156
+      },
+      ".gm-packs-page": {
+        "bottom": 667.1830749511719,
+        "height": 622,
+        "overflow": "visible",
+        "scroll": 622,
+        "top": 141.54928588867188
+      },
+      ".settings-detail-body": null,
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "voice-editor-events": {
+    "cards": [],
+    "region": {
+      ".account-content": null,
+      ".account-page": null,
+      ".audio-grid": {
+        "bottom": 663.8027954101562,
+        "height": 355,
+        "overflow": "visible",
+        "scroll": 355,
+        "top": 364.0140686035156
+      },
+      ".audio-page": {
+        "bottom": 663.8027801513672,
+        "height": 556,
+        "overflow": "hidden",
+        "scroll": 556,
+        "top": 193.9436492919922
+      },
+      ".audio-tools-grid": null,
+      ".gm-packs-page": {
+        "bottom": 667.1830749511719,
+        "height": 622,
+        "overflow": "visible",
+        "scroll": 622,
+        "top": 141.54928588867188
+      },
+      ".settings-detail-body": null,
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "store-wallet": {
+    "cards": [],
+    "region": {
+      ".account-content": null,
+      ".account-page": null,
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": null,
+      ".settings-detail-body": null,
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": {
+        "bottom": 667.18310546875,
+        "height": 570,
+        "overflow": "visible",
+        "scroll": 570,
+        "top": 185.49295043945312
+      }
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "store-inventory": {
+    "cards": [],
+    "region": {
+      ".account-content": null,
+      ".account-page": null,
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": null,
+      ".settings-detail-body": null,
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "store-ledger": {
+    "cards": [],
+    "region": {
+      ".account-content": null,
+      ".account-page": null,
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": null,
+      ".settings-detail-body": null,
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "history": {
+    "cards": [
+      {
+        "background": "rgb(11, 14, 22) none repeat scroll 0% 0% / auto padding-box border-box",
+        "blur": "none",
+        "shadow": "none"
+      },
+      {
+        "background": "rgb(11, 14, 22) none repeat scroll 0% 0% / auto padding-box border-box",
+        "blur": "none",
+        "shadow": "none"
+      }
+    ],
+    "region": {
+      ".account-content": null,
+      ".account-page": null,
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": null,
+      ".settings-detail-body": null,
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "account-wallet": {
+    "cards": [],
+    "region": {
+      ".account-content": {
+        "bottom": 663.8027954101562,
+        "height": 415,
+        "overflow": "auto",
+        "scroll": 415,
+        "top": 312.8873291015625
+      },
+      ".account-page": {
+        "bottom": 667.1830749511719,
+        "height": 622,
+        "overflow": "hidden",
+        "scroll": 622,
+        "top": 141.54928588867188
+      },
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": null,
+      ".settings-detail-body": null,
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": {
+        "bottom": 663.8027954101562,
+        "height": 415,
+        "overflow": "visible",
+        "scroll": 415,
+        "top": 312.8873291015625
+      }
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "account-ledger": {
+    "cards": [],
+    "region": {
+      ".account-content": {
+        "bottom": 663.8027954101562,
+        "height": 415,
+        "overflow": "auto",
+        "scroll": 415,
+        "top": 312.8873291015625
+      },
+      ".account-page": {
+        "bottom": 667.1830749511719,
+        "height": 622,
+        "overflow": "hidden",
+        "scroll": 622,
+        "top": 141.54928588867188
+      },
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": null,
+      ".settings-detail-body": null,
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "account-security": {
+    "cards": [],
+    "region": {
+      ".account-content": {
+        "bottom": 663.8027954101562,
+        "height": 415,
+        "overflow": "auto",
+        "scroll": 415,
+        "top": 312.8873291015625
+      },
+      ".account-page": {
+        "bottom": 667.1830749511719,
+        "height": 622,
+        "overflow": "hidden",
+        "scroll": 622,
+        "top": 141.54928588867188
+      },
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": null,
+      ".settings-detail-body": null,
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "settings-general": {
+    "cards": [],
+    "region": {
+      ".account-content": null,
+      ".account-page": null,
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": null,
+      ".settings-detail-body": {
+        "bottom": 667.1830749511719,
+        "height": 622,
+        "overflow": "auto",
+        "scroll": 622,
+        "top": 141.54928588867188
+      },
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "settings-overlay": {
+    "cards": [],
+    "region": {
+      ".account-content": null,
+      ".account-page": null,
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": null,
+      ".settings-detail-body": {
+        "bottom": 667.1830749511719,
+        "height": 622,
+        "overflow": "auto",
+        "scroll": 622,
+        "top": 141.54928588867188
+      },
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "settings-voice": {
+    "cards": [],
+    "region": {
+      ".account-content": null,
+      ".account-page": null,
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": null,
+      ".settings-detail-body": {
+        "bottom": 667.1830749511719,
+        "height": 622,
+        "overflow": "hidden",
+        "scroll": 622,
+        "top": 141.54928588867188
+      },
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "settings-speech": {
+    "cards": [],
+    "region": {
+      ".account-content": null,
+      ".account-page": null,
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": null,
+      ".settings-detail-body": {
+        "bottom": 667.1830749511719,
+        "height": 622,
+        "overflow": "hidden",
+        "scroll": 622,
+        "top": 141.54928588867188
+      },
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "settings-banners": {
+    "cards": [],
+    "region": {
+      ".account-content": null,
+      ".account-page": null,
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": null,
+      ".settings-detail-body": {
+        "bottom": 667.1830749511719,
+        "height": 622,
+        "overflow": "hidden",
+        "scroll": 622,
+        "top": 141.54928588867188
+      },
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "settings-ai": {
+    "cards": [],
+    "region": {
+      ".account-content": null,
+      ".account-page": null,
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": null,
+      ".settings-detail-body": {
+        "bottom": 667.1830749511719,
+        "height": 622,
+        "overflow": "auto",
+        "scroll": 622,
+        "top": 141.54928588867188
+      },
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "settings-modules": {
+    "cards": [],
+    "region": {
+      ".account-content": null,
+      ".account-page": null,
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": null,
+      ".settings-detail-body": {
+        "bottom": 667.1830749511719,
+        "height": 622,
+        "overflow": "auto",
+        "scroll": 622,
+        "top": 141.54928588867188
+      },
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "settings-privacy": {
+    "cards": [],
+    "region": {
+      ".account-content": null,
+      ".account-page": null,
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": null,
+      ".settings-detail-body": {
+        "bottom": 667.1830749511719,
+        "height": 622,
+        "overflow": "auto",
+        "scroll": 622,
+        "top": 141.54928588867188
+      },
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  },
+  "settings-system": {
+    "cards": [],
+    "region": {
+      ".account-content": null,
+      ".account-page": null,
+      ".audio-grid": null,
+      ".audio-page": null,
+      ".audio-tools-grid": null,
+      ".gm-packs-page": null,
+      ".settings-detail-body": {
+        "bottom": 667.1830749511719,
+        "height": 622,
+        "overflow": "auto",
+        "scroll": 622,
+        "top": 141.54928588867188
+      },
+      ".surface": {
+        "bottom": 687.4647598266602,
+        "height": 720,
+        "overflow": "hidden",
+        "scroll": 720,
+        "top": 79.01407623291016
+      },
+      ".voice-detail": null,
+      ".voice-grid": null,
+      ".voice-inventory": null,
+      ".wallet-tab": null
+    },
+    "viewport": [
+      1200,
+      780
+    ]
+  }
+}

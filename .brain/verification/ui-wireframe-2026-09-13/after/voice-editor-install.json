@@ -1,0 +1,45 @@
+{
+  "cards": [],
+  "region": {
+    ".account-content": null,
+    ".account-page": null,
+    ".audio-grid": null,
+    ".audio-page": {
+      "bottom": 704,
+      "height": 556,
+      "overflow": "hidden",
+      "scroll": 556,
+      "top": 148
+    },
+    ".audio-tools-grid": {
+      "bottom": 704,
+      "height": 355,
+      "overflow": "visible",
+      "scroll": 355,
+      "top": 349.25
+    },
+    ".gm-packs-page": {
+      "bottom": 708,
+      "height": 622,
+      "overflow": "visible",
+      "scroll": 622,
+      "top": 86
+    },
+    ".settings-detail-body": null,
+    ".surface": {
+      "bottom": 732,
+      "height": 720,
+      "overflow": "hidden",
+      "scroll": 720,
+      "top": 12
+    },
+    ".voice-detail": null,
+    ".voice-grid": null,
+    ".voice-inventory": null,
+    ".wallet-tab": null
+  },
+  "viewport": [
+    1420,
+    760
+  ]
+}
