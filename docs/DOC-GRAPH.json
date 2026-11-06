@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-06T02:22:05.188Z",
+  "generatedAt": "2026-11-06T03:02:37.584Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -47,7 +47,7 @@
       "type": "doc",
       "path": "docs/architecture/CR-001-dxgi-capture-migration.md",
       "title": "CR-001: Migrate Screen Capture from WGC to DXGI Desktop Duplication",
-      "status": "Submitted"
+      "status": "historical"
     },
     {
       "id": "docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md",
@@ -347,21 +347,21 @@
       "type": "doc",
       "path": "docs/change request/CR-001-REVIEW-and-execution-plan.md",
       "title": "CR-001 Review & Corrected Multi-Agent Execution Plan (DXGI Migration)",
-      "status": "Wave A+B code-complete & gate-green (2026-06-29); Wave C in-game test pending Boss"
+      "status": "historical"
     },
     {
       "id": "docs/change request/CR-001-Wave-C-test-plan.md",
       "type": "doc",
       "path": "docs/change request/CR-001-Wave-C-test-plan.md",
       "title": "CR-001 Wave C — In-Game Validation Test Plan (DXGI Migration)",
-      "status": "ready to execute"
+      "status": "active"
     },
     {
       "id": "docs/change request/CR-002-Phase2-wire-backend.md",
       "type": "doc",
       "path": "docs/change request/CR-002-Phase2-wire-backend.md",
       "title": "CR-002 Phase 2 — Wire command-deck UI to live backend + run in Tauri",
-      "status": "IMPLEMENTED — merged to main 170805b8 (2026-07-02)"
+      "status": "historical"
     },
     {
       "id": "docs/change request/CR-003-account-phase1-wallet-billing.md",
@@ -375,7 +375,7 @@
       "type": "doc",
       "path": "docs/change request/CR-003-payment-golive-checklist.md",
       "title": "CR-003 Payment Path — Go-Live Checklist",
-      "status": "Open — blocked on Phase 0 (legal/terms) + Phase 1 (Omise)"
+      "status": "active"
     },
     {
       "id": "docs/change request/CR-004-voice-command-browser.md",
@@ -405,7 +405,7 @@
       "type": "doc",
       "path": "docs/change request/CR-005-landing-auth-social.md",
       "title": "Landing page + Full-screen Auth + G-Social community",
-      "status": "DRAFT — awaiting approval"
+      "status": "draft"
     },
     {
       "id": "docs/change request/CR-007-frostline-deck-refresh.md",
@@ -2071,7 +2071,7 @@
       "from": "docs/README.md",
       "to": "docs/research/2026-07-19-govibe-gmaiden-governance-comparison.md",
       "type": "wikilink",
-      "line": 122
+      "line": 133
     },
     {
       "from": "docs/architecture/CR-001-dxgi-capture-migration.md",
@@ -9733,13 +9733,6 @@
       "reason": "no-metadata"
     },
     {
-      "file": "docs/architecture/CR-001-dxgi-capture-migration.md",
-      "line": null,
-      "reason": "invalid-status",
-      "severity": "error",
-      "status": "Submitted"
-    },
-    {
       "file": "docs/architecture/adr/ADR-15-command-deck-hud-v2-design-system.md",
       "line": null,
       "reason": "invalid-status",
@@ -9805,27 +9798,6 @@
       "symbol": "sanitize_file_name"
     },
     {
-      "file": "docs/change request/CR-001-REVIEW-and-execution-plan.md",
-      "line": null,
-      "reason": "invalid-status",
-      "severity": "error",
-      "status": "Wave A+B code-complete & gate-green (2026-06-29); Wave C in-game test pending Boss"
-    },
-    {
-      "file": "docs/change request/CR-001-Wave-C-test-plan.md",
-      "line": null,
-      "reason": "invalid-status",
-      "severity": "error",
-      "status": "ready to execute"
-    },
-    {
-      "file": "docs/change request/CR-002-Phase2-wire-backend.md",
-      "line": null,
-      "reason": "invalid-status",
-      "severity": "error",
-      "status": "IMPLEMENTED — merged to main 170805b8 (2026-07-02)"
-    },
-    {
       "file": "docs/change request/CR-003-account-phase1-wallet-billing.md",
       "line": 712,
       "reason": "anchor-symbol-mismatch",
@@ -9834,23 +9806,9 @@
       "symbol": "rs"
     },
     {
-      "file": "docs/change request/CR-003-payment-golive-checklist.md",
-      "line": null,
-      "reason": "invalid-status",
-      "severity": "error",
-      "status": "Open — blocked on Phase 0 (legal/terms) + Phase 1 (Omise)"
-    },
-    {
       "file": "docs/change request/CR-004-voice-command-browser.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/change request/CR-005-landing-auth-social.md",
-      "line": null,
-      "reason": "invalid-status",
-      "severity": "error",
-      "status": "DRAFT — awaiting approval"
     },
     {
       "file": "docs/change request/CR-007-frostline-deck-refresh.md",
@@ -11033,7 +10991,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-06T02:22:07.595Z",
+    "generatedAt": "2026-11-06T03:02:40.002Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,

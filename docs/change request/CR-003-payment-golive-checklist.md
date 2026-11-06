@@ -1,9 +1,9 @@
 ---
 title: "CR-003 Payment Path — Go-Live Checklist"
 doc_id: "CR-003-payment-golive-checklist"
-status: "Open — blocked on Phase 0 (legal/terms) + Phase 1 (Omise)"
-version: "1.0.1"
-updated: "2026-07-18"
+status: "active"
+version: "1.0.2"
+updated: "2026-11-06"
 owner: "Boss"
 related_docs: ["ADR-16", "ADR-11", "ADR-12", "CR-003"]
 language: "th/en"
@@ -89,3 +89,4 @@ both of which are Boss's to complete.
 | --- | --- | --- |
 | 1.0.0 | 2026-07-19 | changelog table added per Step-5 SOP (G1.5) |
 | 1.0.1 | 2026-07-19 | link/metadata sweep (G15-T2): `[[CLAUDE.md]]` converted to plain backtick path text (CLAUDE.md is outside docs/, not a doc-graph slug) |
+| 1.0.2 | 2026-11-06 | status normalized to enum `active` (was "Open — blocked on Phase 0 (legal/terms) + Phase 1 (Omise)"): checklist still in progress |
