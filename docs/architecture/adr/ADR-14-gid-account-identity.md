@@ -2,8 +2,10 @@
 title: "ADR: GID — G-Series Account & Identity Layer"
 doc_id: "ADR-14-gid-account-identity"
 status: "accepted"
-version: "1.0.3"
-updated: "2026-10-18"
+approved_by: "Boss"
+approved_date: "2026-11-06"
+version: "1.0.4"
+updated: "2026-11-06"
 owner: "Boss"
 source_of_truth: true
 related_docs: ["ADR-10-hybrid-ingestion-resilience", "ADR-11-optin-data-contribution-flywheel", "ADR-12-community-ai-marketplace", "CR-002-Phase2-wire-backend"]
@@ -121,3 +123,4 @@ data is uploaded. Account creation is **opt-in** (additive sign-in), consistent 
 | 1.0.1 | 2026-07-19 | symbol-link coverage extension (G1.5) |
 | 1.0.2 | 2026-07-19 | link/metadata sweep (G1.5) — link `Generation` type |
 | 1.0.3 | 2026-10-18 | Reclassified the existing B generation label as legacy while preserving parsing of issued identifiers. |
+| 1.0.4 | 2026-11-06 | Boss approved this document status (explicit "approve" reply, #134 session, 2026-11-06). Records document approval only; does not widen MVP scope, consent or data-flow boundaries. |
