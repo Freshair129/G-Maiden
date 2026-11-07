@@ -2,9 +2,9 @@
 title: "CR-046 — First demo slice: Announcer Pack + Gank Meter + missing-hero alert"
 doc_id: "CR-046-demo-mvp-announcer-gank-slice"
 status: "accepted"
-approved_by: "Boss (explicit approval in chat, 2026-11-07: อนุมัติตามร่าง; v0.1.2 amendment approved 2026-11-07: อนุมัติตามร่าง)"
+approved_by: "Boss (explicit approval in chat, 2026-11-07: อนุมัติตามร่าง; v0.1.2 amendment approved 2026-11-07: อนุมัติตามร่าง; v0.1.4 §9.3 approved 2026-11-08: อนุมัติตามร่าง)"
 approved_date: "2026-11-07"
-version: "0.1.4"
+version: "0.1.5"
 updated: "2026-11-08"
 owner: "Boss"
 complexity: "C-2"
@@ -16,7 +16,7 @@ related_docs: ["roadmap", "mvp-backlog", "mvp-delivery-plan", "mvp-decisions", "
 
 > **สถานะ:** accepted 2026-11-07. Boss อนุมัติตามร่าง พร้อมมติตาม §9.1 **Risk: MEDIUM**: เปลี่ยนลำดับความสำคัญของ MVP และเพิ่ม announcer event ใหม่หนึ่งตัว.
 > **v0.1.3 (accepted 2026-11-07):** Boss อนุมัติการแก้ข้อเท็จจริงเรื่องที่มาของเสียงเตือนใน §2 และมติ §9.2 ที่แทน §9.1(3): ใช้คลิป `gank`/`danger`/`revision` ใน VRZO pack revision 6.
-> **v0.1.4 (PROPOSED, รออนุมัติ):** เสนอ §9.3 ให้สร้างคลิปเตือนด้วยการโคลนเสียงในเครื่องแทนการอัดใหม่ ตามที่ Boss เลือกในแชต 2026-11-08 ("ใช้เสียงโคลน"). §9.2 ข้ออื่นคงเดิม.
+> **v0.1.5 (accepted 2026-11-08):** Boss อนุมัติ §9.3: สร้างคลิปเตือนด้วยการโคลนเสียงในเครื่องแทนการอัดใหม่. §9.2 ข้ออื่นคงเดิม.
 > ไม่เปลี่ยน G-Signal latency budget, privacy contract หรือกติกา GANN-only ของ [[gann-event-media-contract]].
 
 ## 1. เหตุผล
@@ -153,12 +153,12 @@ Boss เลือกในแชต 2026-11-07: "ก) เพิ่มคลิ�
 6. สิทธิ์เสียง: เหมือน §6 คือใช้เป็นเดโมภายในเท่านั้น.
 7. ผลต่อแผน: เพิ่มงานอัดเสียงและ author pack ประมาณ S (1–2 แต้ม) ภายในงบ 8–10 แต้มเดิมของ §7.
 
-### 9.3 ที่มาของเสียงเตือน: โคลนเสียงในเครื่อง (PROPOSED v0.1.4, รออนุมัติ)
+### 9.3 ที่มาของเสียงเตือน: โคลนเสียงในเครื่อง (accepted v0.1.5, 2026-11-08)
 
 เหตุ: ต้นฉบับในเครื่องไม่มีท่อนเตือนที่ตรงความหมาย. ไฟล์ที่ตรวจคือ `E:\VRZO-ANNOUNCER.mp4` (96 s) ซึ่งใช้ครบแล้วใน 35 คลิปของ pack, และ `audio/announcer/ann-pack01` (น้าค่อม, 120.7 s) ที่คลิปตัดขาดกลางประโยค.
 ทดลองเมื่อ 2026-11-08: F5-TTS-THAI สร้างเสียงสไตล์ VRZO ได้ในเครื่องแบบออฟไลน์, ประมาณ 4 s ต่อคลิปบน RTX 3060. การถอดเสียงกลับอ่านได้เกือบทุกคำ.
 
-มติที่เสนอ (แทนข้อ 1 และ 5 ของ §9.2 เฉพาะเรื่องที่มาของเสียง):
+มติ (แทนข้อ 1 และ 5 ของ §9.2 เฉพาะเรื่องที่มาของเสียง):
 1. **วิธีสร้าง:**
    - คลิป `gank`, `danger`, `revision` สร้างด้วย F5-TTS-THAI (`VIZINTZOR/F5-TTS-THAI`, snapshot `af023c70…`) บนเครื่องนี้เท่านั้น ไม่ส่งเสียงหรือข้อความออกนอกเครื่อง.
    - เสียงต้นแบบคือคลิป VRZO ที่ผู้ใช้ยืนยันคำพูดแล้ว: `double_kill`, `mega_kill`, `rampage`.
@@ -188,3 +188,4 @@ Boss เลือกในแชต 2026-11-07: "ก) เพิ่มคลิ�
 | 0.1.2 | 2026-11-07 | Correct the warning-voice source (GANN critical cache only; no Maiden cached line; missing clips suppress the gank alert) and propose amending §9.1(3) to pack revision 6 clips for gank/danger/revision; pending Boss approval. |
 | 0.1.3 | 2026-11-07 | Boss approved the v0.1.2 amendment as written; §9.2 (pack revision 6 warning clips) supersedes §9.1(3). |
 | 0.1.4 | 2026-11-08 | Propose §9.3: generate the gank/danger/revision clips locally with F5-TTS-THAI voice cloning instead of recording; synthetic provenance and internal-only use; pending Boss approval. |
+| 0.1.5 | 2026-11-08 | Boss approved §9.3 (local voice-clone warning clips) as written. |
