@@ -118,6 +118,13 @@ jobs:
       - name: Doc-graph gate (tests + strict scan + checklist + ledger)
         run: node tools/doc-graph/ci-gate.mjs
 
+      # ci-gate regenerates the doc-graph artifacts in the runner but never
+      # compared them with what the PR committed, so a PR that forgot to
+      # commit them passed while leaving main with a stale index (PR #152).
+      # This step fails on real content drift; generation timestamps are masked.
+      - name: Doc-graph artifacts committed are fresh
+        run: node tools/doc-graph/artifact-freshness.mjs
+
       # Static gameplay snapshots must keep their provenance manifest, runtime
       # schema, and generated hero abilities aligned before Rust embeds them.
       - name: Static gameplay data provenance gate
