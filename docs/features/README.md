@@ -2,8 +2,8 @@
 title: "G-Series Feature Specifications"
 doc_id: "features/README"
 status: "active"
-version: "0.4.0"
-updated: "2026-11-01"
+version: "0.4.1"
+updated: "2026-11-07"
 owner: "Boss"
 related_docs: ["mvp-decisions", "G-SERIES-DATA-LINEAGE", "software-requirements-specification", "FEAT-G-PARTY", "CR-037-party-gsi-own-stat-sharing", "FEAT-G-FRIENDS", "ADR-20", "CR-038-party-friends-presence-invitations"]
 ---
@@ -33,6 +33,10 @@ related_docs: ["mvp-decisions", "G-SERIES-DATA-LINEAGE", "software-requirements-
 | **G-Master** — Strategic Advisor | 5 | — | [[FEAT-G-MASTER]] |
 | **G-Sensory** — Overlay & Hardware | 0–1, 7 | FPS ≤3%, whole-app CPU ≤10%, aggregate RAM ≤900,000,000 bytes | [[FEAT-G-SENSORY]] |
 | **G-Log** — Feedback Loop | 6 | **no-egress** | [[FEAT-G-LOG]] |
+
+## Proposed Tactical Extensions
+
+- [[FEAT-G-TACTICAL-TOOLS]] — G-Review, G-BuildPlan และ G-Cooldown; owner-requested design, draft/doc-only. อ่าน [[g-tactical-tools-mvp-srs]] และ [[2026-11-07-g-tactical-tools-handoff]] ก่อนรับงาน. ไม่เปิด deep G-Coach หรือย้าย Voice/Memory P0.
 
 ## Companion Experience Extensions
 
@@ -100,3 +104,4 @@ G-Coach (post-match) ◄── G-Memory
 | 0.2.0 | 2026-10-10 | Reconciled module index, G-Signal hard-max label, local Voice/Memory routing, G-Motion heuristic scope, and MVP decision precedence |
 | 0.3.0 | 2026-11-01 | Register owner-directed G-Party extension and separate consent/lineage boundaries; align the touched RAM summary with the accepted 900MB ceiling without claiming acceptance. |
 | 0.4.0 | 2026-11-01 | Register G-Friends optional account social extension, private projection and consent boundaries alongside guest G-Party; preserve independent live/operational acceptance. |
+| 0.4.1 | 2026-11-07 | ลงทะเบียนสาม tactical extensions ในสถานะ proposed/doc-only พร้อม SRS และ handoff; ไม่อ้าง runtime acceptance. |
