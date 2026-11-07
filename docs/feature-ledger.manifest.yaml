@@ -73,6 +73,21 @@
 # existence, so a path+anchor would falsely resolve as "missing").
 
 entries:
+  # Owner-requested documentation only; phase is a derived grouping, not a schedule commitment.
+  - id: tactical-tools-mvp
+    title: "G-Tactical Tools — warning review, item plan and manual timers"
+    kind: feature
+    phase_target: P6
+    phase_source: derived
+    claimed_status: doc-only
+    source: owner-requested design, 2026-11-07; implementation and native/live acceptance not started by this PR
+    refs:
+      docs: [docs/features/FEAT-G-TACTICAL-TOOLS.md, docs/product/g-tactical-tools-mvp-srs.md, docs/superpowers/specs/2026-11-07-g-tactical-tools-handoff.md]
+      srs: []
+      code: []
+      tests: []
+      review: []
+
   # G-Party is an owner-directed extension. Portable integration and UI tests
   # plus independent review are recorded; Windows/live/NFR acceptance is pending.
   - id: 3-g-party

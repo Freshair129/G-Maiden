@@ -3,7 +3,7 @@
 # FEATURE-LEDGER
 
 > **GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs**  
-> Source manifest: `docs/feature-ledger.manifest.yaml` · generated `2026-11-06T23:01:10.288Z` · `--run-tests`=false · rows=75
+> Source manifest: `docs/feature-ledger.manifest.yaml` · generated `2026-11-07T03:11:24.673Z` · `--run-tests`=false · rows=76
 
 One row per feature / FR / NFR. **Computed** status is derived structurally from evidence on disk (never from a claim); **Claimed** is the manifest row's `claimed_status`; **Drift** flags where a claim outruns the evidence; **Evidence gaps** lists exactly what is missing to advance.
 
@@ -13,7 +13,7 @@ One row per feature / FR / NFR. **Computed** status is derived structurally from
 
 | Kind | Rows |
 | --- | --- |
-| feature | 50 |
+| feature | 51 |
 | fr | 19 |
 | nfr | 6 |
 
@@ -21,7 +21,7 @@ One row per feature / FR / NFR. **Computed** status is derived structurally from
 
 | Computed status | Rows |
 | --- | --- |
-| doc-only | 30 |
+| doc-only | 31 |
 | in-code | 11 |
 | code+needs-test-or-review | 19 |
 | code+tests-present [(unrun)] | 15 |
@@ -32,7 +32,7 @@ One row per feature / FR / NFR. **Computed** status is derived structurally from
 | --- | --- |
 | status-inflation | 0 |
 | status-understated | 1 |
-| aligned | 68 |
+| aligned | 69 |
 | unclaimed | 6 |
 
 ## Violations
@@ -46,6 +46,7 @@ One row per feature / FR / NFR. **Computed** status is derived structurally from
 
 | ID | Title | Phase | Computed | Claimed | Drift | Evidence gaps | Source |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| tactical-tools-mvp | G-Tactical Tools — warning review, item plan and manual timers | P6 *(derived)* | doc-only | doc-only | aligned | primary doc status not accepted/stable, no code mapped | owner-requested design, 2026-11-07; implementation and native/live acceptance not started by this PR |
 | 3-g-party | G-Party — cooperative own-GSI status sharing with separate consent | P3 | code+tests-present (unrun) | code+needs-test-or-review | status-understated | tests not run (--run-tests) | owner-directed extension, 2026-11-01; tested implementation candidate, Windows/live/NFR acceptance pending |
 | 1.1-g-sentry | G-Sentry — fog-of-war monitor (enemies missing from vision) | P2 | code+needs-test-or-review | code+needs-test-or-review | aligned | review record missing | bootstrap-extraction, pruned 2026-07-20 |
 | 1.1-g-motion | G-Motion — last-seen history and heading-aware risk heuristic; heatmap/path prediction is a target | P3 | code+needs-test-or-review | code+needs-test-or-review | aligned | review record missing | bootstrap-extraction, pruned 2026-07-20 |

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-06T23:01:05.254Z",
+  "generatedAt": "2026-11-07T03:11:15.058Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -880,6 +880,13 @@
       "status": "active"
     },
     {
+      "id": "docs/features/FEAT-G-TACTICAL-TOOLS.md",
+      "type": "doc",
+      "path": "docs/features/FEAT-G-TACTICAL-TOOLS.md",
+      "title": "G-Tactical Tools — Warning Review, Build Plan and Manual Timers",
+      "status": "draft"
+    },
+    {
       "id": "docs/features/FEAT-G-VOICE.md",
       "type": "doc",
       "path": "docs/features/FEAT-G-VOICE.md",
@@ -988,6 +995,13 @@
       "id": "docs/product/competitive-brief.md",
       "type": "doc",
       "path": "docs/product/competitive-brief.md"
+    },
+    {
+      "id": "docs/product/g-tactical-tools-mvp-srs.md",
+      "type": "doc",
+      "path": "docs/product/g-tactical-tools-mvp-srs.md",
+      "title": "G-Maiden Tactical Tools MVP — SRS",
+      "status": "draft"
     },
     {
       "id": "docs/product/mvp-backlog.md",
@@ -1225,6 +1239,13 @@
       "path": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
       "title": "G-Party Friends design",
       "status": "active"
+    },
+    {
+      "id": "docs/superpowers/specs/2026-11-07-g-tactical-tools-handoff.md",
+      "type": "doc",
+      "path": "docs/superpowers/specs/2026-11-07-g-tactical-tools-handoff.md",
+      "title": "Tactical Tools MVP — Implementation Handoff and Acceptance",
+      "status": "draft"
     },
     {
       "id": "src-tauri/src/capture.rs",
@@ -1790,243 +1811,261 @@
   "edges": [
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/product/product-requirements.md",
+      "to": "docs/product/g-tactical-tools-mvp-srs.md",
       "type": "wikilink",
       "line": 21
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/product/software-requirements-specification.md",
+      "to": "docs/features/FEAT-G-TACTICAL-TOOLS.md",
+      "type": "wikilink",
+      "line": 22
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/superpowers/specs/2026-11-07-g-tactical-tools-handoff.md",
       "type": "wikilink",
       "line": 23
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/product/business-requirements.md",
+      "to": "docs/product/product-requirements.md",
       "type": "wikilink",
       "line": 25
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/product/business-validation-plan.md",
+      "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
       "line": 27
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/product/competitive-brief.md",
+      "to": "docs/product/business-requirements.md",
       "type": "wikilink",
       "line": 29
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/product/one-pager.md",
+      "to": "docs/product/business-validation-plan.md",
       "type": "wikilink",
       "line": 31
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/product/roadmap.md",
+      "to": "docs/product/competitive-brief.md",
       "type": "wikilink",
       "line": 33
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/product/mvp-decisions.md",
+      "to": "docs/product/one-pager.md",
       "type": "wikilink",
       "line": 35
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/product/mvp-backlog.md",
+      "to": "docs/product/roadmap.md",
       "type": "wikilink",
       "line": 37
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/product/mvp-execution-dag.md",
+      "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
       "line": 39
     },
     {
       "from": "docs/DOC-INDEX.md",
+      "to": "docs/product/mvp-backlog.md",
+      "type": "wikilink",
+      "line": 41
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/product/mvp-execution-dag.md",
+      "type": "wikilink",
+      "line": 43
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/README.md",
-      "type": "wikilink",
-      "line": 59
-    },
-    {
-      "from": "docs/DOC-INDEX.md",
-      "to": "docs/design-system/01-foundations.md",
-      "type": "wikilink",
-      "line": 61
-    },
-    {
-      "from": "docs/DOC-INDEX.md",
-      "to": "docs/design-system/02-tokens.md",
       "type": "wikilink",
       "line": 63
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/design-system/03-layout.md",
+      "to": "docs/design-system/01-foundations.md",
       "type": "wikilink",
       "line": 65
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/design-system/04-components.md",
+      "to": "docs/design-system/02-tokens.md",
       "type": "wikilink",
       "line": 67
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/design-system/05-sitemap-ia.md",
+      "to": "docs/design-system/03-layout.md",
       "type": "wikilink",
       "line": 69
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/design-system/06-stack.md",
+      "to": "docs/design-system/04-components.md",
       "type": "wikilink",
       "line": 71
     },
     {
       "from": "docs/DOC-INDEX.md",
+      "to": "docs/design-system/05-sitemap-ia.md",
+      "type": "wikilink",
+      "line": 73
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/design-system/06-stack.md",
+      "type": "wikilink",
+      "line": 75
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/09-graphite-clarity.md",
-      "type": "wikilink",
-      "line": 77
-    },
-    {
-      "from": "docs/DOC-INDEX.md",
-      "to": "docs/design-system/10-wireframes.md",
-      "type": "wikilink",
-      "line": 79
-    },
-    {
-      "from": "docs/DOC-INDEX.md",
-      "to": "docs/design-system/11-wireflows.md",
       "type": "wikilink",
       "line": 81
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/design-system/12-user-flows.md",
+      "to": "docs/design-system/10-wireframes.md",
       "type": "wikilink",
       "line": 83
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/design-system/13-ui-technical-drawing-atlas.md",
+      "to": "docs/design-system/11-wireflows.md",
       "type": "wikilink",
       "line": 85
     },
     {
       "from": "docs/DOC-INDEX.md",
+      "to": "docs/design-system/12-user-flows.md",
+      "type": "wikilink",
+      "line": 87
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/design-system/13-ui-technical-drawing-atlas.md",
+      "type": "wikilink",
+      "line": 89
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/tech-stack.md",
-      "type": "wikilink",
-      "line": 94
-    },
-    {
-      "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/engineering-spec.md",
-      "type": "wikilink",
-      "line": 96
-    },
-    {
-      "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/technical-design-document.md",
       "type": "wikilink",
       "line": 98
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/design-system.md",
+      "to": "docs/architecture/engineering-spec.md",
       "type": "wikilink",
       "line": 100
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/product-family-design-map.md",
+      "to": "docs/architecture/technical-design-document.md",
       "type": "wikilink",
       "line": 102
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
+      "to": "docs/architecture/design-system.md",
       "type": "wikilink",
       "line": 104
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/implementation-plan.md",
+      "to": "docs/architecture/product-family-design-map.md",
       "type": "wikilink",
       "line": 106
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/oauth-jwt-client-authorization-flows.md",
+      "to": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "type": "wikilink",
       "line": 108
     },
     {
       "from": "docs/DOC-INDEX.md",
+      "to": "docs/architecture/implementation-plan.md",
+      "type": "wikilink",
+      "line": 110
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/architecture/oauth-jwt-client-authorization-flows.md",
+      "type": "wikilink",
+      "line": 112
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
       "to": "docs/features/README.md",
-      "type": "wikilink",
-      "line": 133
-    },
-    {
-      "from": "docs/DOC-INDEX.md",
-      "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
-      "type": "wikilink",
-      "line": 135
-    },
-    {
-      "from": "docs/DOC-INDEX.md",
-      "to": "docs/features/FEAT-G-PARTY.md",
       "type": "wikilink",
       "line": 137
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/features/FEAT-G-FRIENDS.md",
+      "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "type": "wikilink",
       "line": 139
     },
     {
       "from": "docs/DOC-INDEX.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 141
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/features/FEAT-G-FRIENDS.md",
+      "type": "wikilink",
+      "line": 143
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
       "to": "docs/operations/g-party-social-operations.md",
       "type": "wikilink",
-      "line": 160
+      "line": 164
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/scaffold-setup.md",
       "type": "wikilink",
-      "line": 179
+      "line": 183
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/small-model-prompting.md",
       "type": "wikilink",
-      "line": 181
+      "line": 185
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/research/concepts/subagent-context-scoping.md",
       "type": "wikilink",
-      "line": 186
+      "line": 190
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
       "type": "wikilink",
-      "line": 197
+      "line": 201
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/superpowers/plans/2026-11-01-g-party-friends.md",
       "type": "wikilink",
-      "line": 199
+      "line": 203
     },
     {
       "from": "docs/README.md",
@@ -8287,6 +8326,18 @@
       "line": 21
     },
     {
+      "from": "docs/features/FEAT-G-TACTICAL-TOOLS.md",
+      "to": "docs/product/g-tactical-tools-mvp-srs.md",
+      "type": "wikilink",
+      "line": 15
+    },
+    {
+      "from": "docs/features/FEAT-G-TACTICAL-TOOLS.md",
+      "to": "docs/superpowers/specs/2026-11-07-g-tactical-tools-handoff.md",
+      "type": "wikilink",
+      "line": 15
+    },
+    {
       "from": "docs/features/FEAT-G-VOICE.md",
       "to": "docs/product/product-requirements.md",
       "type": "wikilink",
@@ -8546,87 +8597,105 @@
     },
     {
       "from": "docs/features/README.md",
+      "to": "docs/features/FEAT-G-TACTICAL-TOOLS.md",
+      "type": "wikilink",
+      "line": 39
+    },
+    {
+      "from": "docs/features/README.md",
+      "to": "docs/product/g-tactical-tools-mvp-srs.md",
+      "type": "wikilink",
+      "line": 39
+    },
+    {
+      "from": "docs/features/README.md",
+      "to": "docs/superpowers/specs/2026-11-07-g-tactical-tools-handoff.md",
+      "type": "wikilink",
+      "line": 39
+    },
+    {
+      "from": "docs/features/README.md",
       "to": "docs/features/FEAT-G-VOICE.md",
-      "type": "wikilink",
-      "line": 41
-    },
-    {
-      "from": "docs/features/README.md",
-      "to": "docs/features/FEAT-G-MEMORY.md",
-      "type": "wikilink",
-      "line": 42
-    },
-    {
-      "from": "docs/features/README.md",
-      "to": "docs/features/FEAT-G-COACH.md",
-      "type": "wikilink",
-      "line": 43
-    },
-    {
-      "from": "docs/features/README.md",
-      "to": "docs/features/FEAT-G-REVIVE.md",
-      "type": "wikilink",
-      "line": 44
-    },
-    {
-      "from": "docs/features/README.md",
-      "to": "docs/features/FEAT-G-MIND.md",
       "type": "wikilink",
       "line": 45
     },
     {
       "from": "docs/features/README.md",
-      "to": "docs/features/FEAT-G-PERSONA.md",
+      "to": "docs/features/FEAT-G-MEMORY.md",
       "type": "wikilink",
       "line": 46
     },
     {
       "from": "docs/features/README.md",
-      "to": "docs/features/FEAT-G-STREAM.md",
+      "to": "docs/features/FEAT-G-COACH.md",
       "type": "wikilink",
       "line": 47
     },
     {
       "from": "docs/features/README.md",
+      "to": "docs/features/FEAT-G-REVIVE.md",
+      "type": "wikilink",
+      "line": 48
+    },
+    {
+      "from": "docs/features/README.md",
+      "to": "docs/features/FEAT-G-MIND.md",
+      "type": "wikilink",
+      "line": 49
+    },
+    {
+      "from": "docs/features/README.md",
+      "to": "docs/features/FEAT-G-PERSONA.md",
+      "type": "wikilink",
+      "line": 50
+    },
+    {
+      "from": "docs/features/README.md",
+      "to": "docs/features/FEAT-G-STREAM.md",
+      "type": "wikilink",
+      "line": 51
+    },
+    {
+      "from": "docs/features/README.md",
       "to": "docs/features/FEAT-G-FRIENDS.md",
       "type": "wikilink",
-      "line": 53
+      "line": 57
     },
     {
       "from": "docs/features/README.md",
       "to": "docs/architecture/adr/ADR-20.md",
       "type": "wikilink",
-      "line": 53
+      "line": 57
     },
     {
       "from": "docs/features/README.md",
       "to": "docs/change request/CR-038-party-friends-presence-invitations.md",
       "type": "wikilink",
-      "line": 53
+      "line": 57
     },
     {
       "from": "docs/features/README.md",
       "to": "docs/features/FEAT-G-PARTY.md",
       "type": "wikilink",
-      "line": 54
+      "line": 58
     },
     {
       "from": "docs/features/README.md",
       "to": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
       "type": "wikilink",
-      "line": 54
+      "line": 58
     },
     {
       "from": "docs/features/README.md",
       "to": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
       "type": "wikilink",
-      "line": 56
+      "line": 60
     },
     {
       "from": "docs/features/README.md",
       "to": "docs/features/FEAT-G-SCORE.md",
       "type": "wikilink",
-      "line": 62
+      "line": 66
     },
     {
       "from": "docs/guides/scaffold-setup.md",
@@ -8903,6 +8972,36 @@
       "to": "docs/features/FEAT-G-DAMAGE.md",
       "type": "wikilink",
       "line": 226
+    },
+    {
+      "from": "docs/product/g-tactical-tools-mvp-srs.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 19
+    },
+    {
+      "from": "docs/product/g-tactical-tools-mvp-srs.md",
+      "to": "docs/product/software-requirements-specification.md",
+      "type": "wikilink",
+      "line": 19
+    },
+    {
+      "from": "docs/product/g-tactical-tools-mvp-srs.md",
+      "to": "docs/features/FEAT-G-TACTICAL-TOOLS.md",
+      "type": "wikilink",
+      "line": 29
+    },
+    {
+      "from": "docs/product/g-tactical-tools-mvp-srs.md",
+      "to": "docs/superpowers/specs/2026-11-07-g-tactical-tools-handoff.md",
+      "type": "wikilink",
+      "line": 29
+    },
+    {
+      "from": "docs/product/g-tactical-tools-mvp-srs.md",
+      "to": "docs/superpowers/specs/2026-11-07-g-tactical-tools-handoff.md",
+      "type": "wikilink",
+      "line": 137
     },
     {
       "from": "docs/product/mvp-backlog.md",
@@ -9785,6 +9884,24 @@
       "to": "docs/features/FEAT-G-PARTY.md",
       "type": "wikilink",
       "line": 15
+    },
+    {
+      "from": "docs/superpowers/specs/2026-11-07-g-tactical-tools-handoff.md",
+      "to": "docs/product/g-tactical-tools-mvp-srs.md",
+      "type": "wikilink",
+      "line": 15
+    },
+    {
+      "from": "docs/superpowers/specs/2026-11-07-g-tactical-tools-handoff.md",
+      "to": "docs/features/FEAT-G-TACTICAL-TOOLS.md",
+      "type": "wikilink",
+      "line": 15
+    },
+    {
+      "from": "docs/superpowers/specs/2026-11-07-g-tactical-tools-handoff.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 123
     }
   ],
   "violations": [
@@ -9795,7 +9912,7 @@
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 141,
+      "line": 145,
       "reason": "glob-slug",
       "slug": "FEAT-G-*"
     },
@@ -9922,27 +10039,42 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-06T23:01:10.288Z",
+    "generatedAt": "2026-11-07T03:11:24.673Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
-    "rowCount": 75,
+    "rowCount": 76,
     "byKind": {
-      "feature": 50,
+      "feature": 51,
       "nfr": 6,
       "fr": 19
     },
     "byStatus": {
+      "doc-only": 31,
       "code+tests-present (unrun)": 15,
       "code+needs-test-or-review": 19,
-      "doc-only": 30,
       "in-code": 11
     },
     "byDrift": {
+      "aligned": 69,
       "status-understated": 1,
-      "aligned": 68,
       "unclaimed": 6
     },
     "rows": [
+      {
+        "id": "tactical-tools-mvp",
+        "kind": "feature",
+        "phase_target": "P6",
+        "phase_source": "derived",
+        "phase_target_source": "derived",
+        "computed": "doc-only",
+        "claimed": "doc-only",
+        "drift": "aligned",
+        "gaps": [
+          "primary doc status not accepted/stable",
+          "no code mapped"
+        ],
+        "source": "owner-requested design, 2026-11-07; implementation and native/live acceptance not started by this PR"
+      },
       {
         "id": "3-g-party",
         "kind": "feature",

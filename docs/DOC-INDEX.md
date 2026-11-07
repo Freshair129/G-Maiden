@@ -1,11 +1,11 @@
 ---
 title: "Documentation Index"
 doc_id: "DOC-INDEX"
-version: "0.2.12"
+version: "0.2.13"
 created_at: "2026-07-19T00:00:00+07:00,Unknown"
-last_update: "2026-11-01T00:00:00+07:00,Codex"
+last_update: "2026-11-07T00:00:00+07:00,Codex"
 status: "active"
-updated: "2026-11-06"
+updated: "2026-11-07"
 owner: "Boss"
 attributes:
   domain: "documentation-governance"
@@ -17,6 +17,10 @@ attributes:
 # Documentation Index
 
 ## Product
+
+- [[g-tactical-tools-mvp-srs]] — proposed SRS: warning review, structured build plan และ manual cooldown timers
+- [[FEAT-G-TACTICAL-TOOLS]] — UX/data/state contracts ของสามฟีเจอร์; draft ไม่ใช่ implemented
+- [[2026-11-07-g-tactical-tools-handoff]] — file ownership, work slices และ acceptance matrix สำหรับ agent
 
 - [[product-requirements]]
   - `docs/product/product-requirements.md` — PRD หลักของโปรดักต์
@@ -224,3 +228,4 @@ attributes:
 | 0.2.10 | 2026-11-01 | Register G-Party feature, CR-037 and implementation plan with explicit consent and pending acceptance. |
 | 0.2.11 | 2026-11-01 | Index CR-038, ADR-20, G-Friends feature, design/implementation plan and social operations/evidence runbook. |
 | 0.2.12 | 2026-11-06 | Replace the in-repo Orchestration section with a pointer to the standalone G-Orchestra repository (#134). |
+| 0.2.13 | 2026-11-07 | ลงทะเบียน proposed Tactical Tools SRS, Feature Spec และ implementation handoff โดยไม่เปลี่ยน accepted MVP scope/status. |
