@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>G-Voice local STT recorder</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #10161f; color: #e8edf4; }
+    body { margin: 0 auto; max-width: 980px; padding: 24px; } h1 { margin-bottom: 4px; } h2 { font-size: 1rem; margin-top: 0; }
+    .notice, .card { border: 1px solid #33455c; background: #182331; border-radius: 10px; padding: 16px; margin: 16px 0; }
+    .notice { border-color: #bd8d36; background: #302719; } .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(205px, 1fr)); gap: 12px; }
+    label { display: grid; gap: 5px; font-size: .9rem; } input, select, textarea, button { font: inherit; padding: 8px; border-radius: 6px; border: 1px solid #526b88; }
+    input, select, textarea { color: #e8edf4; background: #0d1520; } textarea { min-height: 56px; resize: vertical; }
+    button { color: #fff; background: #2e649e; cursor: pointer; } button:hover { background: #3976b7; } button:disabled { opacity: .5; cursor: not-allowed; }
+    .danger { background: #a44444; } .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    #prompt-reference { font-size: 1.25rem; line-height: 1.45; } code { color: #a5d7ff; white-space: pre-wrap; }
+    #meter { width: 100%; height: 14px; accent-color: #47be7a; } #warning, #status { min-height: 1.4em; } #warning { color: #ffd270; } #status.error { color: #ff9c9c; }
+    .progress { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 8px; } .progress div { border-left: 3px solid #4c89c3; padding-left: 8px; }
+    audio { width: min(100%, 460px); margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <h1>G-Voice local STT recorder</h1>
+  <p>Local-only corpus helper. It stores WAV and manifest files only in the directory you choose.</p>
+  <section class="notice"><strong>Consent first.</strong> Obtain and store the completed <code>../CONSENT-TEMPLATE.md</code> outside Git before recording. Do not use a real name; use a speaker pseudonym. The accepted corpus location is <code>F:\g-voice-stt-corpus\</code>.</section>
+
+  <section class="card">
+    <h2>1. Select local inputs</h2>
+    <p>Choose the three shipped prompt JSON files: Thai, English, and code-switch. This page reads the files you select; it does not contact a server.</p>
+    <div class="actions"><button id="choose-prompts" type="button">Choose prompt JSON files</button><button id="choose-corpus" type="button">Choose corpus directory</button></div>
+    <input id="prompt-files" type="file" accept="application/json,.json" multiple hidden>
+    <p id="input-state">Prompt files and corpus directory have not been selected.</p>
+  </section>
+
+  <section class="card">
+    <h2>2. Recording session</h2>
+    <div class="grid">
+      <label>Speaker pseudonym <input id="speaker" required placeholder="boss-01" autocomplete="off"></label>
+      <label>Session id <input id="session" required pattern="[a-z0-9][a-z0-9_-]*" placeholder="session-2026-11-07-a" autocomplete="off"></label>
+      <label>Condition <select id="condition"><option value="quiet">quiet</option><option value="game-audio">game-audio</option></select></label>
+      <label>Split <select id="split"><option value="tuning">tuning</option><option value="holdout">holdout</option></select></label>
+      <label>Captured microphone (shown after permission)<input id="microphone" readonly placeholder="Request microphone permission first"></label>
+    </div>
+    <label>Game-audio method and level note <textarea id="game-audio-note" placeholder="For game-audio: device, Dota/replay, speaker or headset, and volume level. For quiet: write quiet/no game audio."></textarea></label>
+  </section>
+
+  <section class="card">
+    <h2>3. Prompt</h2>
+    <p id="prompt-reference">Load the shipped prompt JSON files to begin.</p>
+    <p><strong>Intent:</strong> <code id="prompt-intent">—</code> &nbsp; <strong>Slots:</strong> <code id="prompt-slots">—</code></p>
+    <div class="actions"><button id="skip" type="button">Skip prompt</button><button id="rerecord" type="button">Re-record</button></div>
+  </section>
+
+  <section class="card">
+    <h2>4. Push to talk</h2>
+    <p>Hold <strong>Space</strong> to record and release to stop, or use the button. Microphone access begins only while recording and stops afterwards.</p>
+    <div class="actions"><button id="record" type="button" class="danger">Hold Space / Start recording</button><button id="save" type="button" disabled>Save recording</button></div>
+    <p>Input level <meter id="meter" min="0" max="1" value="0"></meter></p>
+    <p id="warning"></p><p id="status" aria-live="polite"></p><audio id="playback" controls hidden></audio>
+  </section>
+
+  <section class="card"><h2>Saved prompts by language and condition</h2><div id="progress" class="progress"></div></section>
+  <script type="module" src="./app.mjs"></script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+# CR-044: the STT normalization config is hashed into benchmark receipts;
+# keep its bytes identical on every platform.
+tools/g-voice-stt-bench/normalization.json text eol=lf
