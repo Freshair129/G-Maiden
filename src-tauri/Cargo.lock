@@ -1477,6 +1477,7 @@ version = "0.13.6"
 dependencies = [
  "axum",
  "base64 0.22.1",
+ "cpal",
  "g-ann-package",
  "g-party",
  "gann-vpx",

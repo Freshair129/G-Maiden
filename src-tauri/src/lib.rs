@@ -69,6 +69,7 @@ mod updater_install_guard_regression;
 mod usage;
 mod utterance;
 mod voice_api;
+mod voice_capture;
 mod voice_ptt;
 mod voice_turn;
 mod vrzo_mix;
@@ -1468,6 +1469,7 @@ pub(crate) fn save_settings_json(json: &str) -> Result<(), String> {
     let existing = load_settings_json();
     let merged = voice_ptt::preserve_shortcut_setting(existing.as_deref(), json)
         .map_err(|error| error.code().to_owned())?;
+    voice_capture::set_global_mic_enabled(voice_capture::mic_enabled_from_settings(Some(&merged)));
     persist_settings_json(&merged)
 }
 
@@ -1604,7 +1606,10 @@ pub fn run() {
     tauri::Builder::default()
         .manage(VoicePttBindingState::default())
         .manage(std::sync::Mutex::new(voice_turn::VoiceTurn::new(
-            voice_turn::NoSttBackend,
+            voice_capture::MicCaptureBackend::new(
+                voice_capture::shared_mic_enabled(),
+                std::sync::Arc::new(voice_capture::CpalInputDevice::new()),
+            ),
         )))
         .manage(VoiceTurnMonitor::default())
         .register_asynchronous_uri_scheme_protocol(
@@ -1768,6 +1773,9 @@ pub fn run() {
             // first gameplay tick. The webview later hydrates the same,
             // validated snapshot for Control and Overlay.
             let saved_settings = load_settings_json();
+            voice_capture::set_global_mic_enabled(voice_capture::mic_enabled_from_settings(
+                saved_settings.as_deref(),
+            ));
             if let Some(settings) = saved_settings.as_deref() {
                 gann_native::settings(settings);
                 if let Err(error) = runtime::apply_startup_settings_json(settings) {

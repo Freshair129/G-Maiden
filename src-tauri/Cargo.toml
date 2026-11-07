@@ -60,6 +60,7 @@ windows = { version = "0.61", features = [
 ] }
 tract-onnx = "0.21"
 rodio      = "0.19"
+cpal = "0.15.3"
 image      = "0.25"
 gann-vpx = { path = "native-vpx" }
 windows-numerics = "0.2"
