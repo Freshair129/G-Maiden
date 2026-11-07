@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "utterances": [
+    {
+      "id": "th-quiet-001",
+      "language": "th",
+      "condition": "quiet",
+      "speaker": "speaker-pseudonym-01",
+      "session": "session-2026-11-07-a",
+      "split": "holdout",
+      "reference": "[freeze the approved Thai reference transcript before any candidate run]",
+      "intent": "[approved intent label]",
+      "slots": {
+        "[slot_name]": "[exact expected value]"
+      },
+      "wav": "D:/local-only-g-voice-corpus/th-quiet-001.wav"
+    },
+    {
+      "id": "en-game-audio-001",
+      "language": "en",
+      "condition": "game-audio",
+      "speaker": "speaker-pseudonym-02",
+      "session": "session-2026-11-07-b",
+      "split": "holdout",
+      "reference": "[freeze the approved English reference transcript before any candidate run]",
+      "intent": "[approved intent label]",
+      "slots": {
+        "[slot_name]": "[exact expected value]"
+      },
+      "wav": "D:/local-only-g-voice-corpus/en-game-audio-001.wav"
+    },
+    {
+      "id": "code-switch-quiet-001",
+      "language": "code-switch",
+      "condition": "quiet",
+      "speaker": "speaker-pseudonym-03",
+      "session": "session-2026-11-07-c",
+      "split": "holdout",
+      "reference": "[freeze the approved Thai-English code-switch reference before any candidate run]",
+      "intent": "[approved intent label]",
+      "slots": {
+        "[slot_name]": "[exact expected value]"
+      },
+      "wav": "D:/local-only-g-voice-corpus/code-switch-quiet-001.wav"
+    }
+  ]
+}
