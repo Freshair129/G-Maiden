@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-11-07T08:25:02.210Z
+สร้างเมื่อ / Generated at: 2026-11-07T15:40:40.214Z
 
-สแกน 177 ไฟล์เอกสาร, 289 nodes, 1336 edges, 28 รายการปัญหา (2 ตัวบล็อก exit code) / scanned 177 doc files, 289 nodes, 1336 edges, 28 violations (2 blocking exit code).
+สแกน 177 ไฟล์เอกสาร, 289 nodes, 1337 edges, 28 รายการปัญหา (2 ตัวบล็อก exit code) / scanned 177 doc files, 289 nodes, 1337 edges, 28 violations (2 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -70,8 +70,8 @@
 
 ### docs/change request/CR-046-demo-mvp-announcer-gank-slice.md
 
-- [L29] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="mvp-delivery-plan")
-- [L106] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="mvp-delivery-plan")
+- [L30] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="mvp-delivery-plan")
+- [L109] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="mvp-delivery-plan")
 
 ### docs/design-system/landing_page_prompt.md
 

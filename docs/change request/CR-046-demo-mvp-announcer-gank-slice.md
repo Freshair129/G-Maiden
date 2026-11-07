@@ -4,7 +4,7 @@ doc_id: "CR-046-demo-mvp-announcer-gank-slice"
 status: "accepted"
 approved_by: "Boss (explicit approval in chat, 2026-11-07: อนุมัติตามร่าง)"
 approved_date: "2026-11-07"
-version: "0.1.1"
+version: "0.1.2"
 updated: "2026-11-07"
 owner: "Boss"
 complexity: "C-2"
@@ -15,6 +15,7 @@ related_docs: ["roadmap", "mvp-backlog", "mvp-delivery-plan", "mvp-decisions", "
 # CR-046: เดโมแรก (Announcer Pack + Gank Meter + แจ้งฮีโร่หาย)
 
 > **สถานะ:** accepted 2026-11-07. Boss อนุมัติตามร่าง พร้อมมติตาม §9.1 **Risk: MEDIUM**: เปลี่ยนลำดับความสำคัญของ MVP และเพิ่ม announcer event ใหม่หนึ่งตัว.
+> **v0.1.2 (PROPOSED, รออนุมัติ):** แก้ข้อเท็จจริงเรื่องที่มาของเสียงเตือน และเสนอแก้มติ §9.1(3) เป็น (b) ตามที่ Boss เลือกในแชต 2026-11-07 ("ก) เพิ่มคลิปเข้า pack"). ส่วนอื่นของ v0.1.1 คงเดิม; ข้อความ §9.2 มีผลเมื่อ Boss อนุมัติ.
 > ไม่เปลี่ยน G-Signal latency budget, privacy contract หรือกติกา GANN-only ของ [[gann-event-media-contract]].
 
 ## 1. เหตุผล
@@ -34,7 +35,7 @@ CR นี้กำหนด "เดโมแรก" (milestone **D1**) เป็
 | --- | --- | --- |
 | VRZO pack | Studio `vrzo-mapping-v5` (`ann_c4d92f17…`, revision 5): 14 event มีเสียง+แบนเนอร์ (match_start, first_blood, double/triple/ultra kill, rampage, streak 3–10) และ multi-kill ตรงจำนวนคิลทั้ง Dota และ HoN | ยังไม่ยืนยันว่า revision 5 ถูก import เข้าแอปที่ใช้เดโม (handoff ระบุว่า runtime owner ต้อง import ผ่าน Control) |
 | คิลเดี่ยว `kill` | revision 5 ตั้งใจลบคลิปพิเศษของ HoN ที่เคยแทนไว้ | **เงียบ**: event ที่เกิดบ่อยที่สุดไม่มีเสียง |
-| กลุ่มเตือน `gank`/`danger`/`revision` | G-Signal เล่นเสียงผ่าน cached Thai line (`try_voice_interrupt_cached_before`) และ critical snapshot จาก pack | pack VRZO ไม่มีคลิปกลุ่มนี้; dev log 2026-11-07 พบ `phase=unmapped event=danger`; ต้องยืนยันว่าเดโมได้ยินเสียงเตือนจริงในทุกกรณี |
+| กลุ่มเตือน `gank`/`danger`/`revision` | G-Signal เล่นเสียงจาก critical cache เท่านั้น: `audio.rs` `critical_snapshot()` อ่านคู่ audio+video ที่ verified จาก GANN pack ที่เลือก (`try_voice_interrupt_cached_before` ใช้ cache นี้). **ไม่มี Maiden cached Thai line แยก** (แก้ข้อเท็จจริงใน v0.1.2) | pack VRZO ไม่มีคลิปกลุ่มนี้ → `capture.rs` เรียก `suspend_observation()` บันทึก `critical_audio_unready` แล้ว return **ก่อน** emit `gank-alert`: ไม่มีเสียง ไม่มีแบนเนอร์ Gank Meter ไม่ขึ้นระดับ 3. dev log 2026-11-07 พบ `phase=unmapped event=danger` |
 | `hpLow`/`manaLow`/`levelUp`/`death`/`respawn`/`advice` | – | ไม่มีเสียงใน pack |
 | Gank Meter | `FullOverlay.tsx` `gmeterLevel()` ระดับ 0–3 จาก missing count + gank phase | ยังไม่มีผลตรวจบนแมตช์จริง |
 | ฮีโร่หาย | `capture.rs` emit `enemy-missing` (>5 s) | **ไม่ใช่ announcer event**: ไม่มีเสียงหรือแบนเนอร์ผูกได้ |
@@ -48,7 +49,7 @@ CR นี้กำหนด "เดโมแรก" (milestone **D1**) เป็
    - preview ของ First Blood, Double Kill และ Rampage ต้องตรง
    - ต้องไม่มี generic Kill substitute
 2. ตัดสินและทำเสียงของคิลเดี่ยวตาม §9.2
-3. ยืนยันเส้นทางเสียงเตือน gank/danger ของ G-Signal ให้มีเสียงในเดโมเสมอ (source ตาม §9.3)
+3. ยืนยันเส้นทางเสียงเตือน gank/danger/revision ของ G-Signal ให้มีเสียงในเดโมเสมอ (source ตาม §9.2: คลิปใน VRZO pack revision 6)
    - latency ≤300 ms คงเดิม
    - ไม่ใช้ SLM/WebView
 4. เพิ่ม announcer event **`enemy_missing`** (group `warning`)
@@ -88,7 +89,9 @@ CR นี้กำหนด "เดโมแรก" (milestone **D1**) เป็
 - [ ] แอปที่ใช้เดโมแสดง VRZO revision 5 เป็น pack ที่เลือก
 - [ ] First Blood, Double Kill และสตรีคหนึ่งระดับ: แบนเนอร์และเสียงตรงกัน ไม่ซ้ำ
 - [ ] คิลเดี่ยวทำงานตาม §9.2
+- [ ] หลัง import revision 6 log มี `phase=critical_ready` ครบ `gank`, `danger`, `revision` และไม่มี `critical_audio_unready`
 - [ ] gank alert มีเสียงทุกครั้งที่แถบขึ้นระดับ 3 ภายใน ≤300 ms (วัดตาม MVP-006)
+- [ ] เมื่อคาดผิด เสียง `revision` แก้คำเตือนกลางประโยคตาม Belief Revision
 - [ ] ฮีโร่หาย >5 s แสดงชิป (และเสียงตาม §9.4) โดยไม่รก
 - [ ] Gank Meter ไม่แสดงปลอดภัยเมื่อ capture ไม่มี coverage
 - [ ] วิดีโอเดโม 1 แมตช์ + FPS drop ≤3% + RAM ≤900,000,000 bytes ตาม receipt
@@ -118,7 +121,7 @@ Repo หลัก `D:\G-Maiden` อยู่บน branch `fix/vrzo-visual-compl
    - (b) อัดคลิป "kill" ใหม่ในสไตล์ VRZO: แนะนำถ้าหาเสียงได้ทันเดโม
    - (c) ใช้คลิปพิเศษ HoN ที่ปิดไว้: **ไม่แนะนำ** เพราะ revision 5 ตัดสินแล้วว่าผิดความหมาย
 3. **เสียงเตือน gank/danger:**
-   - (a) ใช้ cached Thai line ของ Maiden ที่ G-Signal มีอยู่: แนะนำ เพราะไม่ต้องรอเสียงใหม่
+   - (a) ใช้ cached Thai line ของ Maiden ที่ G-Signal มีอยู่: แนะนำ เพราะไม่ต้องรอเสียงใหม่ (**v0.1.2: ทำไม่ได้** เพราะไม่มี line นี้ในโค้ด ดู §2)
    - (b) อัดคลิปเตือนในสไตล์ VRZO แล้วเพิ่ม mapping ใน pack
 4. **ฮีโร่หาย:**
    - (a) ชิป overlay อย่างเดียว
@@ -135,9 +138,24 @@ Repo หลัก `D:\G-Maiden` อยู่บน branch `fix/vrzo-visual-compl
 5. ผู้ชมเดโม: ภายในเท่านั้นจนกว่าจะได้สิทธิ์เสียง
 6. วันเป้าหมาย D1: 2026-11-22
 
+### 9.2 แก้มติ §9.1(3) (PROPOSED v0.1.2, รออนุมัติ)
+
+เหตุ: มติเดิม (a) ตั้งบนข้อเท็จจริงที่ผิด. โค้ดไม่มี cached Thai line ของ Maiden; เสียงเตือนมาจาก GANN pack อย่างเดียว และเมื่อ pack ไม่มีคลิป ระบบจะกด gank alert ทั้งหมด (ดู §2).
+Boss เลือกในแชต 2026-11-07: "ก) เพิ่มคลิปเข้า pack".
+
+มติที่เสนอ:
+1. เสียงเตือน gank/danger/revision ใช้ (b): อัดคลิปเตือนสไตล์ VRZO สามตัว `gank`, `danger`, `revision` แล้วเพิ่ม mapping เป็น VRZO pack **revision 6** ผ่าน G-AnnStudio. แต่ละ event เป็นคู่ mixed WAV + silent WebM ที่ verified ตาม [[gann-event-media-contract]] และ import ผ่าน Control.
+2. คลิป `revision` ต้องเป็นการแก้คำเตือนกลางประโยคตาม persona Belief Revision ("เอ๊ะ! เดี๋ยวก่อน!").
+3. **ไม่เปลี่ยนโค้ด G-Signal**: ไม่เพิ่ม fallback ใน G-Maiden, latency ≤300 ms, pure Rust, ไม่มี SLM/WebView. ทางเลือก "แบนเนอร์/Gank Meter ขึ้นได้แม้ไม่มีเสียง" อยู่นอก D1 และต้องเป็น CR แยกถ้าต้องการ.
+4. ถ้า revision 6 ไม่พร้อมภายใน 2026-11-22: เดโม D1 ส่วน gank alert ถือว่า**ยังไม่ผ่าน** และรายงานตามจริง. ห้ามแทนด้วยคลิปอื่นหรือ TTS.
+5. ผู้ทำ: Boss/เจ้าของ Studio อัดเสียงและ author pack ใน workspace ของ Studio (นอก repo G-Maiden). งานใน G-Maiden มีแค่ตรวจ log `critical_ready` และ acceptance §5.
+6. สิทธิ์เสียง: เหมือน §6 คือใช้เป็นเดโมภายในเท่านั้น.
+7. ผลต่อแผน: เพิ่มงานอัดเสียงและ author pack ประมาณ S (1–2 แต้ม) ภายในงบ 8–10 แต้มเดิมของ §7.
+
 ## Changelog
 
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.1.0 | 2026-11-07 | Draft first demo slice D1: VRZO revision 5 import/verification, single-kill and warning-voice decisions, new native `enemy_missing` announcer event, Gank Meter live check, rights limits and plan impact. |
 | 0.1.1 | 2026-11-07 | Boss approved the draft as written; recorded §9 decisions per the draft recommendations. |
+| 0.1.2 | 2026-11-07 | Correct the warning-voice source (GANN critical cache only; no Maiden cached line; missing clips suppress the gank alert) and propose amending §9.1(3) to pack revision 6 clips for gank/danger/revision; pending Boss approval. |

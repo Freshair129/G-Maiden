@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-07T08:25:02.210Z",
+  "generatedAt": "2026-11-07T15:40:40.214Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -5460,7 +5460,13 @@
       "from": "docs/change request/CR-046-demo-mvp-announcer-gank-slice.md",
       "to": "docs/architecture/gann-event-media-contract.md",
       "type": "wikilink",
-      "line": 18
+      "line": 19
+    },
+    {
+      "from": "docs/change request/CR-046-demo-mvp-announcer-gank-slice.md",
+      "to": "docs/architecture/gann-event-media-contract.md",
+      "type": "wikilink",
+      "line": 147
     },
     {
       "from": "docs/change request/IMPL-PLAN-DXGI-migration.md",
@@ -9888,13 +9894,13 @@
     },
     {
       "file": "docs/change request/CR-046-demo-mvp-announcer-gank-slice.md",
-      "line": 29,
+      "line": 30,
       "reason": "unresolved",
       "slug": "mvp-delivery-plan"
     },
     {
       "file": "docs/change request/CR-046-demo-mvp-announcer-gank-slice.md",
-      "line": 106,
+      "line": 109,
       "reason": "unresolved",
       "slug": "mvp-delivery-plan"
     },
@@ -9966,7 +9972,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-07T08:25:20.516Z",
+    "generatedAt": "2026-11-07T15:40:47.859Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,
