@@ -23,7 +23,6 @@ pub enum VoiceState {
     Speaking,
     Unavailable,
     Cancelled,
-    #[allow(dead_code)] // used by Slice 2 STT backend (CR-041 §5)
     Failed,
 }
 
@@ -41,6 +40,11 @@ pub enum TurnReason {
     #[allow(dead_code)] // used by Slice 2 STT backend (CR-041 §5)
     ModelUnavailable,
     HoldCap,
+    MicDisabled,
+    NoInputDevice,
+    InputOpenFailed,
+    MicPermissionDenied,
+    InputDeviceLost,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -55,19 +59,48 @@ pub struct VoiceTurnEvent {
 pub enum BackendStart {
     #[allow(dead_code)] // used by Slice 2 STT backend (CR-041 §5)
     Ready,
+    Pending,
+    Unavailable(TurnReason),
+}
+
+pub enum BackendProgress {
+    Pending,
+    Ready,
+    HoldCap,
+    Unavailable(TurnReason),
+    Failed(TurnReason),
+}
+
+pub enum BackendFinish {
     Unavailable(TurnReason),
 }
 
 pub trait VoiceBackend: Send {
     fn on_press(&mut self, request_id: u64) -> BackendStart;
 
-    fn on_release(&mut self, _request_id: u64, _reason: Option<TurnReason>) {}
+    fn start_preparing(&mut self, _request_id: u64, _now_ms: u64) -> BackendProgress {
+        BackendProgress::Pending
+    }
+
+    fn poll(&mut self, _request_id: u64, _now_ms: u64) -> BackendProgress {
+        BackendProgress::Pending
+    }
+
+    fn on_release(
+        &mut self,
+        _request_id: u64,
+        _reason: Option<TurnReason>,
+    ) -> Option<BackendFinish> {
+        None
+    }
 
     fn cancel(&mut self, _request_id: u64, _reason: TurnReason) {}
 }
 
+#[cfg(test)]
 pub struct NoSttBackend;
 
+#[cfg(test)]
 impl VoiceBackend for NoSttBackend {
     fn on_press(&mut self, _request_id: u64) -> BackendStart {
         BackendStart::Unavailable(TurnReason::SttNotInstalled)
@@ -131,6 +164,11 @@ impl VoiceTurn {
                 self.transition(VoiceState::Preparing, None, now_ms, &mut events);
                 self.transition(VoiceState::Listening, None, now_ms, &mut events);
             }
+            BackendStart::Pending => {
+                self.transition(VoiceState::Preparing, None, now_ms, &mut events);
+                let progress = self.backend.start_preparing(self.request_id, now_ms);
+                self.apply_backend_progress(progress, now_ms, &mut events);
+            }
         }
         events
     }
@@ -146,19 +184,21 @@ impl VoiceTurn {
         }
         self.key_down = false;
         let held_ms = now_ms.saturating_sub(self.pressed_at_ms.take().unwrap_or(now_ms));
+        if self.state == VoiceState::Preparing {
+            self.finish_terminal(
+                VoiceState::Cancelled,
+                Some(TurnReason::TooShort),
+                now_ms,
+                &mut events,
+            );
+            return events;
+        }
         if self.state != VoiceState::Listening {
             return events;
         }
 
         if held_ms >= HOLD_CAP_MS {
-            self.backend
-                .on_release(self.request_id, Some(TurnReason::HoldCap));
-            self.transition(
-                VoiceState::Decoding,
-                Some(TurnReason::HoldCap),
-                now_ms,
-                &mut events,
-            );
+            self.finish_listening(TurnReason::HoldCap, now_ms, &mut events);
         } else if held_ms < MINIMUM_HOLD_MS {
             self.finish_terminal(
                 VoiceState::Cancelled,
@@ -167,8 +207,7 @@ impl VoiceTurn {
                 &mut events,
             );
         } else {
-            self.backend.on_release(self.request_id, None);
-            self.transition(VoiceState::Decoding, None, now_ms, &mut events);
+            self.finish_listening_without_reason(now_ms, &mut events);
         }
         events
     }
@@ -179,19 +218,74 @@ impl VoiceTurn {
 
     pub fn tick_at(&mut self, now_ms: u64) -> Vec<VoiceTurnEvent> {
         let mut events = self.observe_preemption(now_ms);
+        if matches!(self.state, VoiceState::Preparing | VoiceState::Listening) {
+            let progress = self.backend.poll(self.request_id, now_ms);
+            self.apply_backend_progress(progress, now_ms, &mut events);
+        }
         if self.state == VoiceState::Listening
             && now_ms.saturating_sub(self.pressed_at_ms.unwrap_or(now_ms)) >= HOLD_CAP_MS
         {
-            self.backend
-                .on_release(self.request_id, Some(TurnReason::HoldCap));
-            self.transition(
-                VoiceState::Decoding,
-                Some(TurnReason::HoldCap),
-                now_ms,
-                &mut events,
-            );
+            self.finish_listening(TurnReason::HoldCap, now_ms, &mut events);
         }
         events
+    }
+
+    fn apply_backend_progress(
+        &mut self,
+        progress: BackendProgress,
+        now_ms: u64,
+        events: &mut Vec<VoiceTurnEvent>,
+    ) {
+        match progress {
+            BackendProgress::Pending => {}
+            BackendProgress::Ready if self.state == VoiceState::Preparing => {
+                self.transition(VoiceState::Listening, None, now_ms, events);
+            }
+            BackendProgress::Ready => {}
+            BackendProgress::HoldCap if self.state == VoiceState::Listening => {
+                self.finish_listening(TurnReason::HoldCap, now_ms, events);
+            }
+            BackendProgress::HoldCap => {}
+            BackendProgress::Unavailable(reason)
+                if matches!(self.state, VoiceState::Preparing | VoiceState::Listening) =>
+            {
+                self.finish_terminal(VoiceState::Unavailable, Some(reason), now_ms, events);
+            }
+            BackendProgress::Failed(reason)
+                if matches!(self.state, VoiceState::Preparing | VoiceState::Listening) =>
+            {
+                self.finish_terminal(VoiceState::Failed, Some(reason), now_ms, events);
+            }
+            BackendProgress::Unavailable(_) | BackendProgress::Failed(_) => {}
+        }
+    }
+
+    fn finish_listening_without_reason(&mut self, now_ms: u64, events: &mut Vec<VoiceTurnEvent>) {
+        let completion = self.backend.on_release(self.request_id, None);
+        self.transition(VoiceState::Decoding, None, now_ms, events);
+        self.finish_backend_completion(completion, now_ms, events);
+    }
+
+    fn finish_listening(
+        &mut self,
+        reason: TurnReason,
+        now_ms: u64,
+        events: &mut Vec<VoiceTurnEvent>,
+    ) {
+        let completion = self.backend.on_release(self.request_id, Some(reason));
+        self.transition(VoiceState::Decoding, Some(reason), now_ms, events);
+        self.finish_backend_completion(completion, now_ms, events);
+    }
+
+    fn finish_backend_completion(
+        &mut self,
+        completion: Option<BackendFinish>,
+        now_ms: u64,
+        events: &mut Vec<VoiceTurnEvent>,
+    ) {
+        if let Some(BackendFinish::Unavailable(reason)) = completion {
+            self.finish_backend_terminal(VoiceState::Unavailable, reason, now_ms, events);
+        }
     }
 
     #[allow(dead_code)] // used by Slice 2 STT backend (CR-041 §5)
@@ -306,7 +400,6 @@ impl VoiceTurn {
         self.transition(VoiceState::Idle, None, now_ms, events);
     }
 
-    #[allow(dead_code)] // used by Slice 2 STT backend (CR-041 §5)
     fn finish_backend_terminal(
         &mut self,
         terminal: VoiceState,
@@ -339,6 +432,9 @@ pub fn monotonic_ms() -> u64 {
 }
 
 #[cfg(test)]
+pub(crate) use tests::serial_turn_test;
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use std::sync::{mpsc, Arc, Mutex, MutexGuard};
@@ -346,7 +442,7 @@ mod tests {
 
     static TURN_TEST_LOCK: Mutex<()> = Mutex::new(());
 
-    fn serial_turn_test() -> MutexGuard<'static, ()> {
+    pub(crate) fn serial_turn_test() -> MutexGuard<'static, ()> {
         TURN_TEST_LOCK
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -537,8 +633,13 @@ mod tests {
             BackendStart::Ready
         }
 
-        fn on_release(&mut self, _request_id: u64, reason: Option<TurnReason>) {
+        fn on_release(
+            &mut self,
+            _request_id: u64,
+            reason: Option<TurnReason>,
+        ) -> Option<BackendFinish> {
             self.listening_end_reasons.lock().unwrap().push(reason);
+            None
         }
     }
 }

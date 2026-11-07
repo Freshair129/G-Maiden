@@ -31,7 +31,12 @@ export const VoiceSettings = React.memo(function VoiceSettings({ settings: s, vo
         aria-label={voiceTab === 'ptt' ? 'G-Voice' : 'การแจ้งเตือน'}
         style={{ overflowX: 'hidden', overflowY: 'auto' }}
       >
-        {voiceTab === 'ptt' ? <VoicePttCard /> : (
+        {voiceTab === 'ptt' ? (
+          <VoicePttCard
+            micEnabled={s.micEnabled}
+            onMicEnabledChange={(enabled) => set('micEnabled', enabled)}
+          />
+        ) : (
           <>
             <Card title="Alerts (G-Signal)">
               <Row label="เตือนเมื่อ HP ต่ำ"><Toggle on={s.alertEnabled} onChange={(v) => set('alertEnabled', v)} /></Row>

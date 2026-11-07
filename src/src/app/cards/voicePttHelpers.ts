@@ -25,6 +25,21 @@ export function voicePttErrorMessage(error: unknown): string {
 export function voiceTurnMessage(payload: unknown): string | null {
   if (!payload || typeof payload !== 'object') return null
   const event = payload as { state?: unknown; reason?: unknown }
+  if (event.state === 'unavailable' && event.reason === 'mic_disabled') {
+    return 'ยังไม่ได้อนุญาตให้ G-Voice ใช้ไมโครโฟน'
+  }
+  if (event.state === 'unavailable' && event.reason === 'no_input_device') {
+    return 'ไม่พบอุปกรณ์ไมโครโฟน'
+  }
+  if (event.state === 'unavailable' && event.reason === 'input_open_failed') {
+    return 'เปิดไมโครโฟนไม่สำเร็จ — ตรวจ Windows Settings › Privacy › Microphone'
+  }
+  if (event.state === 'unavailable' && event.reason === 'mic_permission_denied') {
+    return 'Windows ไม่อนุญาตให้ใช้ไมโครโฟน — ตรวจ Privacy › Microphone'
+  }
+  if (event.state === 'failed' && event.reason === 'input_device_lost') {
+    return 'ไมโครโฟนหลุดการเชื่อมต่อระหว่างใช้งาน'
+  }
   if (event.state === 'unavailable' && event.reason === 'stt_not_installed') {
     return 'รับปุ่มแล้ว — ยังไม่มีระบบจดจำเสียง'
   }

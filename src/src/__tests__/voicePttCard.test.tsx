@@ -3,13 +3,15 @@ import { act, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { invokeMock, handlers } = vi.hoisted(() => ({
+const { invokeMock, emitMock, handlers } = vi.hoisted(() => ({
   invokeMock: vi.fn(),
+  emitMock: vi.fn(),
   handlers: new Map<string, Set<(event: { payload: unknown }) => void>>(),
 }))
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: invokeMock }))
 vi.mock('@tauri-apps/api/event', () => ({
+  emit: emitMock,
   listen: vi.fn((name: string, handler: (event: { payload: unknown }) => void) => {
     const set = handlers.get(name) ?? new Set()
     set.add(handler)
@@ -19,7 +21,9 @@ vi.mock('@tauri-apps/api/event', () => ({
 }))
 
 import { VoiceSettings } from '../app/VoiceSettings'
-import { DEFAULTS } from '../app/types'
+import { DEFAULTS, type Settings } from '../app/types'
+import { StartupSettingsProvider } from '../app/settings'
+import { useStartupSettings } from '../app/settingsContext'
 
 type KeyOptions = Partial<Pick<KeyboardEvent, 'ctrlKey' | 'altKey' | 'shiftKey' | 'metaKey'>>
 type MockPttStatus = { accelerator: string; registered: boolean; error_code?: string }
@@ -53,7 +57,15 @@ async function mount(element: ReactNode) {
 
 async function mountPttCard() {
   const { VoicePttCard } = await import('../app/cards/VoicePttCard')
-  await mount(<VoicePttCard />)
+  await mount(<VoicePttCard micEnabled={false} onMicEnabledChange={vi.fn()} />)
+}
+
+function SettingsBackedVoiceSettings() {
+  const { settings, setSettings } = useStartupSettings()
+  const set = <K extends keyof Settings>(key: K, value: Settings[K]) => {
+    setSettings((previous) => ({ ...previous, [key]: value }))
+  }
+  return <VoiceSettings settings={settings} voices={[]} set={set} />
 }
 
 async function unmount() {
@@ -107,6 +119,43 @@ afterEach(async () => {
 })
 
 describe('G-Voice push-to-talk settings', () => {
+  it('keeps microphone permission disabled by default and explains transient local audio', async () => {
+    await mount(<VoiceSettings settings={DEFAULTS} voices={[]} set={() => {}} />)
+    await click('G-Voice')
+
+    const toggle = container!.querySelector<HTMLInputElement>('input[aria-label="อนุญาตให้ใช้ไมโครโฟนขณะกด PTT"]')
+    expect(toggle).not.toBeNull()
+    expect(toggle!.checked).toBe(false)
+    expect(container!.textContent).toContain('เสียงอยู่ในเครื่องและถูกลบทันทีเมื่อปล่อยปุ่ม ไม่บันทึก ไม่ส่งออก')
+  })
+
+  it('persists microphone permission as voice.micEnabled through the settings save path', async () => {
+    const savedSettings: Record<string, unknown>[] = []
+    invokeMock.mockImplementation((command: string, args?: { json?: string }) => {
+      if (command === 'load_settings_file') return Promise.resolve(null)
+      if (command === 'save_settings_file' && args?.json) {
+        savedSettings.push(JSON.parse(args.json) as Record<string, unknown>)
+        return Promise.resolve(null)
+      }
+      if (command === 'get_voice_ptt_status') return Promise.resolve(initialStatus)
+      if (command === 'voice_cache_status') return Promise.resolve({ dir: 'fixture', total: 0, counts: {} })
+      return Promise.resolve(null)
+    })
+    await mount(<StartupSettingsProvider><SettingsBackedVoiceSettings /></StartupSettingsProvider>)
+    await click('G-Voice')
+    const toggle = container!.querySelector<HTMLInputElement>('input[aria-label="อนุญาตให้ใช้ไมโครโฟนขณะกด PTT"]')!
+    await act(async () => {
+      toggle.click()
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(toggle.checked).toBe(true)
+    expect(savedSettings.some((settings) => (settings.voice as { micEnabled?: boolean } | undefined)?.micEnabled === true)).toBe(true)
+    expect(JSON.parse(localStorage.getItem('gm-settings')!).voice.micEnabled).toBe(true)
+  })
+
   it('keeps alerts as the default tab and shows G-Voice first in its panel', async () => {
     await mount(<VoiceSettings settings={DEFAULTS} voices={[]} set={() => {}} />)
 
@@ -142,7 +191,7 @@ describe('G-Voice push-to-talk settings', () => {
     await mountPttCard()
     expect(container!.textContent).toContain('พร้อมรับปุ่ม')
     expect(container!.querySelector('span[role="status"]')?.getAttribute('style')).toContain('var(--g-ok)')
-    expect(container!.textContent).toContain('ยังไม่มีระบบจดจำเสียงในเครื่อง — กดแล้ว Maiden จะยังไม่ฟัง (ไม่เปิดไมโครโฟน)')
+    expect(container!.textContent).toContain('ยังไม่มีระบบจดจำเสียง — เสียงชั่วคราวจะถูกทิ้งโดยไม่ส่งไปประมวลผล')
 
     await unmount()
     configureStatus({ accelerator: 'Ctrl+Alt+V', registered: false, error_code: 'registration_failed' })
@@ -295,6 +344,11 @@ describe('G-Voice push-to-talk settings', () => {
 
   it.each([
     ['unavailable', 'stt_not_installed', 'รับปุ่มแล้ว — ยังไม่มีระบบจดจำเสียง'],
+    ['unavailable', 'mic_disabled', 'ยังไม่ได้อนุญาตให้ G-Voice ใช้ไมโครโฟน'],
+    ['unavailable', 'no_input_device', 'ไม่พบอุปกรณ์ไมโครโฟน'],
+    ['unavailable', 'input_open_failed', 'เปิดไมโครโฟนไม่สำเร็จ — ตรวจ Windows Settings › Privacy › Microphone'],
+    ['unavailable', 'mic_permission_denied', 'Windows ไม่อนุญาตให้ใช้ไมโครโฟน — ตรวจ Privacy › Microphone'],
+    ['failed', 'input_device_lost', 'ไมโครโฟนหลุดการเชื่อมต่อระหว่างใช้งาน'],
     ['cancelled', 'too_short', 'กดสั้นเกินไป'],
     ['cancelled', 'signal_preempt', 'หยุดเพราะมีการแจ้งเตือนสำคัญ'],
   ])('shows the %s/%s voice-turn result and expires it after three seconds', async (state, reason, message) => {

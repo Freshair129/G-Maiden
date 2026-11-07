@@ -125,6 +125,7 @@ export function sameSettings(left: Settings, right: Settings): boolean {
 /** Validate every persisted setting; invalid fields fall back field by field. */
 export function normalizeSettings(value: unknown, fallback: Settings = DEFAULTS): Settings {
   const raw = withLegacyStats(value)
+  const voice = asRecord(raw.voice)
   // Move only exact shipped defaults. Any user-adjusted module remains intact.
   const layout = migrateLegacyDefaultPositions(raw.layout)
   return {
@@ -136,6 +137,9 @@ export function normalizeSettings(value: unknown, fallback: Settings = DEFAULTS)
     alertEnabled: boolValue(raw, 'alertEnabled', fallback.alertEnabled),
     alertThreshold: numberValue(raw, 'alertThreshold', fallback.alertThreshold, 0, 100, true),
     voiceEnabled: boolValue(raw, 'voiceEnabled', fallback.voiceEnabled),
+    micEnabled: typeof voice?.micEnabled === 'boolean'
+      ? voice.micEnabled
+      : boolValue(raw, 'micEnabled', fallback.micEnabled),
     voiceName: stringValue(raw, 'voiceName', fallback.voiceName, 128),
     voiceRate: numberValue(raw, 'voiceRate', fallback.voiceRate, -10, 10, true),
     volume: numberValue(raw, 'volume', fallback.volume, 0, 100, true),
@@ -164,6 +168,14 @@ export function normalizeSettings(value: unknown, fallback: Settings = DEFAULTS)
     showGold: boolValue(raw, 'showGold', fallback.showGold),
     personaPreset: enumValue(raw, 'personaPreset', ['coach', 'silent', 'caster', 'meme'] as const, fallback.personaPreset),
   }
+}
+
+export function serializeSettings(settings: Settings): RecordValue {
+  const serialized: RecordValue = { ...settings }
+  delete serialized.micEnabled
+  const voice = asRecord(serialized.voice) ?? {}
+  serialized.voice = { ...voice, micEnabled: settings.micEnabled }
+  return serialized
 }
 
 /** Native settings win over the origin-scoped copy; the deck audio key migrates into that snapshot. */
