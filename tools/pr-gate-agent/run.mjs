@@ -72,12 +72,14 @@ const files = await gh(`/pulls/${prNumber}/files?per_page=100`);
 const changedPaths = files.map((f) => f.filename);
 const combinedStatus = await gh(`/commits/${pr.head.sha}/check-runs`);
 const checkRuns = combinedStatus.check_runs ?? [];
+const commits = await gh(`/pulls/${prNumber}/commits?per_page=100`);
 
 let findings = evaluatePrGate({
   pr,
   changedPaths,
   checkRuns,
   body: pr.body ?? '',
+  commits,
 });
 
 if (shouldRunDocGraphGate(changedPaths)) {
@@ -105,12 +107,13 @@ writeSummary(`- Draft: ${isDraft ? 'yes' : 'no'}`);
 writeSummary(`- Result: ${conclusion}`);
 writeSummary(`- Changed files: ${changedPaths.length}`);
 for (const f of findings) writeSummary(shortFindingLine(f));
-if (!findings.length) writeSummary('- No blocking findings.');
+if (!findings.length) writeSummary('- No findings.');
 
 const reviewBody = [
   `PR gate agent result: **${conclusion}**`,
   '',
-  ...(!findings.length ? ['No blocking findings detected.'] : findings.map(shortFindingLine)),
+  ...(!findings.length ? ['No findings.'] : findings.map(shortFindingLine)),
+  ...(findings.length && !hasErrors ? ['', 'Warnings are advisory and do not block merge.'] : []),
 ].join('\n');
 
 if (reviewToken && !isDraft) {

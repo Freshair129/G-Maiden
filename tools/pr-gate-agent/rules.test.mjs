@@ -9,6 +9,8 @@ import {
   shouldRunDocGraphGate,
   ciCheckConclusion,
   evaluatePrGate,
+  hasAgentAttribution,
+  commitsMissingAttribution,
 } from './rules.mjs';
 
 test('bucketForPath groups known roots', () => {
@@ -62,4 +64,49 @@ test('evaluatePrGate allows draft PR to skip ci enforcement', () => {
 
 test('uniqueBuckets deduplicates and sorts', () => {
   assert.deepEqual(uniqueBuckets(['src/a.ts', 'docs/a.md', 'src/b.ts']), ['docs', 'src']);
+});
+
+test('hasAgentAttribution accepts Agent or Co-Authored-By trailers', () => {
+  assert.equal(hasAgentAttribution('feat: x\n\nAgent: Claude Fable 5.1'), true);
+  assert.equal(hasAgentAttribution('feat: x\n\nCo-Authored-By: Codex <noreply@example.com>'), true);
+  assert.equal(hasAgentAttribution('feat: x\n\nagent: lower-case'), true);
+  assert.equal(hasAgentAttribution('feat: x\n\nAgent:'), false);
+  assert.equal(hasAgentAttribution('feat: x'), false);
+});
+
+test('commitsMissingAttribution skips merge commits and reports short sha + subject', () => {
+  const commits = [
+    { sha: 'aaaaaaa1111', parents: [{}], commit: { message: 'feat: no trailer\n\nbody' } },
+    { sha: 'bbbbbbb2222', parents: [{}, {}], commit: { message: "Merge branch 'main'" } },
+    { sha: 'ccccccc3333', parents: [{}], commit: { message: 'fix: ok\n\nAgent: Codex' } },
+  ];
+  assert.deepEqual(commitsMissingAttribution(commits), [{ sha: 'aaaaaaa', subject: 'feat: no trailer' }]);
+});
+
+test('evaluatePrGate reports missing attribution as a warning, never an error', () => {
+  const findings = evaluatePrGate({
+    pr: { draft: false, mergeable: 'MERGEABLE' },
+    changedPaths: ['src/src/App.tsx'],
+    checkRuns: [{ name: 'ci', status: 'COMPLETED', conclusion: 'SUCCESS' }],
+    body: '## Summary\nx',
+    commits: [{ sha: 'abc1234def', parents: [{}], commit: { message: 'feat: x' } }],
+  });
+  const warn = findings.find((f) => f.code === 'agent-attribution-missing');
+  assert.equal(warn.severity, 'warning');
+  assert.equal(findings.some((f) => f.severity === 'error'), false);
+});
+
+test('evaluatePrGate emits no attribution finding when commits are omitted or all attributed', () => {
+  const base = {
+    pr: { draft: false, mergeable: 'MERGEABLE' },
+    changedPaths: ['src/src/App.tsx'],
+    checkRuns: [{ name: 'ci', status: 'COMPLETED', conclusion: 'SUCCESS' }],
+    body: '## Summary\nx',
+  };
+  assert.equal(evaluatePrGate(base).some((f) => f.code === 'agent-attribution-missing'), false);
+  const attributed = evaluatePrGate({
+    ...base,
+    commits: [{ sha: 'abc1234def', parents: [{}], commit: { message: 'feat: x\n\nCo-Authored-By: Claude <noreply@anthropic.com>' } }],
+  });
+  assert.equal(attributed.some((f) => f.code === 'agent-attribution-missing'), false);
 });
