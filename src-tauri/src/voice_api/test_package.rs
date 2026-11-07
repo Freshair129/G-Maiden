@@ -4,14 +4,38 @@ use std::{
 };
 
 pub(crate) fn install(root: &Path, serial: u64, event: &str) -> (String, PathBuf, PathBuf) {
-    install_with_variants(root, serial, event, false)
+    install_with_variants(root, serial, event, false, &[])
 }
 
-pub(crate) fn install_two_variants(root: &Path, serial: u64, event: &str) -> (String, PathBuf, PathBuf) {
-    install_with_variants(root, serial, event, true)
+pub(crate) fn install_two_variants(
+    root: &Path,
+    serial: u64,
+    event: &str,
+) -> (String, PathBuf, PathBuf) {
+    install_with_variants(root, serial, event, true, &[])
 }
 
-fn install_with_variants(root: &Path, serial: u64, event: &str, second: bool) -> (String, PathBuf, PathBuf) {
+/// One verified package with two `kill` pairs and single-pair event mappings.
+/// This is intentionally one archive so tests exercise the active-cache and
+/// pair registry exactly as a runtime GSI event does.
+pub(crate) fn install_rotation_fixture(root: &Path, serial: u64) -> String {
+    install_with_variants(
+        root,
+        serial,
+        "kill",
+        true,
+        &["death", "gank", "danger", "revision"],
+    )
+    .0
+}
+
+fn install_with_variants(
+    root: &Path,
+    serial: u64,
+    event: &str,
+    second: bool,
+    single_pair_events: &[&str],
+) -> (String, PathBuf, PathBuf) {
     let id = format!("ann_00000000-0000-0000-0000-{serial:012x}");
     let original = format!("snd_00000000-0000-0000-0000-{:012x}", serial * 3);
     let mixed = format!("snd_00000000-0000-0000-0000-{:012x}", serial * 3 + 1);
@@ -69,9 +93,35 @@ fn install_with_variants(root: &Path, serial: u64, event: &str, second: bool) ->
             serde_json::json!({"sound_id":original2,"role":"original_voice","label":"second original","path":format!("audio/{original2}.wav"),"sha256":g_ann_package::sha256(&wav2)}),
             serde_json::json!({"sound_id":mixed2,"role":"mixed_voice_sfx","label":"second played","path":format!("audio/{mixed2}.wav"),"sha256":g_ann_package::sha256(&mixed_wav2)})
         ]);
-        registry["events"][event].as_array_mut().unwrap().push(serde_json::json!({"sound_id":original2,"banner_id":banner2}));
+        registry["events"][event]
+            .as_array_mut()
+            .unwrap()
+            .push(serde_json::json!({"sound_id":original2,"banner_id":banner2}));
         registry["banners"].as_array_mut().unwrap().push(serde_json::json!({"banner_id":banner2,"event_key":event,"original_sound_id":original2,"playback_sound_id":mixed2,
           "visual_source":{"root":".","silent":true,"video":format!("video/{banner2}.webm"),"sha256":g_ann_package::sha256(video)},
+          "components":[],"cues":[],"config":{"duration_seconds":0.01}}));
+    }
+    for (index, extra_event) in single_pair_events.iter().enumerate() {
+        let offset = serial * 10 + index as u64;
+        let original = format!("snd_20000000-0000-0000-0000-{:012x}", offset * 3);
+        let mixed = format!("snd_20000000-0000-0000-0000-{:012x}", offset * 3 + 1);
+        let banner = format!("bnr_20000000-0000-0000-0000-{offset:012x}");
+        let mut wav_extra = wav.clone();
+        let mut mixed_wav_extra = mixed_wav.clone();
+        let amplitude = 200_i16 + index as i16 * 50;
+        wav_extra[44..46].copy_from_slice(&amplitude.to_le_bytes());
+        mixed_wav_extra[44..46].copy_from_slice(&(amplitude * 2).to_le_bytes());
+        fs::write(source.join(format!("audio/{original}.wav")), &wav_extra).unwrap();
+        fs::write(source.join(format!("audio/{mixed}.wav")), &mixed_wav_extra).unwrap();
+        fs::write(source.join(format!("video/{banner}.webm")), video).unwrap();
+        registry["sounds"].as_array_mut().unwrap().extend([
+            serde_json::json!({"sound_id":original,"role":"original_voice","label":"extra original","path":format!("audio/{original}.wav"),"sha256":g_ann_package::sha256(&wav_extra)}),
+            serde_json::json!({"sound_id":mixed,"role":"mixed_voice_sfx","label":"extra played","path":format!("audio/{mixed}.wav"),"sha256":g_ann_package::sha256(&mixed_wav_extra)}),
+        ]);
+        registry["events"][*extra_event] =
+            serde_json::json!([{"sound_id":original,"banner_id":banner}]);
+        registry["banners"].as_array_mut().unwrap().push(serde_json::json!({"banner_id":banner,"event_key":extra_event,"original_sound_id":original,"playback_sound_id":mixed,
+          "visual_source":{"root":".","silent":true,"video":format!("video/{banner}.webm"),"sha256":g_ann_package::sha256(video)},
           "components":[],"cues":[],"config":{"duration_seconds":0.01}}));
     }
     let manifest = format!("{id}.json");
