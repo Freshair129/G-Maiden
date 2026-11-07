@@ -4,7 +4,7 @@ doc_id: "CR-044-g-voice-stt-benchmark-harness"
 status: "accepted"
 approved_by: "Boss (explicit approval in chat, 2026-11-07: อนุมัติตามร่าง)"
 approved_date: "2026-11-07"
-version: "0.1.1"
+version: "0.1.2"
 updated: "2026-11-07"
 owner: "Boss"
 complexity: "C-2"
@@ -59,6 +59,7 @@ Slice นี้สร้างสิ่งที่ทำได้ก่อน�
 | C1 | whisper.cpp (MIT) | Whisper `small` multilingual, quantized | Thai + English ในโมเดลเดียว | MIT (OpenAI Whisper) | code-switch ได้ในตัว; ยังไม่มีตัวเลข Thai CER ที่ยืนยันสำหรับ small quantized |
 | C2 | whisper.cpp | Thai fine-tune ขนาด small (เช่น `biodatlab/distill-whisper-th-small`) | Thai เด่น | ต้องตรวจ card (Thonburian variants มีทั้ง MIT และ Apache-2.0) | Thai fine-tune บางตัวระบุว่า**ไม่รักษาภาษาอื่น**: เสี่ยง English WER/code-switch |
 | C3 | sherpa-onnx (Apache-2.0) | Zipformer Thai (`sherpa-onnx-zipformer-thai-2024-06-20`, GigaSpeech2) + English zipformer | แยกโมเดลต่อภาษา | icefall card ระบุ Apache-2.0; license ของ dataset GigaSpeech2 ต้องตรวจแยก | ต้องมีตัวเลือกภาษาหรือรันสองโมเดล → RAM/latency เพิ่ม |
+| C4 | faster-whisper 1.2.1 (CTranslate2) ผ่าน runtime ที่ FUNG staged ไว้ (`G:\AI-Studio\development\FUNG\.venv-whisper`, Python 3.11.9 embed) | ที่มีในเครื่อง: `large-v3-turbo` (≈1.6 GB, `mobiuslabsgmbh/faster-whisper-large-v3-turbo` rev `0a363e91…`); รุ่น `small` int8 ต้องดาวน์โหลดแยก | Thai + English (Whisper multilingual) | `manifest.json` ของ FUNG ระบุ SHA-256 ทุกไฟล์; โฟลเดอร์ `LICENSES` มี faster-whisper, Python และ model card (model ระบุ MIT) | engine เดียวกับ Lalin/FUNG; `large-v3-turbo` เกินงบ RAM 900 MB จึงใช้เป็น**ตัวอ้างอิงเพดานคุณภาพเท่านั้น** ห้ามถือเป็นตัวเลือกส่งจริง; ถ้าเลือกแนวนี้ต้องแนบ Python runtime (ตัดสินใน MVP-047) |
 
 ทุกแถวต้องผ่าน eligibility gate ของ MVP-038 §3 ก่อนเข้า benchmark: hash, license ของทั้ง engine และ model, สิทธิ์ redistribution, offline behavior.
 การมี crate ใน `Cargo.lock` หรือ card บน Hugging Face ไม่ถือเป็นหลักฐาน license จนกว่าจะบันทึกไฟล์ license และ hash.
@@ -119,6 +120,7 @@ Slice นี้สร้างสิ่งที่ทำได้ก่อน�
 2. อนุญาตหลักการดาวน์โหลดลงเครื่อง dev นอก repo **ทีละรายการ**; ทุกไฟล์ต้องแจ้งชื่อไฟล์, แหล่ง และขนาด แล้วรอ Boss ยืนยันรายการนั้นก่อนดาวน์โหลด (การอนุมัติ CR นี้ไม่ใช่การอนุญาตดาวน์โหลดไฟล์ใดไฟล์หนึ่ง)
 3. Harness เขียนด้วย **Node** โดยไม่มี npm dependency ใหม่
 4. Boss เป็นผู้พูดหรือจัดหาผู้พูด พร้อม consent; directory ของ corpus นอก repo ระบุตอนเริ่ม Slice 3b
+5. (เพิ่ม 2026-11-07, Boss: "เพิ่ม C4 เลย") เพิ่ม **C4 faster-whisper** และ adapter `faster-whisper` ใน harness; อ่าน runtime ของ FUNG **แบบอ่านอย่างเดียว** ด้วย path ที่ผู้ใช้ระบุ ไม่คัดลอกเข้า repo ไม่แก้ไฟล์ใน FUNG และไม่ดาวน์โหลดโมเดลเพิ่มโดยไม่ได้รับอนุญาตทีละไฟล์
 
 ## Changelog
 
@@ -126,3 +128,4 @@ Slice นี้สร้างสิ่งที่ทำได้ก่อน�
 | --- | --- | --- |
 | 0.1.0 | 2026-11-07 | Draft Slice 3a: STT candidate long-list under the 900 MB aggregate RAM ceiling, out-of-app Node benchmark harness contract, corpus/consent templates and decisions; no model selected, no app change. |
 | 0.1.1 | 2026-11-07 | Boss approved the draft as written; recorded §8 decisions (C1 primary, per-file download confirmation, Node harness, Boss-provided corpus). |
+| 0.1.2 | 2026-11-07 | Boss added candidate C4 (faster-whisper 1.2.1 via the FUNG staged runtime, read-only) and a faster-whisper harness adapter; large-v3-turbo is a quality-ceiling reference only. |
