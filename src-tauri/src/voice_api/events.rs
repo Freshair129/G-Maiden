@@ -75,6 +75,13 @@ pub(crate) const EVENTS: &[EventDef] = &[
         thai: "ยกเลิกเตือน",
     },
     EventDef {
+        id: "enemy_missing",
+        group: "warning",
+        label: "Enemy Missing",
+        subtitle: "Enemy missing from minimap",
+        thai: "ศัตรูหาย",
+    },
+    EventDef {
         id: "hpLow",
         group: "warning",
         label: "HP Low",

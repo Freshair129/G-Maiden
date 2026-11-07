@@ -15,12 +15,86 @@
 
 use crate::gsi::GameTick;
 use crate::runtime::{MatchLifecycle, MatchSessionSnapshot};
-use std::sync::{Mutex, OnceLock};
+use std::{
+    collections::HashSet,
+    sync::{Mutex, OnceLock},
+};
 
 const MULTIKILL_WINDOW_S: i64 = 18; // kills within this span chain into double/triple/…
 const MANA_LOW: i64 = 15;
 const HP_LOW: i64 = 20;
 const LEVEL_UP_MILESTONES: [i64; 4] = [6, 12, 18, 25];
+const ENEMY_MISSING_VOICE_COOLDOWN_MS: u64 = 10_000;
+
+/// Capture-owned admission for the low-priority `enemy_missing` announcer
+/// event. G-Sentry owns the actual missing episode; this state only prevents a
+/// coverage-qualified episode from producing more than one media request.
+#[derive(Default)]
+pub(crate) struct EnemyMissingVoiceGate {
+    session_epoch: Option<u64>,
+    announced_heroes: HashSet<String>,
+    last_voice_ms: Option<u64>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum EnemyMissingVoiceDecision {
+    Play,
+    NoCoverage,
+    Duplicate,
+    Cooldown,
+    CriticalActive,
+    Unmapped,
+}
+
+impl EnemyMissingVoiceGate {
+    /// Reappearance ends the current missing episode and makes a later
+    /// confirmed disappearance eligible again.
+    pub(crate) fn observe_visible<'a>(&mut self, heroes: impl IntoIterator<Item = &'a str>) {
+        for hero in heroes {
+            self.announced_heroes.remove(hero);
+        }
+    }
+
+    /// Decide before touching the audio queue. A rejected result deliberately
+    /// consumes a coverage-qualified episode: G-Sentry emits one edge per
+    /// episode, and retrying a dropped warning later would turn a safety fence
+    /// into delayed narration.
+    pub(crate) fn admit(
+        &mut self,
+        session_epoch: u64,
+        hero: &str,
+        now_ms: u64,
+        coverage_confirmed: bool,
+        critical_active: bool,
+        gann_mapping_present: bool,
+    ) -> EnemyMissingVoiceDecision {
+        if self.session_epoch != Some(session_epoch) {
+            self.session_epoch = Some(session_epoch);
+            self.announced_heroes.clear();
+            self.last_voice_ms = None;
+        }
+        if !coverage_confirmed {
+            return EnemyMissingVoiceDecision::NoCoverage;
+        }
+        if !self.announced_heroes.insert(hero.to_owned()) {
+            return EnemyMissingVoiceDecision::Duplicate;
+        }
+        if critical_active {
+            return EnemyMissingVoiceDecision::CriticalActive;
+        }
+        if !gann_mapping_present {
+            return EnemyMissingVoiceDecision::Unmapped;
+        }
+        if self
+            .last_voice_ms
+            .is_some_and(|last| now_ms.saturating_sub(last) < ENEMY_MISSING_VOICE_COOLDOWN_MS)
+        {
+            return EnemyMissingVoiceDecision::Cooldown;
+        }
+        self.last_voice_ms = Some(now_ms);
+        EnemyMissingVoiceDecision::Play
+    }
+}
 
 fn crossed_level_up_milestone(prev_level: i64, next_level: i64) -> bool {
     next_level > prev_level
@@ -310,6 +384,82 @@ fn step(s: &mut State, tick: &GameTick) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn enemy_missing_gate_plays_once_per_confirmed_missing_episode() {
+        let mut gate = EnemyMissingVoiceGate::default();
+
+        assert_eq!(
+            gate.admit(7, "npc_dota_hero_axe", 10_000, true, false, true),
+            EnemyMissingVoiceDecision::Play
+        );
+        assert_eq!(
+            gate.admit(7, "npc_dota_hero_axe", 21_000, true, false, true),
+            EnemyMissingVoiceDecision::Duplicate
+        );
+
+        gate.observe_visible(["npc_dota_hero_axe"]);
+        assert_eq!(
+            gate.admit(7, "npc_dota_hero_axe", 22_000, true, false, true),
+            EnemyMissingVoiceDecision::Play
+        );
+    }
+
+    #[test]
+    fn enemy_missing_gate_applies_one_global_ten_second_cooldown() {
+        let mut gate = EnemyMissingVoiceGate::default();
+
+        assert_eq!(
+            gate.admit(7, "npc_dota_hero_axe", 10_000, true, false, true),
+            EnemyMissingVoiceDecision::Play
+        );
+        assert_eq!(
+            gate.admit(7, "npc_dota_hero_lina", 19_999, true, false, true),
+            EnemyMissingVoiceDecision::Cooldown
+        );
+    }
+
+    #[test]
+    fn enemy_missing_gate_rejects_no_coverage_without_consuming_the_episode() {
+        let mut gate = EnemyMissingVoiceGate::default();
+
+        assert_eq!(
+            gate.admit(7, "npc_dota_hero_axe", 10_000, false, false, true),
+            EnemyMissingVoiceDecision::NoCoverage
+        );
+        assert_eq!(
+            gate.admit(7, "npc_dota_hero_axe", 10_001, true, false, true),
+            EnemyMissingVoiceDecision::Play
+        );
+    }
+
+    #[test]
+    fn enemy_missing_gate_resets_dedupe_and_cooldown_for_a_new_session() {
+        let mut gate = EnemyMissingVoiceGate::default();
+
+        assert_eq!(
+            gate.admit(7, "npc_dota_hero_axe", 10_000, true, false, true),
+            EnemyMissingVoiceDecision::Play
+        );
+        assert_eq!(
+            gate.admit(8, "npc_dota_hero_axe", 10_001, true, false, true),
+            EnemyMissingVoiceDecision::Play
+        );
+    }
+
+    #[test]
+    fn enemy_missing_gate_drops_critical_and_unmapped_requests_without_queueing() {
+        let mut gate = EnemyMissingVoiceGate::default();
+
+        assert_eq!(
+            gate.admit(7, "npc_dota_hero_axe", 10_000, true, true, true),
+            EnemyMissingVoiceDecision::CriticalActive
+        );
+        assert_eq!(
+            gate.admit(7, "npc_dota_hero_lina", 20_000, true, false, false),
+            EnemyMissingVoiceDecision::Unmapped
+        );
+    }
 
     fn tick(in_game: bool, clock: i64, kills: i64, alive: bool) -> GameTick {
         GameTick {

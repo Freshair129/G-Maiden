@@ -38,11 +38,11 @@ const SYNC_HINT =
   "src/src/overlay/streaks.ts together (CLAUDE.md \"Kill-banner sync\").";
 
 describe("announcer event contract (schemas/gmaiden-events.json)", () => {
-  it("loads the vendored schema at v1.1 with 24 code-facing events (25 total minus 'unused')", () => {
+  it("loads the vendored schema at v1.2 with 25 code-facing events (26 total minus 'unused')", () => {
     const schema = loadSchema();
-    expect(schema.version).toBe("1.1");
-    expect(schema["x-events"].length).toBe(25);
-    expect(codeFacingEvents(schema).length).toBe(24);
+    expect(schema.version).toBe("1.2");
+    expect(schema["x-events"].length).toBe(26);
+    expect(codeFacingEvents(schema).length).toBe(25);
   });
 
   it("STREAK_LABELS is keyed by exactly the no-death ladder counts 3..10", () => {
