@@ -2,9 +2,9 @@
 title: "CR-046 — First demo slice: Announcer Pack + Gank Meter + missing-hero alert"
 doc_id: "CR-046-demo-mvp-announcer-gank-slice"
 status: "accepted"
-approved_by: "Boss (explicit approval in chat, 2026-11-07: อนุมัติตามร่าง)"
+approved_by: "Boss (explicit approval in chat, 2026-11-07: อนุมัติตามร่าง; v0.1.2 amendment approved 2026-11-07: อนุมัติตามร่าง)"
 approved_date: "2026-11-07"
-version: "0.1.2"
+version: "0.1.3"
 updated: "2026-11-07"
 owner: "Boss"
 complexity: "C-2"
@@ -15,7 +15,7 @@ related_docs: ["roadmap", "mvp-backlog", "mvp-delivery-plan", "mvp-decisions", "
 # CR-046: เดโมแรก (Announcer Pack + Gank Meter + แจ้งฮีโร่หาย)
 
 > **สถานะ:** accepted 2026-11-07. Boss อนุมัติตามร่าง พร้อมมติตาม §9.1 **Risk: MEDIUM**: เปลี่ยนลำดับความสำคัญของ MVP และเพิ่ม announcer event ใหม่หนึ่งตัว.
-> **v0.1.2 (PROPOSED, รออนุมัติ):** แก้ข้อเท็จจริงเรื่องที่มาของเสียงเตือน และเสนอแก้มติ §9.1(3) เป็น (b) ตามที่ Boss เลือกในแชต 2026-11-07 ("ก) เพิ่มคลิปเข้า pack"). ส่วนอื่นของ v0.1.1 คงเดิม; ข้อความ §9.2 มีผลเมื่อ Boss อนุมัติ.
+> **v0.1.3 (accepted 2026-11-07):** Boss อนุมัติการแก้ข้อเท็จจริงเรื่องที่มาของเสียงเตือนใน §2 และมติ §9.2 ที่แทน §9.1(3): ใช้คลิป `gank`/`danger`/`revision` ใน VRZO pack revision 6.
 > ไม่เปลี่ยน G-Signal latency budget, privacy contract หรือกติกา GANN-only ของ [[gann-event-media-contract]].
 
 ## 1. เหตุผล
@@ -133,17 +133,17 @@ Repo หลัก `D:\G-Maiden` อยู่บน branch `fix/vrzo-visual-compl
 
 1. ขอบเขต D1 ตาม §3
 2. คิลเดี่ยว: (b) อัดคลิป "kill" ใหม่ในสไตล์ VRZO ถ้าได้เสียงทันเดโม; ถ้าไม่ทันใช้ (a) แบนเนอร์อย่างเดียว. ห้ามใช้คลิปพิเศษ HoN ที่ revision 5 ปิดไว้
-3. เสียงเตือน gank/danger: (a) cached Thai line ของ Maiden ใน G-Signal
+3. ~~เสียงเตือน gank/danger: (a) cached Thai line ของ Maiden ใน G-Signal~~ ถูกแทนด้วย §9.2 (v0.1.3)
 4. ฮีโร่หาย: (b) ชิป overlay + เสียงสั้นเมื่อมี mapping ใน pack; ไม่มี mapping จะเป็นชิปอย่างเดียวอัตโนมัติ
 5. ผู้ชมเดโม: ภายในเท่านั้นจนกว่าจะได้สิทธิ์เสียง
 6. วันเป้าหมาย D1: 2026-11-22
 
-### 9.2 แก้มติ §9.1(3) (PROPOSED v0.1.2, รออนุมัติ)
+### 9.2 แก้มติ §9.1(3) (accepted v0.1.3, 2026-11-07; แทน §9.1(3))
 
 เหตุ: มติเดิม (a) ตั้งบนข้อเท็จจริงที่ผิด. โค้ดไม่มี cached Thai line ของ Maiden; เสียงเตือนมาจาก GANN pack อย่างเดียว และเมื่อ pack ไม่มีคลิป ระบบจะกด gank alert ทั้งหมด (ดู §2).
 Boss เลือกในแชต 2026-11-07: "ก) เพิ่มคลิปเข้า pack".
 
-มติที่เสนอ:
+มติ:
 1. เสียงเตือน gank/danger/revision ใช้ (b): อัดคลิปเตือนสไตล์ VRZO สามตัว `gank`, `danger`, `revision` แล้วเพิ่ม mapping เป็น VRZO pack **revision 6** ผ่าน G-AnnStudio. แต่ละ event เป็นคู่ mixed WAV + silent WebM ที่ verified ตาม [[gann-event-media-contract]] และ import ผ่าน Control.
 2. คลิป `revision` ต้องเป็นการแก้คำเตือนกลางประโยคตาม persona Belief Revision ("เอ๊ะ! เดี๋ยวก่อน!").
 3. **ไม่เปลี่ยนโค้ด G-Signal**: ไม่เพิ่ม fallback ใน G-Maiden, latency ≤300 ms, pure Rust, ไม่มี SLM/WebView. ทางเลือก "แบนเนอร์/Gank Meter ขึ้นได้แม้ไม่มีเสียง" อยู่นอก D1 และต้องเป็น CR แยกถ้าต้องการ.
@@ -159,3 +159,4 @@ Boss เลือกในแชต 2026-11-07: "ก) เพิ่มคลิ�
 | 0.1.0 | 2026-11-07 | Draft first demo slice D1: VRZO revision 5 import/verification, single-kill and warning-voice decisions, new native `enemy_missing` announcer event, Gank Meter live check, rights limits and plan impact. |
 | 0.1.1 | 2026-11-07 | Boss approved the draft as written; recorded §9 decisions per the draft recommendations. |
 | 0.1.2 | 2026-11-07 | Correct the warning-voice source (GANN critical cache only; no Maiden cached line; missing clips suppress the gank alert) and propose amending §9.1(3) to pack revision 6 clips for gank/danger/revision; pending Boss approval. |
+| 0.1.3 | 2026-11-07 | Boss approved the v0.1.2 amendment as written; §9.2 (pack revision 6 warning clips) supersedes §9.1(3). |
