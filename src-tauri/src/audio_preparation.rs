@@ -313,6 +313,37 @@ pub(super) fn open_verified_file(path: &std::path::Path) -> Result<std::fs::File
     }
 }
 
+/// Device-free test seam for the non-critical GANN preparation work. The
+/// production worker performs these same verified original/mixed reads before
+/// it sends `Cmd::Prepared` to the audio owner.
+#[cfg(test)]
+pub(super) fn prepare_announcer_pair_for_test(
+    original: &std::path::Path,
+    selection: &crate::event_media::MixedSelection,
+) -> Result<(), String> {
+    let (pcm, original_hash) = prepare_file(open_verified_file(original)?, true)?;
+    prepare_mix(pcm, original_hash, Some(selection)).map(|_| ())
+}
+
+#[cfg(test)]
+pub(super) struct TestAnnouncerFenceCancel(Arc<Epochs>);
+
+#[cfg(test)]
+pub(super) fn test_announcer_fence() -> (Fence, TestAnnouncerFenceCancel) {
+    let epochs = Arc::new(Epochs::default());
+    (
+        Fence::capture(&epochs, Priority::Announcer),
+        TestAnnouncerFenceCancel(epochs),
+    )
+}
+
+#[cfg(test)]
+impl TestAnnouncerFenceCancel {
+    pub(super) fn cancel(&self) {
+        self.0.invalidate(Priority::Critical);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
