@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "unicode_form": "NFC",
+  "lowercase": true,
+  "remove_characters": ["\u200b", "\ufeff"],
+  "strip_unicode_categories": ["P", "S"],
+  "collapse_whitespace": true,
+  "trim": true
+}
