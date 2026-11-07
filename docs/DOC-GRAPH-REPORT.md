@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-11-07T20:37:29.087Z
+สร้างเมื่อ / Generated at: 2026-11-07T20:52:44.096Z
 
-สแกน 179 ไฟล์เอกสาร, 291 nodes, 1340 edges, 29 รายการปัญหา (3 ตัวบล็อก exit code) / scanned 179 doc files, 291 nodes, 1340 edges, 29 violations (3 blocking exit code).
+สแกน 180 ไฟล์เอกสาร, 292 nodes, 1349 edges, 27 รายการปัญหา (1 ตัวบล็อก exit code) / scanned 180 doc files, 292 nodes, 1349 edges, 27 violations (1 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -13,7 +13,6 @@
 | anchor-symbol-mismatch | anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) | 1 | yes |
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 1 | no (informational) |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 25 | no (informational) |
-| unresolved | wikilink หาไม่เจอ / unresolved wikilink | 2 | yes |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
 
@@ -69,11 +68,6 @@
 ### docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
-
-### docs/change request/CR-046-demo-mvp-announcer-gank-slice.md
-
-- [L29] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="mvp-delivery-plan")
-- [L106] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="mvp-delivery-plan")
 
 ### docs/design-system/landing_page_prompt.md
 
