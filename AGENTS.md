@@ -2,7 +2,7 @@
 title: "AGENTS.md"
 doc_id: "agents"
 status: active
-version: "0.4.17"
+version: "0.4.18"
 updated: "2026-11-07"
 owner: "G-Maiden"
 ---
@@ -326,6 +326,12 @@ build) and then fails the PR on any of:
 | `empty-diff` | PR exposes no changed files |
 | `missing-scope-rationale` | wide-scope PR whose body has no rationale section |
 
+It also posts one **advisory** finding that never fails the gate:
+
+| Finding | Trigger |
+| --- | --- |
+| `agent-attribution-missing` (warning) | a non-merge commit in the PR has no `Agent:` or `Co-Authored-By:` trailer. Human-authored commits may ignore it; agent-authored commits should add the trailer in a follow-up commit, never by amending |
+
 - **Wide-scope** = more than 3 top-level path buckets changed (`docs`, `src`, `src-tauri`,
   `supabase`, `landing`, `tools`, `scripts`, …) **or** any change under `.github/workflows/`.
   Such a PR's body must contain `## Summary`, `## Rationale`, `## Scope`, or a
@@ -583,3 +589,4 @@ These are **functional requirements**, not flavor text. Maiden must:
 | 0.4.15 | 2026-11-04 | Add early lifecycle-policy navigation, reuse-first ownership and protected runtime/dependency cleanup boundaries. |
 | 0.4.16 | 2026-11-06 | Align stale state references with the code: source version 0.13.6, NVML-based GPU feeder, and GSI port fallback 3000–3010 (#134). |
 | 0.4.17 | 2026-11-07 | Correct the worktree placement note (`.worktrees/` and `.codex/` are gitignored) and the doc-graph artifact claim (CI regenerates, it does not by itself fail stale commits); point to the lifecycle policy (#134). |
+| 0.4.18 | 2026-11-07 | Document the advisory `agent-attribution-missing` pr-gate finding (warning only, no new blocking rule). |
