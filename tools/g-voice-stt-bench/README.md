@@ -84,3 +84,51 @@ node tools/doc-graph/ci-gate.mjs
 ```
 
 Tests create tiny synthetic PCM WAV files only in the operating-system temporary directory and remove them. They do not download or benchmark a real model.
+
+## Local browser recorder (CR-045 Slice 3b-tool)
+
+`recorder/index.html` is a dependency-free, local-only recorder for creating a corpus that this
+harness accepts. It does not start the application, run STT, upload anything, or write audio into
+the repository. It asks the recorder to choose every input and output location explicitly.
+
+### Open it
+
+1. Use a current Edge or Chrome browser. Open
+   `tools/g-voice-stt-bench/recorder/index.html` directly from File Explorer (a `file://` page).
+   The recorder has no external scripts, fonts, CDNs, or network calls.
+2. If the browser asks, grant local directory and microphone permission only for this recording
+   session. If a managed browser policy does not allow File System Access or microphone access
+   from a local file, do not work around that policy or use another storage location; use an
+   owner-approved local Chromium profile instead.
+3. Select the three prompt files from the same folder:
+   `prompts.th.json`, `prompts.en.json`, and `prompts.code-switch.json`.
+4. Select `F:\g-voice-stt-corpus\` as the corpus directory. The page writes only
+   `<id>.wav` and `manifest.json` there. Existing manifest entries are appended or updated by id;
+   unrelated entries are not deleted.
+
+The recorder uses browser `getUserMedia` with mono input and echo cancellation, noise
+suppression, and automatic gain control disabled. It requests an AudioContext at 16 kHz and uses
+its own resampler if the browser supplies another rate. Saved files are mono 16 kHz PCM16 WAV.
+
+### Recording protocol
+
+1. Before any recording, complete and retain `CONSENT-TEMPLATE.md` outside Git. Use a speaker
+   pseudonym, never a real name, in the session form.
+2. Enter a lowercase session id, select `quiet` or `game-audio`, select `tuning` or `holdout`,
+   and record the microphone label. Always fill in the game-audio method/level note; for quiet,
+   state that no game audio was used.
+3. For `game-audio`, play Dota 2 or a replay through the same speakers/headset and level used in
+   normal play. Record every prompt in both `quiet` and `game-audio` conditions.
+4. Hold Space to record and release it to stop, or use the button. Listen to the WAV, use
+   re-record for a replacement, and save only usable takes. The level meter warns for very quiet
+   input or clipping, and an empty capture cannot be saved.
+5. Record at least two sessions on different days. Keep entire sessions separate between `tuning`
+   and `holdout`; never use a holdout session to alter prompts or normalization after seeing
+   candidate results. Boss is the initial sole speaker, so any later result must state that
+   speaker limitation.
+
+The shipped prompts contain 104 Thai, 104 English, and 40 Thai-English code-switch utterances.
+They cover all eight frozen CR-045 intents, include gamer shorthand such as BKB, Rosh, Pudge,
+mid, numbers, and times, and retain canonical lowercase English slot labels in the manifest.
+Consent files, WAVs, manifests, transcript-bearing receipts, and any real corpus remain outside
+Git; `.gitignore` is a secondary guard, not permission to store corpus data in the worktree.

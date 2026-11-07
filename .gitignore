@@ -42,6 +42,13 @@ tests/perf/Cargo.lock
 # Local G-Voice STT benchmark receipts may contain private transcripts.
 /tools/g-voice-stt-bench/out/
 
+# A real STT corpus, consent records, and recordings stay outside this repository.
+/tools/g-voice-stt-bench/recorder/corpus/
+/tools/g-voice-stt-bench/recorder/**/*.wav
+/tools/g-voice-stt-bench/recorder/**/manifest.json
+/tools/g-voice-stt-bench/recorder/**/recording-notes.json
+/tools/g-voice-stt-bench/recorder/**/CONSENT*
+
 # Python (CV tooling)
 __pycache__/
 *.pyc
