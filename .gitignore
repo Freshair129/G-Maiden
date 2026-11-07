@@ -39,6 +39,9 @@ tests/perf/Cargo.lock
 .tmp/
 .codex-artifacts/
 
+# Local G-Voice STT benchmark receipts may contain private transcripts.
+/tools/g-voice-stt-bench/out/
+
 # Python (CV tooling)
 __pycache__/
 *.pyc
