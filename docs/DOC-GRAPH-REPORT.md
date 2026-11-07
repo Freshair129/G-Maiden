@@ -1,10 +1,10 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-11-07T03:48:08.591Z
+สร้างเมื่อ / Generated at: 2026-11-07T17:42:38.508Z
 
-สแกน 176 ไฟล์เอกสาร, 288 nodes, 1335 edges, 26 รายการปัญหา (0 ตัวบล็อก exit code) / scanned 176 doc files, 288 nodes, 1335 edges, 26 violations (0 blocking exit code).
+สแกน 177 ไฟล์เอกสาร, 289 nodes, 1338 edges, 28 รายการปัญหา (2 ตัวบล็อก exit code) / scanned 177 doc files, 289 nodes, 1338 edges, 28 violations (2 blocking exit code).
 
-ผลลัพธ์ / Result: **PASS (exit 0)**
+ผลลัพธ์ / Result: **FAIL (exit 1)**
 
 ## สรุปตามประเภทปัญหา / Summary by violation reason
 
@@ -12,6 +12,7 @@
 | --- | --- | --- | --- |
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 1 | no (informational) |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 25 | no (informational) |
+| unresolved | wikilink หาไม่เจอ / unresolved wikilink | 2 | yes |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
 
@@ -66,6 +67,11 @@
 ### docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
+
+### docs/change request/CR-046-demo-mvp-announcer-gank-slice.md
+
+- [L31] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="mvp-delivery-plan")
+- [L110] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="mvp-delivery-plan")
 
 ### docs/design-system/landing_page_prompt.md
 
