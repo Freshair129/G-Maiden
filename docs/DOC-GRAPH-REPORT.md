@@ -1,10 +1,10 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-11-07T03:48:08.591Z
+สร้างเมื่อ / Generated at: 2026-11-07T07:22:14.370Z
 
-สแกน 176 ไฟล์เอกสาร, 288 nodes, 1335 edges, 26 รายการปัญหา (0 ตัวบล็อก exit code) / scanned 176 doc files, 288 nodes, 1335 edges, 26 violations (0 blocking exit code).
+สแกน 177 ไฟล์เอกสาร, 289 nodes, 1336 edges, 27 รายการปัญหา (1 ตัวบล็อก exit code) / scanned 177 doc files, 289 nodes, 1336 edges, 27 violations (1 blocking exit code).
 
-ผลลัพธ์ / Result: **PASS (exit 0)**
+ผลลัพธ์ / Result: **FAIL (exit 1)**
 
 ## สรุปตามประเภทปัญหา / Summary by violation reason
 
@@ -12,6 +12,7 @@
 | --- | --- | --- | --- |
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 1 | no (informational) |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 25 | no (informational) |
+| unresolved | wikilink หาไม่เจอ / unresolved wikilink | 1 | yes |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
 
@@ -66,6 +67,10 @@
 ### docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
+
+### docs/change request/CR-045-g-voice-stt-corpus-collection.md
+
+- [L22] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="CR-044-g-voice-stt-benchmark-harness")
 
 ### docs/design-system/landing_page_prompt.md
 
