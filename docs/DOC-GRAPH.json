@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-07T03:48:08.591Z",
+  "generatedAt": "2026-11-07T08:25:02.210Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -637,6 +637,13 @@
       "type": "doc",
       "path": "docs/change request/CR-043-g-voice-transient-mic-capture.md",
       "title": "CR-043 — G-Voice Slice 2: transient PTT microphone capture",
+      "status": "accepted"
+    },
+    {
+      "id": "docs/change request/CR-046-demo-mvp-announcer-gank-slice.md",
+      "type": "doc",
+      "path": "docs/change request/CR-046-demo-mvp-announcer-gank-slice.md",
+      "title": "CR-046 — First demo slice: Announcer Pack + Gank Meter + missing-hero alert",
       "status": "accepted"
     },
     {
@@ -5450,6 +5457,12 @@
       "line": 23
     },
     {
+      "from": "docs/change request/CR-046-demo-mvp-announcer-gank-slice.md",
+      "to": "docs/architecture/gann-event-media-contract.md",
+      "type": "wikilink",
+      "line": 18
+    },
+    {
       "from": "docs/change request/IMPL-PLAN-DXGI-migration.md",
       "to": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "type": "wikilink",
@@ -9874,6 +9887,18 @@
       "reason": "no-metadata"
     },
     {
+      "file": "docs/change request/CR-046-demo-mvp-announcer-gank-slice.md",
+      "line": 29,
+      "reason": "unresolved",
+      "slug": "mvp-delivery-plan"
+    },
+    {
+      "file": "docs/change request/CR-046-demo-mvp-announcer-gank-slice.md",
+      "line": 106,
+      "reason": "unresolved",
+      "slug": "mvp-delivery-plan"
+    },
+    {
       "file": "docs/design-system/landing_page_prompt.md",
       "line": null,
       "reason": "no-metadata"
@@ -9941,7 +9966,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-07T03:48:14.591Z",
+    "generatedAt": "2026-11-07T08:25:20.516Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,

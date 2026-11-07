@@ -1,0 +1,143 @@
+---
+title: "CR-046 — First demo slice: Announcer Pack + Gank Meter + missing-hero alert"
+doc_id: "CR-046-demo-mvp-announcer-gank-slice"
+status: "accepted"
+approved_by: "Boss (explicit approval in chat, 2026-11-07: อนุมัติตามร่าง)"
+approved_date: "2026-11-07"
+version: "0.1.1"
+updated: "2026-11-07"
+owner: "Boss"
+complexity: "C-2"
+risk: "MEDIUM"
+related_docs: ["roadmap", "mvp-backlog", "mvp-delivery-plan", "mvp-decisions", "gann-event-media-contract", "software-requirements-specification"]
+---
+
+# CR-046: เดโมแรก (Announcer Pack + Gank Meter + แจ้งฮีโร่หาย)
+
+> **สถานะ:** accepted 2026-11-07. Boss อนุมัติตามร่าง พร้อมมติตาม §9.1 **Risk: MEDIUM**: เปลี่ยนลำดับความสำคัญของ MVP และเพิ่ม announcer event ใหม่หนึ่งตัว.
+> ไม่เปลี่ยน G-Signal latency budget, privacy contract หรือกติกา GANN-only ของ [[gann-event-media-contract]].
+
+## 1. เหตุผล
+
+Boss กำหนด (2026-11-07) ว่าภาพแรกที่ผู้เล่นต้องเห็นคือ:
+- เริ่มเกม → **แบนเนอร์ขึ้นพร้อมเสียงพากย์ไทย** แบบเกม HoN ใช้ VRZO announcer pack
+- **Gank Meter** (แถบความปลอดภัย)
+- **แจ้งเตือนฮีโร่ศัตรูหาย**
+
+เหตุผลคือแอปอื่นส่วนใหญ่เป็นโค้ชที่แจ้งเตือนรก ส่วน announcer ที่เล่นเสียงพร้อมแบนเนอร์ตามเหตุการณ์ยังไม่มีใครทำ.
+CR นี้กำหนด "เดโมแรก" (milestone **D1**) เป็นชุดย่อยของ MVP ที่ปิดก่อน. งานทั้งหมดอยู่ใน MVP-017, 018, 022, 025, 026 อยู่แล้ว
+**จึงไม่ใช่งานเสริม** และไม่ขัดกับการ freeze จนถึง M6 ใน [[mvp-delivery-plan]].
+
+## 2. สถานะปัจจุบัน (ตรวจ 2026-11-07, อ่านอย่างเดียว)
+
+| ส่วน | ที่มีแล้ว | ช่องว่าง |
+| --- | --- | --- |
+| VRZO pack | Studio `vrzo-mapping-v5` (`ann_c4d92f17…`, revision 5): 14 event มีเสียง+แบนเนอร์ (match_start, first_blood, double/triple/ultra kill, rampage, streak 3–10) และ multi-kill ตรงจำนวนคิลทั้ง Dota และ HoN | ยังไม่ยืนยันว่า revision 5 ถูก import เข้าแอปที่ใช้เดโม (handoff ระบุว่า runtime owner ต้อง import ผ่าน Control) |
+| คิลเดี่ยว `kill` | revision 5 ตั้งใจลบคลิปพิเศษของ HoN ที่เคยแทนไว้ | **เงียบ**: event ที่เกิดบ่อยที่สุดไม่มีเสียง |
+| กลุ่มเตือน `gank`/`danger`/`revision` | G-Signal เล่นเสียงผ่าน cached Thai line (`try_voice_interrupt_cached_before`) และ critical snapshot จาก pack | pack VRZO ไม่มีคลิปกลุ่มนี้; dev log 2026-11-07 พบ `phase=unmapped event=danger`; ต้องยืนยันว่าเดโมได้ยินเสียงเตือนจริงในทุกกรณี |
+| `hpLow`/`manaLow`/`levelUp`/`death`/`respawn`/`advice` | – | ไม่มีเสียงใน pack |
+| Gank Meter | `FullOverlay.tsx` `gmeterLevel()` ระดับ 0–3 จาก missing count + gank phase | ยังไม่มีผลตรวจบนแมตช์จริง |
+| ฮีโร่หาย | `capture.rs` emit `enemy-missing` (>5 s) | **ไม่ใช่ announcer event**: ไม่มีเสียงหรือแบนเนอร์ผูกได้ |
+| จังหวะ multi-kill | – | ต้องตรวจในแมตช์จริง (CLAUDE.md: การนับคิลกระโดดจาก GSI ยังไม่พิสูจน์จังหวะ multi-kill) |
+| ลิขสิทธิ์เสียง | `distribution: self_contained_filesystem` | ไม่มีข้อมูลสิทธิ์ใช้เสียง HoN/VRZO สำหรับการเผยแพร่ |
+
+## 3. ขอบเขตเดโม D1
+
+**In scope:**
+1. Import และยืนยัน VRZO revision 5 ในแอปที่ใช้เดโม
+   - preview ของ First Blood, Double Kill และ Rampage ต้องตรง
+   - ต้องไม่มี generic Kill substitute
+2. ตัดสินและทำเสียงของคิลเดี่ยวตาม §9.2
+3. ยืนยันเส้นทางเสียงเตือน gank/danger ของ G-Signal ให้มีเสียงในเดโมเสมอ (source ตาม §9.3)
+   - latency ≤300 ms คงเดิม
+   - ไม่ใช้ SLM/WebView
+4. เพิ่ม announcer event **`enemy_missing`** (group `warning`)
+   - Native Rust เป็นเจ้าของ event เดียวกับที่ emit `enemy-missing` แล้ว
+   - มี dedupe/cooldown ต่อฮีโร่
+   - Overlay แสดงชิปฮีโร่ที่หาย
+   - เสียง/แบนเนอร์ตาม §9.4
+5. ตรวจ Gank Meter ระดับ 0–3 บนแมตช์จริง
+   - unknown/no coverage ต้องไม่แสดงเป็น "ปลอดภัย" ตาม MVP-018
+6. บันทึกวิดีโอเดโมหนึ่งแมตช์พร้อม receipt
+
+**Out of scope:**
+- `hpLow`/`manaLow`/`levelUp`/`death`/`respawn`/`advice` (คงเงียบได้ในเดโม)
+- เปิดคลิป HoN พิเศษ 7 ตัว
+- G-Voice, G-Master advice, Store, การแจกจ่ายสาธารณะ
+
+## 4. สัญญา event `enemy_missing`
+
+| หัวข้อ | สัญญา |
+| --- | --- |
+| เจ้าของ | Native Rust (G-Sentry/capture) เท่านั้น; Overlay ไม่สร้าง event ซ้ำ |
+| Trigger | ฮีโร่ศัตรูที่เคยเห็นหายจาก minimap >5 s ภายใน capture coverage ที่ยืนยันแล้ว; ไม่มี coverage = ไม่ trigger |
+| Dedupe | หนึ่งครั้งต่อฮีโร่ต่อช่วงที่หาย; cooldown รวม ≥10 s ระหว่างเสียง `enemy_missing` เพื่อไม่รก |
+| Priority | ต่ำกว่า `gank`/`danger` (critical) และไม่ขัด G-Signal; ถ้า critical กำลังเล่น ให้ทิ้งเสียง `enemy_missing` นั้น |
+| Media | ตาม GANN contract: ใช้ได้เฉพาะ mapping ใน pack ที่ verify แล้ว; ไม่มี mapping = แสดงชิป overlay อย่างเดียวและบันทึกเหตุผล |
+| Privacy | event อยู่ในเครื่อง; ไม่เข้า cloud/G-Party |
+
+## 5. Acceptance (D1)
+
+**อัตโนมัติ:**
+- [ ] Rust: `enemy_missing` trigger/dedupe/cooldown/priority, no-coverage ไม่ trigger, critical preempt ทิ้ง `enemy_missing`
+- [ ] Rust: event list มี `enemy_missing` ใน group `warning`; GANN resolver คืน unmapped อย่างเงียบเมื่อไม่มี mapping
+- [ ] Frontend: ชิปฮีโร่หาย และ Gank Meter ระดับ 0–3 รวม unknown state
+- [ ] `cargo test`, clippy, tsc, eslint, vitest, doc gate ผ่าน
+
+**ต้องใช้คนบนแมตช์จริง (Boss):**
+- [ ] แอปที่ใช้เดโมแสดง VRZO revision 5 เป็น pack ที่เลือก
+- [ ] First Blood, Double Kill และสตรีคหนึ่งระดับ: แบนเนอร์และเสียงตรงกัน ไม่ซ้ำ
+- [ ] คิลเดี่ยวทำงานตาม §9.2
+- [ ] gank alert มีเสียงทุกครั้งที่แถบขึ้นระดับ 3 ภายใน ≤300 ms (วัดตาม MVP-006)
+- [ ] ฮีโร่หาย >5 s แสดงชิป (และเสียงตาม §9.4) โดยไม่รก
+- [ ] Gank Meter ไม่แสดงปลอดภัยเมื่อ capture ไม่มี coverage
+- [ ] วิดีโอเดโม 1 แมตช์ + FPS drop ≤3% + RAM ≤900,000,000 bytes ตาม receipt
+
+## 6. ความเสี่ยงด้านสิทธิ์
+
+เสียงใน VRZO pack มาจาก announcer ของ HoN และเสียง VRZO. pack ไม่มีข้อมูลสิทธิ์ใช้งาน.
+D1 ใช้ได้เป็น**เดโมภายใน**. การโพสต์หรือแจกจ่ายสาธารณะต้องได้สิทธิ์จากเจ้าของเสียงก่อน (ผูกกับ MVP-062 ที่ยัง DEFERRED) หรือใช้เสียงต้นฉบับที่เราอัดเอง.
+
+## 7. ผลต่อแผน
+
+- งานประมาณ **8–10 แต้ม** (import/verify S, `enemy_missing` M, คิลเดี่ยว S–M, ตรวจเส้นทางเสียงเตือน M, overlay chip S) + หนึ่ง live session
+- ส่วนใหญ่ซ้อนกับ MVP-017/018/026 จึงเลื่อนวันรวมของ MVP ประมาณ **+0.5–1 สัปดาห์** (scenario กลาง ≈ 2027-02-17 ถึง 2027-02-20)
+- เป้าหมาย D1: **2026-11-22** (สิ้นสัปดาห์ 2) ถ้าเริ่ม 2026-11-09
+- ปรับ [[mvp-delivery-plan]] เพิ่ม milestone D1 หลังอนุมัติ
+
+## 8. การประสานงาน
+
+Repo หลัก `D:\G-Maiden` อยู่บน branch `fix/vrzo-visual-completion` และมีไฟล์ announcer/variant rotation ที่ยังไม่ commit (มีอีก session ทำอยู่).
+งาน implementation ของ CR นี้ต้องเริ่มจาก worktree ใหม่บน `main` หลังงานนั้น merge หรือประสานเจ้าของก่อน. ห้ามแก้ไฟล์ใน worktree ของ session อื่น.
+
+## 9. ข้อที่ขอให้ Boss ตัดสิน
+
+1. **ขอบเขต D1 ตาม §3:** อนุมัติหรือแก้
+2. **คิลเดี่ยว `kill`:**
+   - (a) แบนเนอร์อย่างเดียว ไม่มีเสียง
+   - (b) อัดคลิป "kill" ใหม่ในสไตล์ VRZO: แนะนำถ้าหาเสียงได้ทันเดโม
+   - (c) ใช้คลิปพิเศษ HoN ที่ปิดไว้: **ไม่แนะนำ** เพราะ revision 5 ตัดสินแล้วว่าผิดความหมาย
+3. **เสียงเตือน gank/danger:**
+   - (a) ใช้ cached Thai line ของ Maiden ที่ G-Signal มีอยู่: แนะนำ เพราะไม่ต้องรอเสียงใหม่
+   - (b) อัดคลิปเตือนในสไตล์ VRZO แล้วเพิ่ม mapping ใน pack
+4. **ฮีโร่หาย:**
+   - (a) ชิป overlay อย่างเดียว
+   - (b) ชิป + เสียงสั้นตามกติกา §4: แนะนำถ้ามีคลิป; ถ้าไม่มีจะเป็น (a) อัตโนมัติ
+5. **ผู้ชมเดโม:** ภายในเท่านั้น (แนะนำจนกว่าจะได้สิทธิ์เสียง) หรือเผยแพร่สาธารณะ
+6. **วันเป้าหมาย D1:** 2026-11-22
+
+### 9.1 มติ (2026-11-07, ตามข้อแนะนำในร่าง)
+
+1. ขอบเขต D1 ตาม §3
+2. คิลเดี่ยว: (b) อัดคลิป "kill" ใหม่ในสไตล์ VRZO ถ้าได้เสียงทันเดโม; ถ้าไม่ทันใช้ (a) แบนเนอร์อย่างเดียว. ห้ามใช้คลิปพิเศษ HoN ที่ revision 5 ปิดไว้
+3. เสียงเตือน gank/danger: (a) cached Thai line ของ Maiden ใน G-Signal
+4. ฮีโร่หาย: (b) ชิป overlay + เสียงสั้นเมื่อมี mapping ใน pack; ไม่มี mapping จะเป็นชิปอย่างเดียวอัตโนมัติ
+5. ผู้ชมเดโม: ภายในเท่านั้นจนกว่าจะได้สิทธิ์เสียง
+6. วันเป้าหมาย D1: 2026-11-22
+
+## Changelog
+
+| Version | Date | Summary |
+| --- | --- | --- |
+| 0.1.0 | 2026-11-07 | Draft first demo slice D1: VRZO revision 5 import/verification, single-kill and warning-voice decisions, new native `enemy_missing` announcer event, Gank Meter live check, rights limits and plan impact. |
+| 0.1.1 | 2026-11-07 | Boss approved the draft as written; recorded §9 decisions per the draft recommendations. |
