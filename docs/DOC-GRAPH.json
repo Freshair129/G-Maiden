@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-07T07:42:14.450Z",
+  "generatedAt": "2026-11-07T07:43:09.974Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -9150,19 +9150,19 @@
       "from": "docs/product/mvp-delivery-plan.md",
       "to": "docs/product/mvp-execution-dag.md",
       "type": "wikilink",
-      "line": 34
+      "line": 33
     },
     {
       "from": "docs/product/mvp-delivery-plan.md",
       "to": "docs/product/roadmap.md",
       "type": "wikilink",
-      "line": 53
+      "line": 52
     },
     {
       "from": "docs/product/mvp-delivery-plan.md",
       "to": "docs/product/mvp-backlog.md",
       "type": "wikilink",
-      "line": 97
+      "line": 96
     },
     {
       "from": "docs/product/mvp-execution-dag.md",
@@ -9984,7 +9984,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-07T07:42:19.210Z",
+    "generatedAt": "2026-11-07T07:43:14.349Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,

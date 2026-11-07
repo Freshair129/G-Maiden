@@ -2,7 +2,7 @@
 title: "G-Maiden MVP Backlog"
 doc_id: "mvp-backlog"
 status: "draft"
-version: "0.4.1"
+version: "0.4.2"
 updated: "2026-11-07"
 owner: "Boss"
 related_docs: ["roadmap", "mvp-execution-dag", "software-requirements-specification", "G-SERIES-DATA-LINEAGE", "FEAT-G-VOICE", "FEAT-G-MEMORY", "FEAT-G-COACH", "EXEC-PLAN-CR-034-iam-remediation", "FEAT-G-PARTY", "CR-037-party-gsi-own-stat-sharing", "2026-11-01-g-party-gsi-sharing", "FEAT-G-FRIENDS", "ADR-20", "CR-038-party-friends-presence-invitations", "2026-11-01-g-party-friends"]
@@ -74,7 +74,7 @@ Owner อนุมัติสถานะด้านล่างเมื่�
 - 025 (#94 `audio_preparation.rs`, #105)
 - 026 (GANN #98–#100, #105)
 - 046 (`update_guard.rs`, signed promotion #119/#123/#129/#131)
-- 043 CONDITIONAL: dependency ครบแล้ว รอ Owner ยืนยันว่าเงื่อนไขใช้
+- 043/044: Owner ยืนยัน 2026-11-07 ว่าอยู่ใน MVP → 043 `READY` (dependency 001/002/004 DONE), 044 `TODO` (รอ 043)
 
 **ข้อขัดแย้งที่พบ:**
 1. DAG (`mvp-execution-dag.json` v0.2.6) ยังเป็น MVP-009 `NOT_STARTED` ขณะที่ backlog เป็น DONE
@@ -272,8 +272,8 @@ Owner อนุมัติสถานะด้านล่างเมื่�
 
 | ID | P / Size | สถานะ | Depends on | งานและเกณฑ์รับ |
 | --- | --- | --- | --- | --- |
-| MVP-043 | P0 / M | CONDITIONAL | MVP-001, MVP-002, MVP-004 | **ตรวจ auth remediation หลัง integration.** ทดสอบ local sign-out เมื่อ remote ล่ม, expired grace, account switch, delayed entitlement response และ native lock; local credential cleanup กับ remote revoke แสดงคนละผลอย่างถูกต้อง; ใช้ patch จาก main และแก้เฉพาะ regression ที่พบ |
-| MVP-044 | P0 / L | CONDITIONAL | MVP-004, MVP-043 | **ปิด Google-session/revocation contract.** ตรวจ sign-in method ของ session และ revocation ทุก privileged endpoint ที่ยังใช้; admin AAL2 ต้องมีทาง enrollment/operation ที่อนุมัติหรือไม่เปิด surface นั้น; probe RLS/role/session กับ production ต้องมีขอบเขตและ approval ไม่ใช้ linked-provider metadata เป็นหลักฐานแทน session method |
+| MVP-043 | P0 / M | READY | MVP-001, MVP-002, MVP-004 | **ตรวจ auth remediation หลัง integration.** ทดสอบ local sign-out เมื่อ remote ล่ม, expired grace, account switch, delayed entitlement response และ native lock; local credential cleanup กับ remote revoke แสดงคนละผลอย่างถูกต้อง; ใช้ patch จาก main และแก้เฉพาะ regression ที่พบ |
+| MVP-044 | P0 / L | TODO | MVP-004, MVP-043 | **ปิด Google-session/revocation contract.** ตรวจ sign-in method ของ session และ revocation ทุก privileged endpoint ที่ยังใช้; admin AAL2 ต้องมีทาง enrollment/operation ที่อนุมัติหรือไม่เปิด surface นั้น; probe RLS/role/session กับ production ต้องมีขอบเขตและ approval ไม่ใช้ linked-provider metadata เป็นหลักฐานแทน session method |
 | MVP-045 | P0 / M | NOT_APPLICABLE | MVP-004; legal approval ถ้ายังเก็บ Terms receipt | **ทำ Terms/account/download handoff ที่ยังจำเป็น.** ทุก CTA จาก desktop ไปหน้าที่มีจริง รวม redirect/rewrite/error/back-to-app; receipt version/optional consent แยกตาม legal decision; ถอน Closed Beta CTA/countdown ที่ขัดแผนตาม surface จริง โดยไม่สร้าง ops/payment ใหม่เกิน scope |
 
 หาก account ยังเปิดให้ใช้แบบ optional งาน E7 ที่เกี่ยวข้องยังต้องผ่านก่อน expose เส้นทางนั้น การเลือก local core ไม่ได้ทำให้ auth ที่ยังมองเห็นอยู่ได้รับการยกเว้นโดยอัตโนมัติ
@@ -377,3 +377,4 @@ Status:
 | 0.3.13 | 2026-11-01 | Link CR-038 Friends Tasks1–5 as a separate owner-directed extension without changing any of the 62 MVP parent task IDs, priorities or completion states. |
 | 0.4.0 | 2026-11-07 | Draft status reconciliation against origin/main `455c4b0e`: add IN_PROGRESS to the legend; propose READY for 007/008/013/020/027/038 and IN_PROGRESS for 010/011/016/039/048/051 with evidence; no task marked DONE; record DAG/roadmap/release contradictions and unmapped merged work. |
 | 0.4.1 | 2026-11-07 | Owner approved the v0.4.0 status reconciliation and IN_PROGRESS legend; link the accepted mvp-delivery-plan. |
+| 0.4.2 | 2026-11-07 | Owner confirmed MVP-043/044 are in MVP scope: 043 CONDITIONAL → READY, 044 CONDITIONAL → TODO (depends on 043). |
