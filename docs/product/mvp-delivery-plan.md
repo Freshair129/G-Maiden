@@ -4,7 +4,7 @@ doc_id: "mvp-delivery-plan"
 status: "accepted"
 approved_by: "Boss (explicit approval in chat, 2026-11-07: อนุมัติตามร่าง)"
 approved_date: "2026-11-07"
-version: "0.1.3"
+version: "0.1.4"
 updated: "2026-11-07"
 owner: "Boss"
 related_docs: ["roadmap", "mvp-backlog", "mvp-execution-dag", "mvp-decisions"]
@@ -65,6 +65,15 @@ Go-live = release ที่ผ่านทุกมิติใน Go/No-Go ข�
 
 Milestone ทำซ้อนกันได้ตาม roadmap. ตารางนี้แสดงช่วงที่**คาดว่าจะปิด**ไม่ใช่ barrier.
 
+### 4.1 Milestone D1: เดโมแรก ([[CR-046-demo-mvp-announcer-gank-slice]])
+
+| ช่วง | งาน | เกณฑ์ |
+| --- | --- | --- |
+| 2026-11-09 → **2026-11-22** | VRZO revision 5 import/verify, คิลเดี่ยว, เส้นทางเสียงเตือน gank/danger, announcer event `enemy_missing`, Gank Meter บนแมตช์จริง, วิดีโอเดโม | acceptance ใน CR-046 §5; เดโมภายในเท่านั้นจนกว่าจะได้สิทธิ์เสียง |
+
+D1 ใช้ capacity สัปดาห์ 1–2 ร่วมกับ M0/M1 และเพิ่มงานรวมประมาณ 8–10 แต้มที่ส่วนใหญ่ซ้อนกับ MVP-017/018/026.
+วันรวมของ MVP (scenario กลาง) จึงเลื่อนจาก 2027-02-13 เป็นช่วง **2027-02-17 ถึง 2027-02-20**; จะยืนยันตัวเลขในการปรับเทียบ 2026-11-22.
+
 ## 5. ความเสี่ยงที่ทำให้วันที่เลื่อน
 
 | ความเสี่ยง | ผล | สิ่งที่ลดความเสี่ยง |
@@ -103,3 +112,4 @@ Milestone ทำซ้อนกันได้ตาม roadmap. ตาราง
 | 0.1.1 | 2026-11-07 | Boss approved the draft; record 2027-02-08 as internal planning target and acceptance of backlog v0.4.0 statuses; extension freeze and MVP-043/044 scope remain undecided. |
 | 0.1.2 | 2026-11-07 | Boss decided to freeze new owner extensions until M6; bug fixes/releases of merged extensions continue; exceptions need per-item Owner approval. |
 | 0.1.3 | 2026-11-07 | Boss put MVP-043/044 in MVP scope: remaining ≈105 points; scenarios 2027-01-23 / 2027-02-13 / 2027-03-25; internal target moves to 2027-02-13. |
+| 0.1.4 | 2026-11-07 | Add milestone D1 (first demo, CR-046) targeting 2026-11-22; MVP middle-scenario estimate moves to 2027-02-17–02-20 pending recalibration. |

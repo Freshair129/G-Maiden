@@ -1,10 +1,10 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-11-07T07:43:09.974Z
+สร้างเมื่อ / Generated at: 2026-11-07T08:25:51.068Z
 
-สแกน 177 ไฟล์เอกสาร, 289 nodes, 1341 edges, 26 รายการปัญหา (0 ตัวบล็อก exit code) / scanned 177 doc files, 289 nodes, 1341 edges, 26 violations (0 blocking exit code).
+สแกน 177 ไฟล์เอกสาร, 289 nodes, 1341 edges, 27 รายการปัญหา (1 ตัวบล็อก exit code) / scanned 177 doc files, 289 nodes, 1341 edges, 27 violations (1 blocking exit code).
 
-ผลลัพธ์ / Result: **PASS (exit 0)**
+ผลลัพธ์ / Result: **FAIL (exit 1)**
 
 ## สรุปตามประเภทปัญหา / Summary by violation reason
 
@@ -12,6 +12,7 @@
 | --- | --- | --- | --- |
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 1 | no (informational) |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 25 | no (informational) |
+| unresolved | wikilink หาไม่เจอ / unresolved wikilink | 1 | yes |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
 
@@ -94,6 +95,10 @@
 ### docs/product/competitive-brief.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
+
+### docs/product/mvp-delivery-plan.md
+
+- [L68] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="CR-046-demo-mvp-announcer-gank-slice")
 
 ### docs/product/one-pager.md
 
