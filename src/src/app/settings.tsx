@@ -11,7 +11,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { emit, listen } from '@tauri-apps/api/event'
 import type { Settings } from './types'
 import { StartupSettingsContext } from './settingsContext'
-import { mergeStoredSettings, normalizeSettings, parseObjectJson, sameSettings, type RecordValue } from './settingsSchema'
+import { mergeStoredSettings, normalizeSettings, parseObjectJson, sameSettings, serializeSettings, type RecordValue } from './settingsSchema'
 
 const SETTINGS_KEY = 'gm-settings'
 const LEGACY_AUDIO_KEY = 'gm-deck-audio-rail'
@@ -21,7 +21,7 @@ function readLocalObject(key: string): RecordValue | null {
 }
 
 function writeBrowserCopies(settings: Settings, legacyMasterApiKey: string | null): void {
-  const persisted: RecordValue = { ...settings }
+  const persisted = serializeSettings(settings)
   if (legacyMasterApiKey) persisted.masterApiKey = legacyMasterApiKey
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(persisted))
@@ -72,7 +72,7 @@ function applyNativeSettings(
 }
 
 function persistNativeSettings(settings: Settings, legacyMasterApiKey: string | null = null): Promise<void> {
-  const snapshot: RecordValue = { ...settings }
+  const snapshot = serializeSettings(settings)
   if (legacyMasterApiKey) snapshot.masterApiKey = legacyMasterApiKey
   return invoke('save_settings_file', { json: JSON.stringify(snapshot) }).then(() => undefined).catch(() => undefined)
 }

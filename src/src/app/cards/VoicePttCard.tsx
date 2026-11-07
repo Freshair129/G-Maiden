@@ -22,6 +22,11 @@ type VoiceTurnEvent = {
   monotonicMs: number
 }
 
+type VoicePttCardProps = {
+  micEnabled: boolean
+  onMicEnabledChange: (enabled: boolean) => void
+}
+
 const cardStyle: CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
@@ -66,7 +71,7 @@ function Keycaps({ accelerator, label }: { accelerator: string; label: string })
   )
 }
 
-export function VoicePttCard() {
+export function VoicePttCard({ micEnabled, onMicEnabledChange }: VoicePttCardProps) {
   const [status, setStatus] = useState<PttStatus | null>(null)
   const [capturing, setCapturing] = useState(false)
   const [preview, setPreview] = useState<string | null>(null)
@@ -230,6 +235,33 @@ export function VoicePttCard() {
         </div>
       </div>
 
+      <label htmlFor="g-voice-mic-enabled" style={{
+        alignItems: 'center',
+        background: 'var(--g-instrument-2)',
+        border: '1px solid var(--g-hairline)',
+        borderRadius: 'var(--g-r-sm)',
+        color: 'var(--g-text)',
+        display: 'flex',
+        fontSize: 12,
+        gap: 12,
+        justifyContent: 'space-between',
+        padding: '9px 11px',
+      }}>
+        <span>อนุญาตให้ใช้ไมโครโฟนขณะกด PTT</span>
+        <input
+          id="g-voice-mic-enabled"
+          aria-label="อนุญาตให้ใช้ไมโครโฟนขณะกด PTT"
+          type="checkbox"
+          role="switch"
+          checked={micEnabled}
+          onChange={(event) => onMicEnabledChange(event.currentTarget.checked)}
+          style={{ accentColor: 'var(--g-ice-300)', flex: '0 0 auto', margin: 0 }}
+        />
+      </label>
+      <p style={{ color: 'var(--g-text-dim)', fontSize: 10.5, lineHeight: 1.45, margin: 0 }}>
+        เสียงอยู่ในเครื่องและถูกลบทันทีเมื่อปล่อยปุ่ม ไม่บันทึก ไม่ส่งออก
+      </p>
+
       {capturing && !preview && (
         <div aria-live="polite" style={{ color: 'var(--g-ice-300)', fontSize: 12, fontWeight: 600 }}>
           กดปุ่มที่ต้องการ… (Esc เพื่อยกเลิก)
@@ -263,7 +295,7 @@ export function VoicePttCard() {
       )}
 
       <p style={{ color: 'var(--g-text-mute)', fontSize: 11, lineHeight: 1.5, margin: 0 }}>
-        ยังไม่มีระบบจดจำเสียงในเครื่อง — กดแล้ว Maiden จะยังไม่ฟัง (ไม่เปิดไมโครโฟน)
+        ยังไม่มีระบบจดจำเสียง — เสียงชั่วคราวจะถูกทิ้งโดยไม่ส่งไปประมวลผล
       </p>
       <p style={{ color: 'var(--g-text-dim)', fontSize: 10.5, lineHeight: 1.45, margin: 0 }}>
         แอปตรวจปุ่มที่ผูกไว้ในเกมไม่ได้ — เลือกปุ่มที่ไม่ได้ใช้ใน Dota 2

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-07T03:37:44.174Z",
+  "generatedAt": "2026-11-07T03:48:08.591Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -630,6 +630,13 @@
       "type": "doc",
       "path": "docs/change request/CR-042-g-voice-ptt-settings-ui.md",
       "title": "CR-042 — G-Voice Slice 1b: PTT settings card",
+      "status": "accepted"
+    },
+    {
+      "id": "docs/change request/CR-043-g-voice-transient-mic-capture.md",
+      "type": "doc",
+      "path": "docs/change request/CR-043-g-voice-transient-mic-capture.md",
+      "title": "CR-043 — G-Voice Slice 2: transient PTT microphone capture",
       "status": "accepted"
     },
     {
@@ -5431,6 +5438,18 @@
       "line": 93
     },
     {
+      "from": "docs/change request/CR-043-g-voice-transient-mic-capture.md",
+      "to": "docs/change request/CR-041-g-voice-ptt-turn-lifecycle.md",
+      "type": "wikilink",
+      "line": 22
+    },
+    {
+      "from": "docs/change request/CR-043-g-voice-transient-mic-capture.md",
+      "to": "docs/architecture/spikes/MVP-038-local-stt-evaluation.md",
+      "type": "wikilink",
+      "line": 23
+    },
+    {
       "from": "docs/change request/IMPL-PLAN-DXGI-migration.md",
       "to": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "type": "wikilink",
@@ -9922,7 +9941,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-07T03:38:13.015Z",
+    "generatedAt": "2026-11-07T03:48:14.591Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,
