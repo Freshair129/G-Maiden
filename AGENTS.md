@@ -2,8 +2,8 @@
 title: "AGENTS.md"
 doc_id: "agents"
 status: active
-version: "0.4.16"
-updated: "2026-11-06"
+version: "0.4.17"
+updated: "2026-11-07"
 owner: "G-Maiden"
 ---
 # AGENTS.md
@@ -298,9 +298,11 @@ Enforcement, not style. Every rule below is either enforced by GitHub branch pro
 - **This repo has two remotes** — `origin` (`Freshair129/G-Maiden`) and `rwang`
   (`Freshair129/RWANG`). Always `git push -u origin <branch>` on a new branch. A bare `git push`
   with no upstream can reach the wrong repository.
-- Worktrees: `.gitignore` has no `.worktrees/` or `worktrees/` entry, so create worktrees
-  **outside** the repo (`git worktree add ../gm-<lane> -b <branch>`). A project-local worktree
-  directory would be tracked. If you need one anyway, gitignore it and commit that first.
+- Worktrees: create them **outside** the repo by default (`git worktree add ../gm-<lane> -b
+  <branch>`). `.gitignore` does ignore `.worktrees/` and `.codex/`, so a linked worktree under
+  `.worktrees/` is permitted when a tool needs it; any other project-local directory would be
+  tracked. Ownership, locking and cleanup follow
+  [the lifecycle policy](docs/engineering/GIT-WORKTREE-POLICY.md).
 
 ### Commits
 
@@ -350,7 +352,10 @@ node tools/doc-graph/ci-gate.mjs
 
 - **It regenerates artifacts** — `docs/DOC-GRAPH.json`, `docs/DOC-GRAPH-REPORT.md`,
   `docs/FEATURE-LEDGER.md`, `docs/FEATURE-ORPHAN-REPORT.*`, `docs/atomic_index.jsonl`. Commit them
-  **with** the documentation change; a PR that leaves them stale fails.
+  **with** the documentation change, generated on the final HEAD after the last update from
+  `main`. CI regenerates them in the runner; it only fails a stale commit where the
+  artifact-freshness step is present in `ci.yml`, so do not treat a green `ci` as proof the
+  committed artifacts are current.
 - A new or edited document needs frontmatter with `title`, `doc_id`, `status`, `version`,
   `updated`, `owner`; `status` from `draft | active | accepted | stable | superseded | historical`;
   and `version` equal to the last row of that document's own `## Changelog` table — that heading
@@ -577,3 +582,4 @@ These are **functional requirements**, not flavor text. Maiden must:
 | 0.4.14 | 2026-11-01 | Record CR-038 optional Friends/account/relay privacy, consent, lifecycle and map constraints with separate operational/live acceptance. |
 | 0.4.15 | 2026-11-04 | Add early lifecycle-policy navigation, reuse-first ownership and protected runtime/dependency cleanup boundaries. |
 | 0.4.16 | 2026-11-06 | Align stale state references with the code: source version 0.13.6, NVML-based GPU feeder, and GSI port fallback 3000–3010 (#134). |
+| 0.4.17 | 2026-11-07 | Correct the worktree placement note (`.worktrees/` and `.codex/` are gitignored) and the doc-graph artifact claim (CI regenerates, it does not by itself fail stale commits); point to the lifecycle policy (#134). |
