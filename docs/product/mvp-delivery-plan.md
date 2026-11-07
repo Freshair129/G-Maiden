@@ -4,7 +4,7 @@ doc_id: "mvp-delivery-plan"
 status: "accepted"
 approved_by: "Boss (explicit approval in chat, 2026-11-07: อนุมัติตามร่าง)"
 approved_date: "2026-11-07"
-version: "0.1.1"
+version: "0.1.2"
 updated: "2026-11-07"
 owner: "Boss"
 related_docs: ["roadmap", "mvp-backlog", "mvp-execution-dag", "mvp-decisions"]
@@ -92,7 +92,7 @@ Milestone ทำซ้อนกันได้ตาม roadmap. ตาราง
 ### 7.1 มติ (2026-11-07)
 
 1. ใช้ scenario กลาง **2027-02-08** เป็นเป้าหมายวางแผนภายใน (ไม่ใช่วันประกาศภายนอก จนกว่าจะปรับเทียบตาม §6)
-2. Freeze owner extensions: **ยังไม่ตัดสิน**. ร่างไม่ได้เสนอคำตอบ จึงไม่ถือว่าอนุมัติ freeze
+2. **Freeze owner extensions จนถึง M6** (Boss, 2026-11-07: "Freeze จนถึง M6"): ไม่เริ่ม extension/feature ใหม่นอก 52 MVP parent tasks จนกว่า M6 จะปิด. งานแก้บั๊กหรือ release ของ extension ที่ merge แล้วยังทำได้เมื่อจำเป็น. ข้อยกเว้นต้องได้รับอนุมัติจาก Owner ทีละรายการ และต้องปรับวันที่ในเอกสารนี้
 3. MVP-043/044: **ยังไม่ตัดสิน**. ร่างไม่ได้เสนอคำตอบ จึงยังเป็น CONDITIONAL และไม่นับในประมาณการ
 4. ยอมรับสถานะ `IN_PROGRESS` และการเปลี่ยนสถานะใน [[mvp-backlog]] v0.4.0
 
@@ -102,3 +102,4 @@ Milestone ทำซ้อนกันได้ตาม roadmap. ตาราง
 | --- | --- | --- |
 | 0.1.0 | 2026-11-07 | Draft dated projection from backlog v0.4.0: ~99 remaining points, three throughput scenarios (2027-01-20 / 2027-02-08 / 2027-03-19), milestone windows, risks and recalibration rule; all figures are assumptions pending measured throughput. |
 | 0.1.1 | 2026-11-07 | Boss approved the draft; record 2027-02-08 as internal planning target and acceptance of backlog v0.4.0 statuses; extension freeze and MVP-043/044 scope remain undecided. |
+| 0.1.2 | 2026-11-07 | Boss decided to freeze new owner extensions until M6; bug fixes/releases of merged extensions continue; exceptions need per-item Owner approval. |
