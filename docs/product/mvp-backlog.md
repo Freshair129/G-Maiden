@@ -2,8 +2,8 @@
 title: "G-Maiden MVP Backlog"
 doc_id: "mvp-backlog"
 status: "draft"
-version: "0.3.13"
-updated: "2026-11-01"
+version: "0.4.2"
+updated: "2026-11-07"
 owner: "Boss"
 related_docs: ["roadmap", "mvp-execution-dag", "software-requirements-specification", "G-SERIES-DATA-LINEAGE", "FEAT-G-VOICE", "FEAT-G-MEMORY", "FEAT-G-COACH", "EXEC-PLAN-CR-034-iam-remediation", "FEAT-G-PARTY", "CR-037-party-gsi-own-stat-sharing", "2026-11-01-g-party-gsi-sharing", "FEAT-G-FRIENDS", "ADR-20", "CR-038-party-friends-presence-invitations", "2026-11-01-g-party-friends"]
 ---
@@ -29,7 +29,7 @@ Owner สั่งพัฒนา own-GSI sharing ระหว่างสมา
 ## วิธีใช้ backlog
 
 - **P0:** ต้องปิดก่อนปล่อยความสามารถนั้นใน MVP; **P1:** จำเป็นต่อขอบเขต MVP ที่วางไว้แต่ทำหลังฐาน P0; **P2:** เลื่อนออกจาก MVP
-- **READY:** เริ่มวิเคราะห์/จัดทำผลลัพธ์ของ task ได้; **TODO:** รอ dependency; **DECISION:** ต้องมีข้อสรุปจาก owner ก่อนงานที่ขึ้นต่อ; **CONDITIONAL:** ทำเมื่อ policy ที่เลือกใช้ความสามารถนั้น; **DEFERRED:** อยู่นอก MVP ปัจจุบัน
+- **READY:** เริ่มวิเคราะห์/จัดทำผลลัพธ์ของ task ได้; **TODO:** รอ dependency; **DECISION:** ต้องมีข้อสรุปจาก owner ก่อนงานที่ขึ้นต่อ; **CONDITIONAL:** ทำเมื่อ policy ที่เลือกใช้ความสามารถนั้น; **IN_PROGRESS:** มี implementation บางส่วนเข้า main แล้ว แต่ยังขาด acceptance/native/live evidence หรือ owner acceptance ตาม Definition of Done (เทียบ DAG `INTEGRATED`); **DEFERRED:** อยู่นอก MVP ปัจจุบัน
 - **S/M/L:** ขนาดสัมพัทธ์ S = ขอบเขตแคบหนึ่งชั้น, M = เชื่อมสองชั้น, L = หลายชั้นหรือมีความไม่แน่นอน ควรแตก checklist เพิ่มหลัง design โดยคง ID แม่; ไม่ใช่จำนวนวันหรือกำหนดส่ง
 - บทบาทในแต่ละ epic เป็นผู้รับผิดชอบที่เสนอ ยังไม่ได้มอบหมายบุคคล ให้ใส่ assignee, issue/PR, evidence และวันปิดเมื่อเริ่มทำ
 - Dependency ที่ระบุเป็นขั้นต่ำ ทุก implementation ต้องมี baseline `MVP-001`, environment `MVP-002` และ contract ที่เกี่ยวข้องพร้อมก่อนเริ่ม
@@ -47,6 +47,49 @@ Owner สั่งพัฒนา own-GSI sharing ระหว่างสมา
 มติ MVP-003–006 ถูกบันทึกใน [[mvp-decisions]] ตามคำสั่ง Owner ให้ Codex ตัดสินใจ; รับ verified baseline MVP-001/002. DONE ของงาน contract หมายถึงเลือกข้อกำหนดแล้ว ไม่ใช่รับรองฟีเจอร์ที่ยังต้องพัฒนา. MVP-045 เป็น NOT_APPLICABLE สำหรับ legacy desktop handoff; MVP-043/044 ยัง applicable เพราะมี optional account surface.
 
 **อนุมัติขอบเขตเอกสาร (2026-10-19):** Owner สั่งให้ Codex ปรับ backlog และรับรองการแก้เอกสารในขอบเขตการเทียบ design flows กับ source code นี้โดยอัตโนมัติ. Crosswalk ใน branch นี้ pin กับ source baseline `origin/main` `621c83d6`; การอนุมัติครอบคลุมเฉพาะการแก้ข้อความ/หลักฐานเอกสาร ไม่ปิด MVP-007 หรือ MVP-008 และไม่แทน C-3 security, legal, provider, live-runtime, release หรือ product-code approval.
+
+### Status reconciliation — origin/main `455c4b0e` (2026-11-07)
+
+ตรวจแบบอ่านอย่างเดียวเทียบ backlog v0.3.13 กับ main ณ `455c4b0e`. **ไม่มี task ใดผ่าน DONE** เพราะยังไม่มี owner acceptance พร้อม native/live evidence.
+Owner อนุมัติสถานะด้านล่างเมื่อ 2026-11-07 ("อนุมัติตามร่าง"); ดูแผนวันที่ใน [[mvp-delivery-plan]].
+
+| MVP | เดิม | ใหม่ | หลักฐานบน main | ยังขาด |
+| --- | --- | --- | --- | --- |
+| 007 | TODO | READY | dependencies 003–006 DONE | reconcile บน integrated SHA เดียว |
+| 008 | TODO | READY | 001/004 DONE; `account_gate_required=false` ใน mvp-decisions | release-build verification |
+| 010 | TODO | IN_PROGRESS | PR #87: `set_dota_selection`, folder picker, `classify_bind_error` → `port_conflict` | native negative cases, owner acceptance |
+| 011 | TODO | IN_PROGRESS | PR #93: `runtimeReadiness.ts`; audit 2026-10-28 ระบุว่ายังเปิด | ขั้น B ต้องรอ health producers 016/017/024 |
+| 013 | TODO | READY | 001/002 DONE; replay harness #143 (test-only) | envelope validation |
+| 016 | TODO | IN_PROGRESS | PR #86 capture supervisor/retry; `7a9bf389` | live Alt-Tab/device reset/monitor move; merged ก่อน 014/015 |
+| 020 | TODO | READY | 003/005 DONE; CI static-data provenance gate | patch/source audit |
+| 027 | TODO | READY | 005/009 DONE | implementation |
+| 038 | TODO | READY | spike MVP-038 + CR-044 harness (PR #158 ยังไม่ merge) + CR-045 corpus protocol | corpus, benchmark, selection |
+| 039 | TODO | IN_PROGRESS | PR #150/#151/#153: `voice_ptt.rs`, `voice_turn.rs`, `voice_capture.rs` (CR-041/042/043) | native/live evidence, device selection; merged ก่อน 038/024 |
+| 048 | TODO | IN_PROGRESS | audit 2026-10-28 runtime baseline (native probe NOT_RUN) | full matrix |
+| 051 | TODO | IN_PROGRESS | `ci.yml` clippy/ESLint/Rust/Vitest/Tauri smoke/doc freshness (#155) | native/live gate split, required checks |
+
+งานบางส่วนที่บันทึกไว้แต่ยังไม่เปลี่ยนสถานะ (dependency ยังไม่ครบ):
+- 019 (#92 buyback ตาม death episode)
+- 022/023 (#92, audit 2026-10-28 event corrections)
+- 025 (#94 `audio_preparation.rs`, #105)
+- 026 (GANN #98–#100, #105)
+- 046 (`update_guard.rs`, signed promotion #119/#123/#129/#131)
+- 043/044: Owner ยืนยัน 2026-11-07 ว่าอยู่ใน MVP → 043 `READY` (dependency 001/002/004 DONE), 044 `TODO` (รอ 043)
+
+**ข้อขัดแย้งที่พบ:**
+1. DAG (`mvp-execution-dag.json` v0.2.6) ยังเป็น MVP-009 `NOT_STARTED` ขณะที่ backlog เป็น DONE
+2. #86 (MVP-016) และ MVP-039 scope ของ CR-041/043 merge ก่อน dependency ครบ ซึ่งขัดกติกา backlog
+3. roadmap v1.4.2 ยังชี้ MVP-009–011 เป็นงานถัดไป
+4. 0.13.6 ถูก promote เป็น stable ขณะที่ MVP-012/046/047/052 ยังไม่ปิด; ยังไม่ได้ตรวจว่า Owner waive หรือไม่
+
+**งานที่ merge แล้วแต่ไม่ map กับ MVP task:**
+- G-Party #104 และ G-Friends #107 (owner extensions)
+- CR-040 OBS highlight #116/#117/#120/#147
+- CR-039 ability parser #145
+- HUD canvas editor #91
+- CV hero board #89 (MVP-055 DEFERRED)
+- persona preset #139
+- releases 0.13.5/0.13.6
 
 ### ผลเทียบ flow กับ source code — snapshot origin/main `621c83d6` (2026-10-19)
 
@@ -125,7 +168,7 @@ Owner สั่งพัฒนา own-GSI sharing ระหว่างสมา
 | MVP-004 | P0 / M | DONE | MVP-003 | **กำหนด access/offline หลังยกเลิก Closed Beta.** ทำตาราง cold start, signed-out, network loss, revoke, new device, Terms change, update/recovery; เลือก local core optional account หรือ retained gate พร้อม owner/legal/security approval ที่จำเป็น ระบุ migration/rollback และ channel ปลายทาง ไม่มี blanket bypass |
 | MVP-005 | P0 / M | DONE | MVP-003 | **กำหนด data contract ของ AI.** ทำ field-by-field allowlist/denylist พร้อมต้นทางและ consent; CV/raw G-Log/Memory ไม่ออก cloud, live stats ที่ไม่ผ่าน policy ไม่ส่ง; แก้ความขัดกันระหว่าง SRS/ADR/Privacy UI ให้ได้ contract เดียวและเก็บ approval ก่อนเปลี่ยน egress |
 | MVP-006 | P0 / M | DONE | MVP-003 | **กำหนด acceptance matrix.** ระบุเครื่อง/OS/GPU/จอ/DPI/minimap/game mode, label set, precision/recall/false alerts ต่อแมตช์, latency landmarks, Voice STT/response targets และวิธีนับ CPU/RAM ทั้งระบบ; ตัวเลขคุณภาพต้องตกลงก่อนดูผลวัด ไม่ลด hard NFR เพื่อให้ผ่าน |
-| MVP-007 | P1 / M | TODO | MVP-003, MVP-004, MVP-005, MVP-006 | **reconcile product contract และ diagram กับ code บน integrated SHA เดียว.** ครอบคลุม wireframe/sitemap, wireflow, userflow, execution DAG (.md/.json), system diagram/TDD และ PRD/SRS; map ทุก route, decision, side effect, data source และ owner/state กลับไปยัง code anchor; จัดประเภท target / present / wired / live-verified และเก็บ historical snapshot. Static review บน `origin/main` `621c83d6` อัปเดต PRD/TDD, design-system sitemap/stack, feature ledger, AGENTS/CLAUDE code refs, backlog crosswalk และเพิ่ม wireframe/wireflow/user-flow artifacts; SRS มี Alt+M mute/Ctrl+Alt+V PTT contract อยู่แล้ว. GSI own-player/session/death-count context แยกจาก enemy minimap CV; G-Motion ใช้ 5-minute history/heading heuristic; G-Signal ใช้ local voice/audio. Route หลัก UF01–UF08 มี source crosswalk ในตารางด้านบน แต่ uncovered states และ code gaps ยังเปิดอยู่. Static docs/doc-graph เป็นเพียง source-snapshot evidence. งานยัง TODO จนกว่า uncovered states จะถูกตรวจ, F04 purchase/top-up/faucet paths จะถูกตัดสินเทียบ deferred target, provider/update gates จะผ่านตาม scope และ native/live acceptance จะเกิดบน integrated SHA พร้อม owner acceptance; ห้ามนับไฟล์ component, call path หรือ release channel ว่า runtime/rollout ผ่าน |
+| MVP-007 | P1 / M | READY | MVP-003, MVP-004, MVP-005, MVP-006 | **reconcile product contract และ diagram กับ code บน integrated SHA เดียว.** ครอบคลุม wireframe/sitemap, wireflow, userflow, execution DAG (.md/.json), system diagram/TDD และ PRD/SRS; map ทุก route, decision, side effect, data source และ owner/state กลับไปยัง code anchor; จัดประเภท target / present / wired / live-verified และเก็บ historical snapshot. Static review บน `origin/main` `621c83d6` อัปเดต PRD/TDD, design-system sitemap/stack, feature ledger, AGENTS/CLAUDE code refs, backlog crosswalk และเพิ่ม wireframe/wireflow/user-flow artifacts; SRS มี Alt+M mute/Ctrl+Alt+V PTT contract อยู่แล้ว. GSI own-player/session/death-count context แยกจาก enemy minimap CV; G-Motion ใช้ 5-minute history/heading heuristic; G-Signal ใช้ local voice/audio. Route หลัก UF01–UF08 มี source crosswalk ในตารางด้านบน แต่ uncovered states และ code gaps ยังเปิดอยู่. Static docs/doc-graph เป็นเพียง source-snapshot evidence. งานยัง TODO จนกว่า uncovered states จะถูกตรวจ, F04 purchase/top-up/faucet paths จะถูกตัดสินเทียบ deferred target, provider/update gates จะผ่านตาม scope และ native/live acceptance จะเกิดบน integrated SHA พร้อม owner acceptance; ห้ามนับไฟล์ component, call path หรือ release channel ว่า runtime/rollout ผ่าน |
 
 ## E1 เปิดแอปและตั้งค่า
 
@@ -135,10 +178,10 @@ Owner สั่งพัฒนา own-GSI sharing ระหว่างสมา
 
 | ID | P / Size | สถานะ | Depends on | งานและเกณฑ์รับ |
 | --- | --- | --- | --- | --- |
-| MVP-008 | P0 / L | TODO | MVP-001, MVP-004; MVP-043–045 ถ้าคง account gate | **ปรับ entry/runtime ตาม access policy ที่เลือกและตรวจใน release build.** MVP-004 ตั้ง account_gate_required=false; ใน source baseline นี้ App.tsx mount CommandDeck โดยตรง และไม่พบ GmadFirstRunGate component หรือ mount จึงห้ามอ้างไฟล์ gate เป็นหลักฐานว่ามี active gate หรือว่าการย้าย access flow เสร็จแล้ว. ทำ local core startup โดยไม่พึ่ง account/entitlement พร้อมคง server-side authorization สำหรับ protected account actions; ตรวจ signed-out, cold offline, network loss, revoke, account switch, new device และ Terms/version ตาม contract. ปิดได้เมื่อ frontend/native/channel/runtime matrix และ security gate ที่ใช้จริงผ่านบน integrated SHA; ห้ามถอด guard ฝั่งเดียวหรืออนุมาน approval จากเอกสาร |
+| MVP-008 | P0 / L | READY | MVP-001, MVP-004; MVP-043–045 ถ้าคง account gate | **ปรับ entry/runtime ตาม access policy ที่เลือกและตรวจใน release build.** MVP-004 ตั้ง account_gate_required=false; ใน source baseline นี้ App.tsx mount CommandDeck โดยตรง และไม่พบ GmadFirstRunGate component หรือ mount จึงห้ามอ้างไฟล์ gate เป็นหลักฐานว่ามี active gate หรือว่าการย้าย access flow เสร็จแล้ว. ทำ local core startup โดยไม่พึ่ง account/entitlement พร้อมคง server-side authorization สำหรับ protected account actions; ตรวจ signed-out, cold offline, network loss, revoke, account switch, new device และ Terms/version ตาม contract. ปิดได้เมื่อ frontend/native/channel/runtime matrix และ security gate ที่ใช้จริงผ่านบน integrated SHA; ห้ามถอด guard ฝั่งเดียวหรืออนุมาน approval จากเอกสาร |
 | MVP-009 | P0 / M | DONE | MVP-001, MVP-002 | **ย้าย settings initialization ไป startup.** โหลด/validate settings หนึ่งจุดก่อนเริ่ม gameplay และ sync Control/Overlay/native; cold restart โดยไม่เข้าหน้า Settings คืน voice, sensitivity, persona, backend/model, privacy และ layout ครบ ไม่มี default cloud call ก่อน hydrate |
-| MVP-010 | P0 / M | TODO | MVP-001, MVP-002 | **ทำ GSI setup และ port health.** แยก config exists/config valid/listening/waiting/live, แจ้ง port 3000 conflict ที่กระทบ GSI/OAuth, มี retry และเลือก/ซ่อม Dota path ที่ควบคุมขอบเขตได้; negative cases แสดงวิธีแก้โดยไม่ใช้ terminal |
-| MVP-011 | P0 / M | TODO | MVP-009, MVP-010; ขั้น B รอ MVP-016, MVP-017, MVP-024 | **แทน readiness สมมติด้วยผลจริง.** ขั้น A ทำ contract/UI ที่แสดง unknown เมื่อยังไม่มี producer; ขั้น B ต่อ capture coverage/audio health จริงก่อนปิดงาน; ตรวจ resources, live GSI, overlay preview และ audible confirmation; null ไม่เป็น pass, overlay ไม่ pass ตายตัว และ Lite mode ชัด |
+| MVP-010 | P0 / M | IN_PROGRESS | MVP-001, MVP-002 | **ทำ GSI setup และ port health.** แยก config exists/config valid/listening/waiting/live, แจ้ง port 3000 conflict ที่กระทบ GSI/OAuth, มี retry และเลือก/ซ่อม Dota path ที่ควบคุมขอบเขตได้; negative cases แสดงวิธีแก้โดยไม่ใช้ terminal |
+| MVP-011 | P0 / M | IN_PROGRESS | MVP-009, MVP-010; ขั้น B รอ MVP-016, MVP-017, MVP-024 | **แทน readiness สมมติด้วยผลจริง.** ขั้น A ทำ contract/UI ที่แสดง unknown เมื่อยังไม่มี producer; ขั้น B ต่อ capture coverage/audio health จริงก่อนปิดงาน; ตรวจ resources, live GSI, overlay preview และ audible confirmation; null ไม่เป็น pass, overlay ไม่ pass ตายตัว และ Lite mode ชัด |
 | MVP-012 | P0 / M | TODO | MVP-008, MVP-009, MVP-010, MVP-011 | **ตรวจ first-run และ restart ใน release mode.** บนเครื่องสะอาด/โปรไฟล์ใหม่ ทำ install→setup→deck→ปิดเปิด; ผ่าน/ขาด config, port ชน, ไม่มีเสียง, ไม่มีโมเดล และ offline แสดงสถานะตาม contract; เก็บภาพและ native logs ที่ไม่เผยข้อมูลผู้เล่น |
 
 
@@ -152,14 +195,14 @@ Owner สั่งพัฒนา own-GSI sharing ระหว่างสมา
 
 | ID | P / Size | สถานะ | Depends on | งานและเกณฑ์รับ |
 | --- | --- | --- | --- | --- |
-| MVP-013 | P0 / M | TODO | MVP-001, MVP-002 | **Validate GSI envelope และ fields.** JSON เสีย, null, partial และค่าผิดช่วงไม่ถูกแปลงเป็น tick ศูนย์ที่เปลี่ยนแมตช์; reject/unknown ตาม schema, ไม่ refresh last-valid timestamp และไม่ reset game/log ด้วย invalid payload |
+| MVP-013 | P0 / M | READY | MVP-001, MVP-002 | **Validate GSI envelope และ fields.** JSON เสีย, null, partial และค่าผิดช่วงไม่ถูกแปลงเป็น tick ศูนย์ที่เปลี่ยนแมตช์; reject/unknown ตาม schema, ไม่ refresh last-valid timestamp และไม่ reset game/log ด้วย invalid payload |
 | MVP-014 | P0 / M | TODO | MVP-013, MVP-006 | **ทำ freshness เป็นสถานะร่วม.** เมื่อ Dota ยังเปิดแต่ GSI หยุด ทุก consumer เห็น stale/degraded เหมือนกัน; หยุดข้อสรุปที่ใช้ own-state เก่า ส่วน CV-only ที่ยังเชื่อถือได้ทำตาม contract; feed กลับมาแล้ว recover โดยไม่สร้างจบแมตช์ปลอม |
 | MVP-015 | P0 / L | TODO | MVP-013, MVP-014 | **สร้าง match/session identity และ lifecycle กลาง.** ใช้ game match ID เมื่อเชื่อถือได้และ local session ID เมื่อไม่มี; แยก draft/live/disconnect/end/abandon, มี session epoch ให้ events/cache/requests; reconnect ต่อ session ที่ถูกต้องและแมตช์ใหม่ไม่รับ state เก่า |
-| MVP-016 | P0 / M | TODO | MVP-014, MVP-015 | **เพิ่ม capture retry/recovery.** Init failure แสดง Lite พร้อม retry ที่ไม่สร้าง thread ซ้อน; ACCESS_LOST/device reset/monitor move กู้คืนหรือ degraded ตามจริง และ reset started latch อย่างปลอดภัย; main voice/GSI ยังใช้ได้ระหว่างรอ |
+| MVP-016 | P0 / M | IN_PROGRESS | MVP-014, MVP-015 | **เพิ่ม capture retry/recovery.** Init failure แสดง Lite พร้อม retry ที่ไม่สร้าง thread ซ้อน; ACCESS_LOST/device reset/monitor move กู้คืนหรือ degraded ตามจริง และ reset started latch อย่างปลอดภัย; main voice/GSI ยังใช้ได้ระหว่างรอ |
 | MVP-017 | P0 / L | TODO | MVP-006, MVP-016 | **กำหนดและตรวจ capture coverage.** รองรับ geometry/DPI/minimap side ตาม matrix หรือแจ้ง unsupported; Alt-Tab/desktop/เกมไม่อยู่ foreground ต้องไม่กลายเป็น minimap ปลอดภัย; readiness และ roster coverage มีหลักฐานจากภาพจริงทุก layout ที่ประกาศ |
 | MVP-018 | P0 / M | TODO | MVP-014, MVP-017 | **แยก unknown, no coverage, clear และ danger.** Empty detections ไม่ยืนยัน safe; แสดงอายุข้อมูล/coverage และ label risk เป็น heuristic score จนผ่าน calibration; hysteresis/revision ยังคงทำงานและไม่ invent KDA/items ของอีก 9 คน |
 | MVP-019 | P0 / M | TODO | MVP-013, MVP-015 | **แก้ buyback unknown และ mode assumptions.** Allies/base threat/game mode ที่ไม่ทราบต้องเป็น unknown ไม่ใช้ 4 คน/บ้านปลอดภัยโดยปริยาย; ไม่มีข้อมูลพอให้รายงานเฉพาะ timer/cost/affordability ที่ทราบ; ไม่พูดว่าเก็บเงินได้อย่างมั่นใจ และ narrative หมดอายุเมื่อเกิดใหม่ |
-| MVP-020 | P1 / M | TODO | MVP-003, MVP-005 | **ตรวจ static gameplay data และข้ออ้าง damage.** ระบุ patch/source/date/coverage ที่พิสูจน์ได้ใน provenance, ตรวจ hero/ability/item ที่อยู่ MVP; own burst แสดง assumptions เกราะ/MR/skill build, unsupported เป็น unknown; target lethality ไม่เปิดใช้จนมี live target contract ครบ |
+| MVP-020 | P1 / M | READY | MVP-003, MVP-005 | **ตรวจ static gameplay data และข้ออ้าง damage.** ระบุ patch/source/date/coverage ที่พิสูจน์ได้ใน provenance, ตรวจ hero/ability/item ที่อยู่ MVP; own burst แสดง assumptions เกราะ/MR/skill build, unsupported เป็น unknown; target lethality ไม่เปิดใช้จนมี live target contract ครบ |
 | MVP-021 | P0 / L | TODO | MVP-006, MVP-018, MVP-020 | **สร้างและวัด quality baseline.** ใช้ local labeled replay แยกชุด tuning กับ held-out validation วัด precision/recall/false alerts/coverage ราย scenario ตาม thresholds ที่ตกลง; เปรียบเทียบ default/tuned โดยไม่แต่ง probability; ส่วน live acceptance ส่งต่อ MVP-049 |
 
 ## E3 เสียง เหตุการณ์ และ Overlay
@@ -184,7 +227,7 @@ Owner สั่งพัฒนา own-GSI sharing ระหว่างสมา
 
 | ID | P / Size | สถานะ | Depends on | งานและเกณฑ์รับ |
 | --- | --- | --- | --- | --- |
-| MVP-027 | P0 / M | TODO | MVP-005, MVP-009 | **บังคับ outbound allowlist ใน backend.** แยก local/cloud context; CV-derived hero identities, raw logs, memory และ field ที่ไม่ได้อนุญาตไม่เข้า provider prompt; manual ask ไม่เท่ากับ opt-in ทุก field; ตรวจ serialized requests ทั้ง CLI/API และ local-only ไม่มี fallback ออก cloud |
+| MVP-027 | P0 / M | READY | MVP-005, MVP-009 | **บังคับ outbound allowlist ใน backend.** แยก local/cloud context; CV-derived hero identities, raw logs, memory และ field ที่ไม่ได้อนุญาตไม่เข้า provider prompt; manual ask ไม่เท่ากับ opt-in ทุก field; ตรวจ serialized requests ทั้ง CLI/API และ local-only ไม่มี fallback ออก cloud |
 | MVP-028 | P0 / M | TODO | MVP-009, MVP-027 | **ตรวจ backend/model readiness และ fallback.** UI/native ใช้ชื่อ Ollama model เดียวกัน มี availability/error/cost/timeout state; เครื่องไม่มี Claude/Ollama ยังใช้ alerts และ deterministic fallback ได้; offline ไม่ค้างรอจนคำตอบหมดความหมาย |
 | MVP-029 | P0 / M | TODO | MVP-015, MVP-028 | **ผูก request/cache กับ context.** ใช้ request ID, session epoch, hero/backend และ freshness ที่เหมาะสม; cancel/discard เมื่อจบเกม เปลี่ยนบัญชี/โมเดลหรือบริบทตาย/เกิดที่เกี่ยวข้อง; cache 30s ไม่คืนคำตอบของคน/แมตช์ก่อน และจำกัดงานซ้อน |
 | MVP-030 | P1 / M | TODO | MVP-023, MVP-029 | **ต่อ auto-advice กับ events และ budget.** Milestones/death streak ยิงครั้งเดียวตาม cooldown, quota และ opt-in; high-priority warning ชนะ, ค่า budget เสียมีพฤติกรรมที่ระบุ, ปิด auto แล้วไม่มี request ใหม่; acceptance ใช้ real effect integration |
@@ -213,8 +256,8 @@ Owner สั่งพัฒนา own-GSI sharing ระหว่างสมา
 
 | ID | P / Size | สถานะ | Depends on | งานและเกณฑ์รับ |
 | --- | --- | --- | --- | --- |
-| MVP-038 | P0 / L | TODO | MVP-003, MVP-005, MVP-006 | **ออกแบบและประเมิน local STT.** เลือก mic/STT dependency และ model จาก Thai/English corpus, วัด cold/warm latency/RAM พร้อม license/size/resource delivery; ระบุ PTT key ใหม่ที่ไม่ชน Alt+M, privacy/retention และ lifecycle; ไม่ใช้ cloud STT หรือดาวน์โหลด model เงียบ ๆ เพื่อเลี่ยงงบ |
-| MVP-039 | P0 / M | TODO | MVP-038, MVP-024 | **ทำ PTT/mic lifecycle.** กดค้างเริ่มรับเสียง ปล่อยหยุด, มี listening indicator/device selection/permission error; ไม่ always-on, hotkey focus/เกม/อุปกรณ์หลุดไม่ค้างอัด และปิดแอปแล้วปล่อย device |
+| MVP-038 | P0 / L | READY | MVP-003, MVP-005, MVP-006 | **ออกแบบและประเมิน local STT.** เลือก mic/STT dependency และ model จาก Thai/English corpus, วัด cold/warm latency/RAM พร้อม license/size/resource delivery; ระบุ PTT key ใหม่ที่ไม่ชน Alt+M, privacy/retention และ lifecycle; ไม่ใช้ cloud STT หรือดาวน์โหลด model เงียบ ๆ เพื่อเลี่ยงงบ |
+| MVP-039 | P0 / M | IN_PROGRESS | MVP-038, MVP-024 | **ทำ PTT/mic lifecycle.** กดค้างเริ่มรับเสียง ปล่อยหยุด, มี listening indicator/device selection/permission error; ไม่ always-on, hotkey focus/เกม/อุปกรณ์หลุดไม่ค้างอัด และปิดแอปแล้วปล่อย device |
 | MVP-040 | P0 / L | TODO | MVP-039 | **เชื่อม local STT และผลที่ไม่แน่ใจ.** Audio buffer มีขนาด/อายุจำกัด, Thai/English transcription ผ่าน corpus และ thresholds จาก MVP-006; silence/low confidence ขอพูดใหม่โดยไม่สร้างคำถามมั่ว, cancel ล้าง transient audio และไม่ส่ง audio ออกเครือข่าย |
 | MVP-041 | P0 / L | TODO | MVP-040, MVP-029, MVP-036 | **ต่อ conversation turn.** PTT→STT→latest permitted context→local/cloud route ตาม policy→text/TTS, มี turn ID, single-flight/backpressure และ cancel; คำตอบสั้นตาม persona, Memory ใช้เฉพาะ local branch, no-model/timeout ยังมีทางออกชัดเจน |
 | MVP-042 | P0 / M | TODO | MVP-041, MVP-025, MVP-031 | **ตรวจ Voice interruption และ privacy.** G-Signal ขัดคำตอบได้ตามงบ, interrupted turn ไม่กลับมาพูดข้อมูลเก่า; offline/mic unplug/STT error/end-match ผ่าน matrix, transcript/audio cleanup ทำจริง, วัด response ตาม contract ≤2s และรายงาน cold/warm แยก; ถ้าทำไม่ได้ต้องแก้ design/requirement ผ่าน owner |
@@ -229,8 +272,8 @@ Owner สั่งพัฒนา own-GSI sharing ระหว่างสมา
 
 | ID | P / Size | สถานะ | Depends on | งานและเกณฑ์รับ |
 | --- | --- | --- | --- | --- |
-| MVP-043 | P0 / M | CONDITIONAL | MVP-001, MVP-002, MVP-004 | **ตรวจ auth remediation หลัง integration.** ทดสอบ local sign-out เมื่อ remote ล่ม, expired grace, account switch, delayed entitlement response และ native lock; local credential cleanup กับ remote revoke แสดงคนละผลอย่างถูกต้อง; ใช้ patch จาก main และแก้เฉพาะ regression ที่พบ |
-| MVP-044 | P0 / L | CONDITIONAL | MVP-004, MVP-043 | **ปิด Google-session/revocation contract.** ตรวจ sign-in method ของ session และ revocation ทุก privileged endpoint ที่ยังใช้; admin AAL2 ต้องมีทาง enrollment/operation ที่อนุมัติหรือไม่เปิด surface นั้น; probe RLS/role/session กับ production ต้องมีขอบเขตและ approval ไม่ใช้ linked-provider metadata เป็นหลักฐานแทน session method |
+| MVP-043 | P0 / M | READY | MVP-001, MVP-002, MVP-004 | **ตรวจ auth remediation หลัง integration.** ทดสอบ local sign-out เมื่อ remote ล่ม, expired grace, account switch, delayed entitlement response และ native lock; local credential cleanup กับ remote revoke แสดงคนละผลอย่างถูกต้อง; ใช้ patch จาก main และแก้เฉพาะ regression ที่พบ |
+| MVP-044 | P0 / L | TODO | MVP-004, MVP-043 | **ปิด Google-session/revocation contract.** ตรวจ sign-in method ของ session และ revocation ทุก privileged endpoint ที่ยังใช้; admin AAL2 ต้องมีทาง enrollment/operation ที่อนุมัติหรือไม่เปิด surface นั้น; probe RLS/role/session กับ production ต้องมีขอบเขตและ approval ไม่ใช้ linked-provider metadata เป็นหลักฐานแทน session method |
 | MVP-045 | P0 / M | NOT_APPLICABLE | MVP-004; legal approval ถ้ายังเก็บ Terms receipt | **ทำ Terms/account/download handoff ที่ยังจำเป็น.** ทุก CTA จาก desktop ไปหน้าที่มีจริง รวม redirect/rewrite/error/back-to-app; receipt version/optional consent แยกตาม legal decision; ถอน Closed Beta CTA/countdown ที่ขัดแผนตาม surface จริง โดยไม่สร้าง ops/payment ใหม่เกิน scope |
 
 หาก account ยังเปิดให้ใช้แบบ optional งาน E7 ที่เกี่ยวข้องยังต้องผ่านก่อน expose เส้นทางนั้น การเลือก local core ไม่ได้ทำให้ auth ที่ยังมองเห็นอยู่ได้รับการยกเว้นโดยอัตโนมัติ
@@ -245,10 +288,10 @@ Owner สั่งพัฒนา own-GSI sharing ระหว่างสมา
 | --- | --- | --- | --- | --- |
 | MVP-046 | P0 / M | TODO | MVP-004, MVP-015 | **ทำ update ที่ไม่ขัดแมตช์.** ตรวจ/ดาวน์โหลดได้ตาม policy แต่ install/relaunch รอจบเกม; สถานะผิดพลาด/retry/channel/locked-user recovery ชัด, ทดสอบ signed manifest/platform และ rollback; ไม่เพิ่ม path ที่ bypass signature |
 | MVP-047 | P0 / M | TODO | MVP-012, MVP-026, MVP-038, MVP-040 | **ตรวจ resource packaging และ clean install.** Model/labels/default voice/cache/GPU sidecar และ STT resources ที่เลือกมีครบหรือ provision ด้วยขั้นตอนที่ตกลง; รอ STT integration จริงก่อนปิด packaging; ตรวจ Windows/WebView prerequisite, install/upgrade/uninstall/data retention; missing/corrupt asset ให้ actionable error |
-| MVP-048 | P0 / L | TODO | MVP-002, MVP-006; ผลสุดท้ายหลัง MVP-025, MVP-042 | **วัดและแก้ NFR ทั้งระบบ.** เริ่ม baseline เร็ว, วัด acquisition→audible onset รวม cold/cache-miss/interrupt/throttle; วัด process tree, peak RAM, STT/SLM และ PresentMon Dota FPS แบบ A/B บน matrix; ผ่าน ≤250ms p50/ทุก sample ≤300ms, CPU≤10%, RAM≤900MB, FPS drop≤3% หรือกลับไปแก้ design; SKIP ไม่ใช่ PASS |
+| MVP-048 | P0 / L | IN_PROGRESS | MVP-002, MVP-006; ผลสุดท้ายหลัง MVP-025, MVP-042 | **วัดและแก้ NFR ทั้งระบบ.** เริ่ม baseline เร็ว, วัด acquisition→audible onset รวม cold/cache-miss/interrupt/throttle; วัด process tree, peak RAM, STT/SLM และ PresentMon Dota FPS แบบ A/B บน matrix; ผ่าน ≤250ms p50/ทุก sample ≤300ms, CPU≤10%, RAM≤900MB, FPS drop≤3% หรือกลับไปแก้ design; SKIP ไม่ใช่ PASS |
 | MVP-049 | P0 / L | TODO | MVP-006, MVP-012, MVP-021, MVP-026, MVP-031, MVP-033, MVP-035, MVP-037, MVP-042, MVP-046, MVP-047 | **รัน player journey และ fault matrix.** Fresh install→match→summary→restart→next match รวม GSI loss, malformed payload, alt-tab, capture/device/network failure, unknown data, crash/reconnect และ live alert accuracy; มี expected/actual, defect IDs, exact build และ local evidence ทุก scenario |
 | MVP-050 | P0 / M | TODO | MVP-005, MVP-027, MVP-035, MVP-041 | **ตรวจ privacy/no-egress ที่ runtime.** เก็บ outbound destinations/payload fields ของ CLI/API/Ollama/account paths ด้วยข้อมูลทดสอบที่ไม่ระบุตัวบุคคล; local-only, non-consented fields, CV/raw logs/Memory และ transient mic data ไม่มี egress ที่ห้าม; forget/retention/diagnostic redaction ผ่าน |
-| MVP-051 | P0 / M | TODO | MVP-001, MVP-002, MVP-006 | **ทำ verification matrix และ CI coverage.** Rust/clippy/eslint/tsc/Vitest/native smoke รวม landing/Deno/SQL เมื่อพื้นที่นั้นอยู่ใน scope; suites มี timeoutและแยก headless/live/manual gates, required check ชี้ exact SHA; doc graph/ledger ใช้ผลจริง ไม่มี disable check เพื่อผ่าน |
+| MVP-051 | P0 / M | IN_PROGRESS | MVP-001, MVP-002, MVP-006 | **ทำ verification matrix และ CI coverage.** Rust/clippy/eslint/tsc/Vitest/native smoke รวม landing/Deno/SQL เมื่อพื้นที่นั้นอยู่ใน scope; suites มี timeoutและแยก headless/live/manual gates, required check ชี้ exact SHA; doc graph/ledger ใช้ผลจริง ไม่มี disable check เพื่อผ่าน |
 | MVP-052 | P0 / M | TODO | MVP-001–051 ทุกงานที่อยู่ใน scope; MVP-043–045 ต้องผ่านถ้า exposed | **ปิด acceptance และเตรียม release decision.** รวบรวม scope matrix ที่ไม่มี P0/P1 required ค้าง, known limitations, installer hash, CI/native/live/NFR/privacy evidence และ rollback; งาน conditional ที่ไม่ใช้ต้องมี scope decision อ้างกลับได้; owner ตรวจ Go/No-Go และอนุมัติช่องทาง; bump/tag/candidate/promote เฉพาะเมื่อสั่ง release และ main CI ของ SHA นั้น green ไม่ auto-open Beta |
 
 ## E9 หลัง MVP และงานคนละผลิตภัณฑ์
@@ -332,3 +375,6 @@ Status:
 | 0.3.11 | 2026-10-28 | Align active MVP RAM ceiling to owner-approved900MB aggregate Working Set; preserve accounting and historical evidence. |
 | 0.3.12 | 2026-11-01 | Link owner-directed G-Party GP-001–006 extension while preserving all 62 MVP task IDs/statuses and separate consent/native/live acceptance. |
 | 0.3.13 | 2026-11-01 | Link CR-038 Friends Tasks1–5 as a separate owner-directed extension without changing any of the 62 MVP parent task IDs, priorities or completion states. |
+| 0.4.0 | 2026-11-07 | Draft status reconciliation against origin/main `455c4b0e`: add IN_PROGRESS to the legend; propose READY for 007/008/013/020/027/038 and IN_PROGRESS for 010/011/016/039/048/051 with evidence; no task marked DONE; record DAG/roadmap/release contradictions and unmapped merged work. |
+| 0.4.1 | 2026-11-07 | Owner approved the v0.4.0 status reconciliation and IN_PROGRESS legend; link the accepted mvp-delivery-plan. |
+| 0.4.2 | 2026-11-07 | Owner confirmed MVP-043/044 are in MVP scope: 043 CONDITIONAL → READY, 044 CONDITIONAL → TODO (depends on 043). |
