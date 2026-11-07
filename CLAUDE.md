@@ -2,8 +2,8 @@
 title: "CLAUDE.md"
 doc_id: "claude"
 status: active
-version: "0.4.14"
-updated: "2026-11-06"
+version: "0.4.15"
+updated: "2026-11-07"
 owner: "G-Maiden"
 ---
 # CLAUDE.md
@@ -13,6 +13,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Git, Worktree & Multi-Agent Lifecycle
 
 For Git/worktree operations read the relevant sections of [the local lifecycle policy](docs/engineering/GIT-WORKTREE-POLICY.md). It preserves this primary working guide, protected-main/review/release rules and native acceptance; workspaces actively owned by another session, or with unknown ownership, require a patch/handoff. Reuse owned allocations and serialize writers.
+
+**Five Git rules every session must keep** (full text and the reasons in `AGENTS.md` → "Git & GitHub"):
+
+1. **Never commit or push to `main`.** Everything lands through a PR; `ci` and `pr-gate-agent` are required and `strict`, so update the branch from `main` before merge. New branch: `git push -u origin <branch>` (there is a second remote, `rwang`).
+2. **Never `git add -A`.** Other sessions hold unrelated dirty files in the same checkout; stage explicit paths.
+3. **Never force-push, amend or rebase a branch once its PR is open.** Add commits; merge `main` in when behind.
+4. **Worktrees go outside the repo** (`git worktree add ../gm-<lane> -b <branch>`); `.worktrees/` is the only permitted in-repo location. One active writer per worktree; a workspace owned by another session needs a patch/handoff, not a branch switch.
+5. **Agent-authored commits carry an attribution trailer** (`Agent: <name>` or `Co-Authored-By:`). Cleanup of worktrees, branches, stashes or reflog is a separate, owner-authorized step — MERGED does not mean safe to delete.
 
 ## Status: implemented (source v0.13.6; latest dated release 0.13.4), shipping via in-app updater
 
@@ -365,3 +373,4 @@ G-AnnStudio opens the same container through its package panel or a file argumen
 | 0.4.12 | 2026-11-01 | Document optional G-Friends social authorization separately from guest sharing and AI; preserve native/live/deployment evidence boundaries. |
 | 0.4.13 | 2026-11-04 | Reference the shared lifecycle policy without changing release or native acceptance authority. |
 | 0.4.14 | 2026-11-06 | Align stale state references with the code: source version 0.13.6, GSI port fallback 3000–3010, optional Piper TTS, NVML-based GPU feeder, and hotkey registration in `lib.rs` (#134). |
+| 0.4.15 | 2026-11-07 | Surface the five standing Git rules (protected main, no `add -A`, no rewrite of open PRs, outside-repo worktrees, agent attribution trailer) directly in this file so every agent session sees them without following the pointer chain. |
