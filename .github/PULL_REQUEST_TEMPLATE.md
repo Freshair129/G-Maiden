@@ -9,6 +9,15 @@
 <!-- Delete if this PR is narrow. If it is wide, say why these areas had to move together
      instead of as separate PRs. -->
 
+## Work item and collisions
+
+<!-- Required by docs/engineering/GIT-WORKTREE-POLICY.md §9. Link the Issue/task this PR belongs to,
+     name other open PRs or worktrees touching the same files, interfaces, lockfiles or generated
+     artifacts, and list prerequisite PRs with the order they must land in. -->
+
+- Work item:
+- Collisions / dependencies:
+
 ## Verification
 
 <!-- The checks actually run, with their result. See AGENTS.md → "Review / verify-gate checklist".
@@ -19,7 +28,8 @@
 - [ ] `pnpm -C src lint`
 - [ ] `pnpm -C src exec tsc --noEmit`
 - [ ] `pnpm -C src test`
-- [ ] `node tools/doc-graph/ci-gate.mjs` (any change under `docs/`, `CLAUDE.md`, `AGENTS.md`, `tools/doc-graph/` — and its regenerated artifacts are committed here)
+- [ ] `node tools/doc-graph/ci-gate.mjs` (any change under `docs/`, `CLAUDE.md`, `AGENTS.md`, `tools/doc-graph/` — and its regenerated artifacts are committed here, generated on the final HEAD)
+- Outstanding gates (each as `NOT_RUN` + reason, or `NOT_APPLICABLE`): native/UAT, owner approval
 
 ## Notes for the reviewer
 
