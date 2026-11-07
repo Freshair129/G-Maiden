@@ -60,6 +60,36 @@ impl AnnouncerRequestFence {
     }
 }
 
+/// Isolated cancellation control for admission tests. Production requests use
+/// the process-wide epoch above; keeping this test control private to test
+/// builds avoids cross-test interference from a synthetic Stop/preemption.
+#[cfg(test)]
+pub(crate) struct TestAnnouncerFenceCancel(preparation::TestAnnouncerFenceCancel);
+
+#[cfg(test)]
+impl TestAnnouncerFenceCancel {
+    pub(crate) fn cancel(&self) {
+        self.0.cancel();
+    }
+}
+
+#[cfg(test)]
+pub(crate) fn test_announcer_request_fence() -> (AnnouncerRequestFence, TestAnnouncerFenceCancel) {
+    let (fence, cancel) = preparation::test_announcer_fence();
+    (
+        AnnouncerRequestFence(fence),
+        TestAnnouncerFenceCancel(cancel),
+    )
+}
+
+#[cfg(test)]
+pub(crate) fn prepare_announcer_pair_for_test(
+    original: &std::path::Path,
+    selection: &crate::event_media::MixedSelection,
+) -> Result<(), String> {
+    preparation::prepare_announcer_pair_for_test(original, selection)
+}
+
 fn lifecycle_current() -> &'static Arc<std::sync::atomic::AtomicU64> {
     static CURRENT: OnceLock<Arc<std::sync::atomic::AtomicU64>> = OnceLock::new();
     CURRENT.get_or_init(|| Arc::new(std::sync::atomic::AtomicU64::new(0)))

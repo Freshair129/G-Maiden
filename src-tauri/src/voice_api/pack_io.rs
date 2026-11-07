@@ -976,6 +976,34 @@ pub(crate) fn sanitize_id(value: &str) -> String {
 }
 
 #[cfg(test)]
+pub(super) fn select_announcer_clip_for_revision_at(
+    event: &str,
+    revision: Option<u64>,
+    last: Option<&Path>,
+    index: usize,
+) -> Option<AnnouncerClip> {
+    with_resolved_cache(|cache| {
+        let cache = cache?;
+        if revision.is_some_and(|expected| expected != cache.revision) {
+            return None;
+        }
+        let candidates = super::variant_rotation::eligible(cache.clips_by_event.get(event)?, last);
+        let count = candidates.len();
+        let path = candidates
+            .into_iter()
+            .nth((count > 0).then(|| index % count)?)?;
+        Some(AnnouncerClip {
+            installation: cache.installation.clone(),
+            revision: cache.revision,
+            pack_id: cache.pack_id.clone(),
+            pack_name: cache.pack_name.clone(),
+            pair: Some(cache.pairs.get(&(event.to_owned(), path.clone()))?.clone()),
+            path,
+        })
+    })
+}
+
+#[cfg(test)]
 mod integrity_tests {
     use super::*;
     use ring::signature::{Ed25519KeyPair, KeyPair};

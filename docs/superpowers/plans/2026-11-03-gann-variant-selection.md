@@ -2,8 +2,8 @@
 title: "GANN variant selection without consecutive repeats"
 doc_id: "2026-11-03-gann-variant-selection"
 status: draft
-version: "0.1.2"
-updated: "2026-11-03"
+version: "0.1.3"
+updated: "2026-11-07"
 owner: "G-Maiden"
 ---
 # GANN Variant Selection Implementation Plan
@@ -29,8 +29,8 @@ owner: "G-Maiden"
 
 - [x] Define and test bounded event/revision state and a deterministic candidate selector.
 - [x] Integrate candidate choice and committed playback history across non-critical event admission, preserving preview and critical paths.
-- [ ] Validate multi-variant verified GANN pairs, lifecycle/race cases, tests and native behavior. Isolated application previews verified both registered pairs with screen captures and process-loopback source correlation on 2026-11-03; live GSI multi-variant admission and non-repetition remain unverified.
-- [ ] Review, update documentation and run required checks before delivery.
+- [x] Validate multi-variant verified GANN pairs and lifecycle/race cases with deterministic source tests at the GSI dispatch seam: 50 admitted multi-pair `kill` selections never repeat consecutively; one-pair `death` may repeat; preview and failed preparation do not commit history; package revision resets history and invalidates an in-flight request; and a cancelled dispatch fence cannot admit. The same fixture confirms `gank`/`danger`/`revision` stay on cached critical selection without rotation. Isolated application previews verified both registered pairs with screen captures and process-loopback source correlation on 2026-11-03. **UNVERIFIED (owner-run): live GSI in a real Dota match and native audible non-repetition.**
+- [x] Review the focused diff, update documentation, run `rustfmt --edition 2021` on changed Rust files, and regenerate the documentation graph. Cargo checks remain reviewer-owned because this worktree is not authorized to use the owned F: Cargo lane.
 
 ## Changelog
 
@@ -39,3 +39,4 @@ owner: "G-Maiden"
 | 0.1.0 | 2026-11-03 | Record owner-approved variant behavior and verification boundaries. |
 | 0.1.1 | 2026-11-03 | Preserve the original cancellation generation from GSI dispatch through admission. |
 | 0.1.2 | 2026-11-03 | Record isolated two-pair preview evidence and retain the live-admission limitation. |
+| 0.1.3 | 2026-11-07 | Add deterministic verified-package admission coverage for rotation, preview/rejection, revision, cancellation, and critical-path isolation; retain live/native acceptance as unverified. |
