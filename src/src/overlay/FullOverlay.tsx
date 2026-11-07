@@ -252,7 +252,7 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, war
           })())
         : null}
 
-      {inGame && missingHeroes.size > 0 && !gank && s.gankVisuals
+      {inGame && missingHeroes.size > 0 && s.gankVisuals
         ? M('missing', (
             <div style={{ ...glass(op), padding: '8px 14px', border: `1px solid rgba(255,207,107,0.45)`, color: C.warn, fontSize: 12.5, display: 'flex', gap: 8 }}>
               <span style={{ opacity: 0.7 }}>👁️</span>
