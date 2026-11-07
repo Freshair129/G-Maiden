@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-07T20:36:24.876Z",
+  "generatedAt": "2026-11-07T20:53:04.594Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -1022,6 +1022,13 @@
       "type": "doc",
       "path": "docs/product/mvp-decisions.md",
       "title": "G-Maiden MVP — Scope, Access, Data and Quality Decisions",
+      "status": "accepted"
+    },
+    {
+      "id": "docs/product/mvp-delivery-plan.md",
+      "type": "doc",
+      "path": "docs/product/mvp-delivery-plan.md",
+      "title": "G-Maiden MVP Delivery Plan (dated projection)",
       "status": "accepted"
     },
     {
@@ -9029,69 +9036,75 @@
     },
     {
       "from": "docs/product/mvp-backlog.md",
+      "to": "docs/product/mvp-delivery-plan.md",
+      "type": "wikilink",
+      "line": 54
+    },
+    {
+      "from": "docs/product/mvp-backlog.md",
       "to": "docs/design-system/10-wireframes.md",
       "type": "wikilink",
-      "line": 77
+      "line": 120
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/design-system/11-wireflows.md",
       "type": "wikilink",
-      "line": 77
+      "line": 120
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/design-system/12-user-flows.md",
       "type": "wikilink",
-      "line": 77
+      "line": 120
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 118
+      "line": 161
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "type": "wikilink",
-      "line": 118
+      "line": 161
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-MEMORY.md",
       "type": "wikilink",
-      "line": 197
+      "line": 240
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-COACH.md",
       "type": "wikilink",
-      "line": 197
+      "line": 240
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-VOICE.md",
       "type": "wikilink",
-      "line": 212
+      "line": 255
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 212
+      "line": 255
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/releases/README.md",
       "type": "wikilink",
-      "line": 242
+      "line": 285
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/releases/release-channel-architecture.md",
       "type": "wikilink",
-      "line": 242
+      "line": 285
     },
     {
       "from": "docs/product/mvp-decisions.md",
@@ -9158,6 +9171,36 @@
       "to": "docs/operations/g-party-social-operations.md",
       "type": "wikilink",
       "line": 97
+    },
+    {
+      "from": "docs/product/mvp-delivery-plan.md",
+      "to": "docs/product/roadmap.md",
+      "type": "wikilink",
+      "line": 16
+    },
+    {
+      "from": "docs/product/mvp-delivery-plan.md",
+      "to": "docs/product/mvp-backlog.md",
+      "type": "wikilink",
+      "line": 16
+    },
+    {
+      "from": "docs/product/mvp-delivery-plan.md",
+      "to": "docs/product/mvp-execution-dag.md",
+      "type": "wikilink",
+      "line": 33
+    },
+    {
+      "from": "docs/product/mvp-delivery-plan.md",
+      "to": "docs/product/roadmap.md",
+      "type": "wikilink",
+      "line": 52
+    },
+    {
+      "from": "docs/product/mvp-delivery-plan.md",
+      "to": "docs/product/mvp-backlog.md",
+      "type": "wikilink",
+      "line": 105
     },
     {
       "from": "docs/product/mvp-execution-dag.md",
@@ -9947,6 +9990,12 @@
       "reason": "no-metadata"
     },
     {
+      "file": "docs/product/mvp-delivery-plan.md",
+      "line": 68,
+      "reason": "unresolved",
+      "slug": "CR-046-demo-mvp-announcer-gank-slice"
+    },
+    {
       "file": "docs/product/one-pager.md",
       "line": null,
       "reason": "no-metadata"
@@ -9979,7 +10028,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-07T20:36:33.693Z",
+    "generatedAt": "2026-11-07T20:53:09.707Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,
