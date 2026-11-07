@@ -175,7 +175,7 @@ Boss เลือกในแชต 2026-11-07: "ก) เพิ่มคลิ�
    - การโคลนเสียงคนจริงพูดประโยคใหม่เข้มกว่าการตัดคลิปเดิม จึงใช้ได้เฉพาะเดโมภายในตาม §6.
    - ห้ามเผยแพร่ pack, คลิปโคลน หรือวิดีโอเดโมที่มีเสียงนี้สู่สาธารณะ จนกว่าจะได้สิทธิ์จากเจ้าของเสียง หรือเปลี่ยนเป็นเสียงที่เราเป็นเจ้าของ.
 6. **ผู้ทำ:**
-   - Claude/Codex สร้างคลิปและ author pack revision 6 ใน workspace ของ Studio (`D:\G-Maiden-3D-Studio\workspacerzo-mapping-v6`, นอก repo G-Maiden). ไม่แก้ revision 5 และไม่แก้ Lalin.
+   - Claude/Codex สร้างคลิปและ author pack revision 6 ใน workspace ของ Studio (`D:\G-Maiden-3D-Studio\workspace\vrzo-mapping-v6`, นอก repo G-Maiden). ไม่แก้ revision 5 และไม่แก้ Lalin.
    - Boss import ผ่าน Control.
 7. **ไม่เปลี่ยน:** โค้ด G-Signal, ข้อ 2–4 และ 6–7 ของ §9.2.
 
