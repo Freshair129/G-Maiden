@@ -2,8 +2,8 @@
 title: "FEAT-G-VOICE — Two-Way Voice Conversation"
 doc_id: "FEAT-G-VOICE"
 status: "active"
-version: "0.3.1"
-updated: "2026-10-11"
+version: "0.3.2"
+updated: "2026-11-07"
 owner: "Boss"
 source_of_truth: true
 complexity: "C-3"
@@ -29,6 +29,8 @@ risk: "HIGH"
 **G-Signal มีสิทธิ์ interrupt G-Voice ได้เสมอ** เมื่อเกิดเหตุวิกฤต.
 
 ## 2. Flow (planned)
+
+รายละเอียด binding/remap และ VoiceTurn lifecycle ที่เสนอ: [[CR-041-g-voice-ptt-turn-lifecycle]] (accepted 2026-11-07; runtime ยังไม่ทำ).
 
 ใช้ `Ctrl+Alt+V` เป็น PTT ค่าเริ่มต้นใน MVP; implementation ต้องตรวจ collision กับ global shortcuts และรองรับ remap. `Alt+M` คงเป็น mute toggle. ไม่มี always-on mic. TTS ปัจจุบันเป็น SAPI จนกว่า Piper จะ land.
 
@@ -144,3 +146,4 @@ Transcript and microphone buffer are not persisted or sent to a network provider
 | 0.2.0 | 2026-10-05 | Added the DL-006 source, transport, latency, privacy, fallback, and evidence contract; runtime remains planned. |
 | 0.3.0 | 2026-10-10 | Aligned P0 Voice with accepted MVP contract: Ctrl+Alt+V PTT, local STT/answer only, no cloud utterance or Memory egress, and measured latency/quality acceptance. |
 | 0.3.1 | 2026-10-11 | Linked the MVP-038 evaluation protocol and corrected TTS runtime status to match the Piper-first/SAPI-fallback source path; Voice capture/STT remain unimplemented. |
+| 0.3.2 | 2026-11-07 | Linked the draft CR-041 Slice 1 PTT/remap/VoiceTurn contract; runtime status unchanged. |

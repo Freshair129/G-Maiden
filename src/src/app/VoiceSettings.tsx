@@ -4,6 +4,8 @@ import type { Settings, VoiceInfo, Sensitivity } from './types'
 import { C } from './theme'
 import { Card, Row, Toggle } from './primitives'
 import { AudioSettingsCard } from './cards/AudioSettingsCard'
+import { VoicePttCard } from './cards/VoicePttCard'
+import { DeckTabs } from '../deck/onair'
 
 type VoiceSettingsProps = {
   settings: Settings
@@ -12,7 +14,24 @@ type VoiceSettingsProps = {
 }
 
 export const VoiceSettings = React.memo(function VoiceSettings({ settings: s, voices, set }: VoiceSettingsProps) {
+  const [voiceTab, setVoiceTab] = React.useState('alerts')
   return (
+    <div className="deck-tabbed">
+      <DeckTabs
+        tabs={[
+          { key: 'alerts', label: 'การแจ้งเตือน' },
+          { key: 'ptt', label: 'G-Voice' },
+        ]}
+        active={voiceTab}
+        onChange={setVoiceTab}
+      />
+      <div
+        className="deck-tabbed-body"
+        role="tabpanel"
+        aria-label={voiceTab === 'ptt' ? 'G-Voice' : 'การแจ้งเตือน'}
+        style={{ overflowX: 'hidden', overflowY: 'auto' }}
+      >
+        {voiceTab === 'ptt' ? <VoicePttCard /> : (
           <>
             <Card title="Alerts (G-Signal)">
               <Row label="เตือนเมื่อ HP ต่ำ"><Toggle on={s.alertEnabled} onChange={(v) => set('alertEnabled', v)} /></Row>
@@ -112,5 +131,8 @@ export const VoiceSettings = React.memo(function VoiceSettings({ settings: s, vo
 
             <AudioSettingsCard />
           </>
+        )}
+      </div>
+    </div>
   )
 })
