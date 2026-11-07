@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-07T20:34:31.182Z",
+  "generatedAt": "2026-11-07T20:51:06.050Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -651,6 +651,13 @@
       "type": "doc",
       "path": "docs/change request/CR-045-g-voice-stt-corpus-collection.md",
       "title": "CR-045 — G-Voice Slice 3b: consented STT corpus collection",
+      "status": "accepted"
+    },
+    {
+      "id": "docs/change request/CR-046-demo-mvp-announcer-gank-slice.md",
+      "type": "doc",
+      "path": "docs/change request/CR-046-demo-mvp-announcer-gank-slice.md",
+      "title": "CR-046 — First demo slice: Announcer Pack + Gank Meter + missing-hero alert",
       "status": "accepted"
     },
     {
@@ -5495,6 +5502,36 @@
       "line": 22
     },
     {
+      "from": "docs/change request/CR-046-demo-mvp-announcer-gank-slice.md",
+      "to": "docs/architecture/gann-event-media-contract.md",
+      "type": "wikilink",
+      "line": 20
+    },
+    {
+      "from": "docs/change request/CR-046-demo-mvp-announcer-gank-slice.md",
+      "to": "docs/product/mvp-delivery-plan.md",
+      "type": "wikilink",
+      "line": 31
+    },
+    {
+      "from": "docs/change request/CR-046-demo-mvp-announcer-gank-slice.md",
+      "to": "docs/product/mvp-delivery-plan.md",
+      "type": "wikilink",
+      "line": 110
+    },
+    {
+      "from": "docs/change request/CR-046-demo-mvp-announcer-gank-slice.md",
+      "to": "docs/architecture/gann-event-media-contract.md",
+      "type": "wikilink",
+      "line": 148
+    },
+    {
+      "from": "docs/change request/CR-046-demo-mvp-announcer-gank-slice.md",
+      "to": "docs/architecture/gann-event-media-contract.md",
+      "type": "wikilink",
+      "line": 172
+    },
+    {
       "from": "docs/change request/IMPL-PLAN-DXGI-migration.md",
       "to": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "type": "wikilink",
@@ -9198,6 +9235,12 @@
     },
     {
       "from": "docs/product/mvp-delivery-plan.md",
+      "to": "docs/change request/CR-046-demo-mvp-announcer-gank-slice.md",
+      "type": "wikilink",
+      "line": 68
+    },
+    {
+      "from": "docs/product/mvp-delivery-plan.md",
       "to": "docs/product/mvp-backlog.md",
       "type": "wikilink",
       "line": 105
@@ -9990,12 +10033,6 @@
       "reason": "no-metadata"
     },
     {
-      "file": "docs/product/mvp-delivery-plan.md",
-      "line": 68,
-      "reason": "unresolved",
-      "slug": "CR-046-demo-mvp-announcer-gank-slice"
-    },
-    {
       "file": "docs/product/one-pager.md",
       "line": null,
       "reason": "no-metadata"
@@ -10028,7 +10065,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-07T20:34:47.363Z",
+    "generatedAt": "2026-11-07T20:51:11.466Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,
