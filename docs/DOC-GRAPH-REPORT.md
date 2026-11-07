@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-11-07T08:25:02.210Z
+สร้างเมื่อ / Generated at: 2026-11-07T09:51:29.853Z
 
-สแกน 177 ไฟล์เอกสาร, 289 nodes, 1336 edges, 28 รายการปัญหา (2 ตัวบล็อก exit code) / scanned 177 doc files, 289 nodes, 1336 edges, 28 violations (2 blocking exit code).
+สแกน 177 ไฟล์เอกสาร, 289 nodes, 1336 edges, 29 รายการปัญหา (3 ตัวบล็อก exit code) / scanned 177 doc files, 289 nodes, 1336 edges, 29 violations (3 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -10,6 +10,7 @@
 
 | Reason | คำอธิบาย / Description | Count | Blocking? |
 | --- | --- | --- | --- |
+| anchor-symbol-mismatch | anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) | 1 | yes |
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 1 | no (informational) |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 25 | no (informational) |
 | unresolved | wikilink หาไม่เจอ / unresolved wikilink | 2 | yes |
@@ -50,6 +51,7 @@
 
 ### docs/change request/CR-007-frostline-deck-refresh.md
 
+- [L82] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/announcer.rs", anchor=97, symbol="most_important")
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
 ### docs/change request/CR-008-login-hardening.md
