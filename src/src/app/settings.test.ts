@@ -77,7 +77,7 @@ describe('startup settings normalization', () => {
     expect(settings.layout).toEqual(DEFAULTS.layout)
   })
 
-  it('moves old centred event and standby defaults to screenshot-based safe zones', () => {
+  it('moves old event and standby defaults to the owner-approved layout', () => {
     const settings = normalizeSettings({
       layout: {
         ...DEFAULTS.layout,
@@ -86,7 +86,7 @@ describe('startup settings normalization', () => {
       },
     })
 
-    expect(settings.layout.banner).toEqual({ x: 89, y: 44, scale: 0.7, enabled: true })
+    expect(settings.layout.banner).toEqual({ x: 50, y: 20, scale: 0.7, enabled: true })
     expect(settings.layout.standby).toEqual({ x: 93, y: 10, scale: 0.85, enabled: true })
   })
 

@@ -63,28 +63,37 @@ export const MODULE_META: { id: ModuleId; label: string }[] = [
   { id: 'hero', label: 'HP / Mana' },
 ]
 
-/** Measured against the bundled 1920×1080 Steam capture, 20261019153246_1.jpg.
- * Keep the player's central view and Dota's fixed HUD clear; use the right rail.
- * Existing custom layouts are preserved until the player chooses Reset. */
+/** Owner layout decision, 2026-11-08 (target-20261101.png, 849×475).
+ * Restore the requested pre-#91 stat row; keep other notifications on the right.
+ * Settings migration replaces exact historical defaults only, preserving custom modules. */
 export const DEFAULT_LAYOUT: Layout = {
   alert: { x: 89, y: 54, scale: 0.75, enabled: true },
   gmeter: { x: 89, y: 26, scale: 0.9, enabled: true },
   toast: { x: 89, y: 67, scale: 0.7, enabled: true },
-  companion: { x: 82, y: 5, scale: 0.8, enabled: true },
+  // Target card ≈x759–824/y5–27, centre ≈791/16 = 93.2%/3.4%.
+  // 190×64 at 0.8 projects to 67.2×22.5 target pixels; reference edges
+  // x89.24–97.16%, y1.03–5.77%. Broad HUD warnings are advisory, not exclusion.
+  companion: { x: 93.2, y: 3.4, scale: 0.8, enabled: true },
   advice: { x: 89, y: 75, scale: 0.75, enabled: true },
   buyback: { x: 89, y: 84, scale: 0.75, enabled: true },
   missing: { x: 89, y: 33, scale: 0.8, enabled: true },
-  banner: { x: 89, y: 44, scale: 0.7, enabled: true },
+  // Announcer banners render NATIVELY (src-tauri/src/gann_native_windows.rs `place`):
+  // width = min(680px, 72% screen) × scale, height = width × 420/960, centred on (x, y).
+  // At 1920×1080, scale 0.7 → 476×208px; y20 puts the top edge at ≈112px, clearing
+  // Dota's hero bar and the first-blood/kill-feed line (≈80–101px), bottom ≈320px.
+  // (The 320×190 MODULE_BOX below is only the editor preview frame.)
+  banner: { x: 50, y: 20, scale: 0.7, enabled: true },
   lowhp: { x: 89, y: 61, scale: 0.8, enabled: true },
   vol: { x: 78, y: 94, scale: 0.8, enabled: true },
   standby: { x: 93, y: 10, scale: 0.85, enabled: true },
-  clock: { x: 78, y: 13, scale: 1, enabled: true },
+  // Owner-specified pre-#91 centres at y43.2px; labelled-chip top 21.7px.
+  clock: { x: 4, y: 4, scale: 1, enabled: true },
   score: { x: 84.5, y: 13, scale: 1, enabled: true },
-  kda: { x: 91, y: 13, scale: 1, enabled: true },
-  gold: { x: 97, y: 13, scale: 1, enabled: true },
-  gpm: { x: 84.5, y: 19, scale: 1, enabled: true },
+  kda: { x: 9.5, y: 4, scale: 1, enabled: true },
+  gold: { x: 15, y: 4, scale: 1, enabled: true },
+  gpm: { x: 20.5, y: 4, scale: 1, enabled: true },
   xpm: { x: 91, y: 19, scale: 1, enabled: false },
-  nw: { x: 97, y: 19, scale: 1, enabled: true },
+  nw: { x: 26, y: 4, scale: 1, enabled: true },
   hero: { x: 79.5, y: 35, scale: 0.8, enabled: false },
 }
 
