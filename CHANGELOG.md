@@ -11,7 +11,7 @@
 - **เอกสาร G-Party และการทดสอบ** — เพิ่ม FEAT/CR-037/implementation plan, สัญญา peer-sharing แยกจาก AI consent และ CI สำหรับ relay/portable Rust โดยคง 62 MVP tasks เดิม
 
 ### Fixed
-- **การ์ดซื้อเกิด (G-Revive) ไม่บังช่องไอเทมแล้ว** — ย้ายเป็นแถบเล็กกลางจอด้านบนใต้ช่องคะแนน/เวลา กว้างไม่เกินช่องคะแนนสองฝั่ง สูงเท่าแถบเวลา ข้อความยาวตัดด้วย "…"; layout ที่ยังเป็นตำแหน่งเดิมจากโรงงานจะย้ายให้อัตโนมัติ ส่วนตำแหน่งที่ผู้เล่นลากไว้เองคงเดิม
+- **Overlay layout ตั้งต้นใหม่** — ชิปสถิติเรียงแถวเดียวกับรูปฮีโร่ (ไม่มีเวลา, มี XPM), Maiden มุมขวาบน, แบนเนอร์ announcer เล็กลงอยู่กลางบน, แถบ RISK กลางบนใต้ช่องคะแนน/เวลา, การ์ดซื้อเกิด (G-Revive) แบบเต็มกลางล่างเหนือไอคอนบัฟ ไม่บังช่องไอเทมและ feed; layout ที่ยังเป็นค่าตั้งต้นรุ่นเก่าจะย้ายให้อัตโนมัติ ส่วนตำแหน่งที่ผู้เล่นลากไว้เองคงเดิม
 - **One Canvas UI** — Voice pack inventory paginates within its available space, Account content uses a bounded scroll region, Insights links to Account when Steam is not linked.
 
 ## [0.13.5] — Pending release

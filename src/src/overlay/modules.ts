@@ -79,10 +79,10 @@ export const DEFAULT_LAYOUT: Layout = {
   advice: { x: 89, y: 75, scale: 0.75, enabled: true },
   // Owner direction 2026-11-08: a compact strip under Dota's score/clock row,
   // no wider than the two score cells, clear of the inventory and stash.
-  // Owner 2026-11-08: buyback strip (dead-only) sits bottom-centre, directly above the round
-  // buff/status icons over the ability bar (icon top ≈857px): 196×40px, x ≈862–1058px,
-  // y ≈809–849px. Not on the left — that covers the kill feed.
-  buyback: { x: 50, y: 76.8, scale: 1, enabled: true },
+  // Owner 2026-11-08: the original buyback card (dead-only) sits bottom-centre, directly above
+  // the round buff/status icons over the ability bar (icon top ≈857px): 420×120 × 0.75 →
+  // 315×90px, x ≈802–1118px, y ≈760–850px. Not on the left — that covers the kill feed.
+  buyback: { x: 50, y: 74.5, scale: 0.75, enabled: true },
   missing: { x: 89, y: 33, scale: 0.8, enabled: true },
   // Announcer banners render NATIVELY (src-tauri/src/gann_native_windows.rs `place`):
   // width = min(680px, 72% screen) × scale, height = width × 420/960, centred on (x, y).
@@ -127,7 +127,7 @@ export const MODULE_BOX: Record<ModuleId, { w: number; h: number }> = {
   toast: { w: 460, h: 80 },
   companion: { w: 190, h: 64 },  // minWidth 142 + 44px portrait
   advice: { w: 420, h: 120 },
-  buyback: { w: 196, h: 40 },     // compact two-line strip
+  buyback: { w: 420, h: 120 },
   missing: { w: 300, h: 84 },
   banner: { w: 320, h: 190 },    // compact art frame; captions keep their type size and may overflow
   lowhp: { w: 300, h: 38 },      // pad 9/22, one line
