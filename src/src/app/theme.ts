@@ -1,4 +1,5 @@
 import type { OverlayProfile } from './types'
+import { normalizeSettings } from './settingsSchema'
 
 export const C = { bg: '#08090c', ice: '#8fd4ff', txt: '#e7eef6', mut: '#8794a6', ok: '#5be3a7', warn: '#ffcf6b', bad: '#ff7b85', line: 'rgba(143,212,255,0.16)' }
 
@@ -81,5 +82,10 @@ export const CHANGELOG: { ver: string; date: string; items: string[] }[] = [
 ]
 
 export const loadProfiles = (): OverlayProfile[] => {
-  try { return JSON.parse(localStorage.getItem('gm-profiles') ?? '[]') } catch { return [] }
+  try {
+    const profiles: OverlayProfile[] = JSON.parse(localStorage.getItem('gm-profiles') ?? '[]')
+    return profiles.map(profile => profile.layout
+      ? { ...profile, layout: normalizeSettings({ layout: profile.layout }).layout }
+      : profile)
+  } catch { return [] }
 }
