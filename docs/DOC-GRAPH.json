@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-08T03:47:09.335Z",
+  "generatedAt": "2026-11-08T06:08:52.694Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -781,6 +781,13 @@
       "domain": "ui-ux"
     },
     {
+      "id": "docs/design-system/arena-layout-dimensional.md",
+      "type": "doc",
+      "path": "docs/design-system/arena-layout-dimensional.md",
+      "title": "Arena layout dimensional drawing",
+      "status": "draft"
+    },
+    {
       "id": "docs/design-system/assets/wireframes/design-qa.md",
       "type": "doc",
       "path": "docs/design-system/assets/wireframes/design-qa.md",
@@ -1361,6 +1368,11 @@
       "path": "src-tauri/data/provenance.json"
     },
     {
+      "id": "tools/data-provenance/verify_manifest.py",
+      "type": "code",
+      "path": "tools/data-provenance/verify_manifest.py"
+    },
+    {
       "id": "src-tauri/src/log.rs",
       "type": "code",
       "path": "src-tauri/src/log.rs"
@@ -1824,260 +1836,271 @@
       "id": "src-tauri/src/voice_api/pack_io.rs",
       "type": "code",
       "path": "src-tauri/src/voice_api/pack_io.rs"
+    },
+    {
+      "id": "tools/telemetry/ocr-test",
+      "type": "code",
+      "path": "tools/telemetry/ocr-test"
     }
   ],
   "edges": [
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/features/FEAT-G-ARENA.md",
+      "to": "docs/design-system/arena-layout-dimensional.md",
       "type": "wikilink",
       "line": 21
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/superpowers/specs/2026-11-08-g-arena-hero-inspector-handoff.md",
+      "to": "docs/features/FEAT-G-ARENA.md",
       "type": "wikilink",
-      "line": 22
+      "line": 25
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/product/product-requirements.md",
+      "to": "docs/superpowers/specs/2026-11-08-g-arena-hero-inspector-handoff.md",
       "type": "wikilink",
       "line": 26
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/product/software-requirements-specification.md",
-      "type": "wikilink",
-      "line": 28
-    },
-    {
-      "from": "docs/DOC-INDEX.md",
-      "to": "docs/product/business-requirements.md",
+      "to": "docs/product/product-requirements.md",
       "type": "wikilink",
       "line": 30
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/product/business-validation-plan.md",
+      "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
       "line": 32
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/product/competitive-brief.md",
+      "to": "docs/product/business-requirements.md",
       "type": "wikilink",
       "line": 34
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/product/one-pager.md",
+      "to": "docs/product/business-validation-plan.md",
       "type": "wikilink",
       "line": 36
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/product/roadmap.md",
+      "to": "docs/product/competitive-brief.md",
       "type": "wikilink",
       "line": 38
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/product/mvp-decisions.md",
+      "to": "docs/product/one-pager.md",
       "type": "wikilink",
       "line": 40
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/product/mvp-backlog.md",
+      "to": "docs/product/roadmap.md",
       "type": "wikilink",
       "line": 42
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/product/mvp-execution-dag.md",
+      "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
       "line": 44
     },
     {
       "from": "docs/DOC-INDEX.md",
+      "to": "docs/product/mvp-backlog.md",
+      "type": "wikilink",
+      "line": 46
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/product/mvp-execution-dag.md",
+      "type": "wikilink",
+      "line": 48
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/README.md",
-      "type": "wikilink",
-      "line": 64
-    },
-    {
-      "from": "docs/DOC-INDEX.md",
-      "to": "docs/design-system/01-foundations.md",
-      "type": "wikilink",
-      "line": 66
-    },
-    {
-      "from": "docs/DOC-INDEX.md",
-      "to": "docs/design-system/02-tokens.md",
       "type": "wikilink",
       "line": 68
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/design-system/03-layout.md",
+      "to": "docs/design-system/01-foundations.md",
       "type": "wikilink",
       "line": 70
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/design-system/04-components.md",
+      "to": "docs/design-system/02-tokens.md",
       "type": "wikilink",
       "line": 72
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/design-system/05-sitemap-ia.md",
+      "to": "docs/design-system/03-layout.md",
       "type": "wikilink",
       "line": 74
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/design-system/06-stack.md",
+      "to": "docs/design-system/04-components.md",
       "type": "wikilink",
       "line": 76
     },
     {
       "from": "docs/DOC-INDEX.md",
+      "to": "docs/design-system/05-sitemap-ia.md",
+      "type": "wikilink",
+      "line": 78
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/design-system/06-stack.md",
+      "type": "wikilink",
+      "line": 80
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/09-graphite-clarity.md",
-      "type": "wikilink",
-      "line": 82
-    },
-    {
-      "from": "docs/DOC-INDEX.md",
-      "to": "docs/design-system/10-wireframes.md",
-      "type": "wikilink",
-      "line": 84
-    },
-    {
-      "from": "docs/DOC-INDEX.md",
-      "to": "docs/design-system/11-wireflows.md",
       "type": "wikilink",
       "line": 86
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/design-system/12-user-flows.md",
+      "to": "docs/design-system/10-wireframes.md",
       "type": "wikilink",
       "line": 88
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/design-system/13-ui-technical-drawing-atlas.md",
+      "to": "docs/design-system/11-wireflows.md",
       "type": "wikilink",
       "line": 90
     },
     {
       "from": "docs/DOC-INDEX.md",
+      "to": "docs/design-system/12-user-flows.md",
+      "type": "wikilink",
+      "line": 92
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/design-system/13-ui-technical-drawing-atlas.md",
+      "type": "wikilink",
+      "line": 94
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/tech-stack.md",
-      "type": "wikilink",
-      "line": 99
-    },
-    {
-      "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/engineering-spec.md",
-      "type": "wikilink",
-      "line": 101
-    },
-    {
-      "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/technical-design-document.md",
       "type": "wikilink",
       "line": 103
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/design-system.md",
+      "to": "docs/architecture/engineering-spec.md",
       "type": "wikilink",
       "line": 105
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/product-family-design-map.md",
+      "to": "docs/architecture/technical-design-document.md",
       "type": "wikilink",
       "line": 107
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
+      "to": "docs/architecture/design-system.md",
       "type": "wikilink",
       "line": 109
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/implementation-plan.md",
+      "to": "docs/architecture/product-family-design-map.md",
       "type": "wikilink",
       "line": 111
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/oauth-jwt-client-authorization-flows.md",
+      "to": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "type": "wikilink",
       "line": 113
     },
     {
       "from": "docs/DOC-INDEX.md",
+      "to": "docs/architecture/implementation-plan.md",
+      "type": "wikilink",
+      "line": 115
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/architecture/oauth-jwt-client-authorization-flows.md",
+      "type": "wikilink",
+      "line": 117
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
       "to": "docs/features/README.md",
-      "type": "wikilink",
-      "line": 138
-    },
-    {
-      "from": "docs/DOC-INDEX.md",
-      "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
-      "type": "wikilink",
-      "line": 140
-    },
-    {
-      "from": "docs/DOC-INDEX.md",
-      "to": "docs/features/FEAT-G-PARTY.md",
       "type": "wikilink",
       "line": 142
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/features/FEAT-G-FRIENDS.md",
+      "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "type": "wikilink",
       "line": 144
     },
     {
       "from": "docs/DOC-INDEX.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 146
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/features/FEAT-G-FRIENDS.md",
+      "type": "wikilink",
+      "line": 148
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
       "to": "docs/operations/g-party-social-operations.md",
       "type": "wikilink",
-      "line": 165
+      "line": 169
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/scaffold-setup.md",
       "type": "wikilink",
-      "line": 184
+      "line": 188
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/small-model-prompting.md",
       "type": "wikilink",
-      "line": 186
+      "line": 190
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/research/concepts/subagent-context-scoping.md",
       "type": "wikilink",
-      "line": 191
+      "line": 195
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
       "type": "wikilink",
-      "line": 202
+      "line": 206
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/superpowers/plans/2026-11-01-g-party-friends.md",
       "type": "wikilink",
-      "line": 204
+      "line": 208
     },
     {
       "from": "docs/README.md",
@@ -2840,6 +2863,12 @@
       "to": "src-tauri/data/provenance.json",
       "type": "symbol",
       "line": 87
+    },
+    {
+      "from": "docs/architecture/engineering-spec.md",
+      "to": "tools/data-provenance/verify_manifest.py",
+      "type": "symbol",
+      "line": 88
     },
     {
       "from": "docs/architecture/engineering-spec.md",
@@ -7319,141 +7348,165 @@
     },
     {
       "from": "docs/design-system/README.md",
+      "to": "docs/design-system/arena-layout-dimensional.md",
+      "type": "wikilink",
+      "line": 31
+    },
+    {
+      "from": "docs/design-system/README.md",
+      "to": "docs/features/FEAT-G-ARENA.md",
+      "type": "wikilink",
+      "line": 31
+    },
+    {
+      "from": "docs/design-system/README.md",
       "to": "docs/design-system/01-foundations.md",
-      "type": "wikilink",
-      "line": 34
-    },
-    {
-      "from": "docs/design-system/README.md",
-      "to": "docs/design-system/02-tokens.md",
-      "type": "wikilink",
-      "line": 35
-    },
-    {
-      "from": "docs/design-system/README.md",
-      "to": "docs/design-system/03-layout.md",
-      "type": "wikilink",
-      "line": 36
-    },
-    {
-      "from": "docs/design-system/README.md",
-      "to": "docs/design-system/04-components.md",
-      "type": "wikilink",
-      "line": 37
-    },
-    {
-      "from": "docs/design-system/README.md",
-      "to": "docs/design-system/05-sitemap-ia.md",
       "type": "wikilink",
       "line": 38
     },
     {
       "from": "docs/design-system/README.md",
-      "to": "docs/design-system/06-stack.md",
+      "to": "docs/design-system/02-tokens.md",
       "type": "wikilink",
       "line": 39
     },
     {
       "from": "docs/design-system/README.md",
-      "to": "docs/design-system/07-combat-hud.md",
+      "to": "docs/design-system/03-layout.md",
       "type": "wikilink",
       "line": 40
     },
     {
       "from": "docs/design-system/README.md",
-      "to": "docs/design-system/08-account-gid.md",
+      "to": "docs/design-system/04-components.md",
       "type": "wikilink",
       "line": 41
     },
     {
       "from": "docs/design-system/README.md",
-      "to": "docs/design-system/09-graphite-clarity.md",
+      "to": "docs/design-system/05-sitemap-ia.md",
       "type": "wikilink",
       "line": 42
     },
     {
       "from": "docs/design-system/README.md",
-      "to": "docs/design-system/10-wireframes.md",
+      "to": "docs/design-system/06-stack.md",
       "type": "wikilink",
       "line": 43
     },
     {
       "from": "docs/design-system/README.md",
-      "to": "docs/design-system/11-wireflows.md",
+      "to": "docs/design-system/07-combat-hud.md",
       "type": "wikilink",
       "line": 44
     },
     {
       "from": "docs/design-system/README.md",
-      "to": "docs/design-system/12-user-flows.md",
+      "to": "docs/design-system/08-account-gid.md",
       "type": "wikilink",
       "line": 45
     },
     {
       "from": "docs/design-system/README.md",
-      "to": "docs/design-system/13-ui-technical-drawing-atlas.md",
+      "to": "docs/design-system/09-graphite-clarity.md",
       "type": "wikilink",
       "line": 46
     },
     {
       "from": "docs/design-system/README.md",
-      "to": "docs/design-system/06-stack.md",
-      "type": "wikilink",
-      "line": 56
-    },
-    {
-      "from": "docs/design-system/README.md",
-      "to": "docs/architecture/design-system.md",
-      "type": "wikilink",
-      "line": 71
-    },
-    {
-      "from": "docs/design-system/README.md",
-      "to": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
-      "type": "wikilink",
-      "line": 72
-    },
-    {
-      "from": "docs/design-system/README.md",
-      "to": "docs/design-system/05-sitemap-ia.md",
-      "type": "wikilink",
-      "line": 72
-    },
-    {
-      "from": "docs/design-system/README.md",
       "to": "docs/design-system/10-wireframes.md",
       "type": "wikilink",
-      "line": 72
+      "line": 47
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/design-system/11-wireflows.md",
       "type": "wikilink",
-      "line": 72
+      "line": 48
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/design-system/12-user-flows.md",
       "type": "wikilink",
-      "line": 72
+      "line": 49
+    },
+    {
+      "from": "docs/design-system/README.md",
+      "to": "docs/design-system/13-ui-technical-drawing-atlas.md",
+      "type": "wikilink",
+      "line": 50
+    },
+    {
+      "from": "docs/design-system/README.md",
+      "to": "docs/design-system/06-stack.md",
+      "type": "wikilink",
+      "line": 60
+    },
+    {
+      "from": "docs/design-system/README.md",
+      "to": "docs/architecture/design-system.md",
+      "type": "wikilink",
+      "line": 75
+    },
+    {
+      "from": "docs/design-system/README.md",
+      "to": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
+      "type": "wikilink",
+      "line": 76
+    },
+    {
+      "from": "docs/design-system/README.md",
+      "to": "docs/design-system/05-sitemap-ia.md",
+      "type": "wikilink",
+      "line": 76
+    },
+    {
+      "from": "docs/design-system/README.md",
+      "to": "docs/design-system/10-wireframes.md",
+      "type": "wikilink",
+      "line": 76
+    },
+    {
+      "from": "docs/design-system/README.md",
+      "to": "docs/design-system/11-wireflows.md",
+      "type": "wikilink",
+      "line": 76
+    },
+    {
+      "from": "docs/design-system/README.md",
+      "to": "docs/design-system/12-user-flows.md",
+      "type": "wikilink",
+      "line": 76
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/product/product-requirements.md",
       "type": "wikilink",
-      "line": 73
+      "line": 77
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 73
+      "line": 77
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 73
+      "line": 77
+    },
+    {
+      "from": "docs/design-system/arena-layout-dimensional.md",
+      "to": "docs/features/FEAT-G-ARENA.md",
+      "type": "wikilink",
+      "line": 14
+    },
+    {
+      "from": "docs/design-system/arena-layout-dimensional.md",
+      "to": "docs/design-system/03-layout.md",
+      "type": "wikilink",
+      "line": 15
     },
     {
       "from": "docs/design-system/assets/wireframes/design-qa.md",
@@ -7502,6 +7555,12 @@
       "to": "docs/design-system/05-sitemap-ia.md",
       "type": "wikilink",
       "line": 42
+    },
+    {
+      "from": "docs/features/FEAT-G-ARENA.md",
+      "to": "docs/design-system/arena-layout-dimensional.md",
+      "type": "wikilink",
+      "line": 44
     },
     {
       "from": "docs/features/FEAT-G-COACH.md",
@@ -8528,6 +8587,12 @@
       "to": "src-tauri/data/provenance.json",
       "type": "symbol",
       "line": 102
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "tools/data-provenance/verify_manifest.py",
+      "type": "symbol",
+      "line": 115
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
@@ -9898,6 +9963,12 @@
       "line": 9
     },
     {
+      "from": "docs/reference/dota-ui/README.md",
+      "to": "tools/telemetry/ocr-test",
+      "type": "symbol",
+      "line": 19
+    },
+    {
       "from": "docs/releases/README.md",
       "to": "docs/product/roadmap.md",
       "type": "wikilink",
@@ -10001,9 +10072,15 @@
     },
     {
       "from": "docs/superpowers/specs/2026-11-08-g-arena-hero-inspector-handoff.md",
+      "to": "docs/design-system/arena-layout-dimensional.md",
+      "type": "wikilink",
+      "line": 38
+    },
+    {
+      "from": "docs/superpowers/specs/2026-11-08-g-arena-hero-inspector-handoff.md",
       "to": "docs/features/FEAT-G-ARENA.md",
       "type": "wikilink",
-      "line": 72
+      "line": 76
     }
   ],
   "violations": [
@@ -10014,7 +10091,7 @@
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 146,
+      "line": 150,
       "reason": "glob-slug",
       "slug": "FEAT-G-*"
     },
@@ -10042,12 +10119,6 @@
       "file": "docs/architecture/assets/design-references/README.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/architecture/engineering-spec.md",
-      "line": 88,
-      "reason": "missing-file",
-      "target": "tools/data-provenance/verify_manifest.py"
     },
     {
       "file": "docs/architecture/spikes/S-1-minimap-cv.md",
@@ -10095,12 +10166,6 @@
       "reason": "no-metadata"
     },
     {
-      "file": "docs/features/G-SERIES-DATA-LINEAGE.md",
-      "line": 115,
-      "reason": "missing-file",
-      "target": "tools/data-provenance/verify_manifest.py"
-    },
-    {
       "file": "docs/guides/scaffold-setup.md",
       "line": null,
       "reason": "no-metadata"
@@ -10124,12 +10189,6 @@
       "file": "docs/product/one-pager.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/reference/dota-ui/README.md",
-      "line": 19,
-      "reason": "missing-file",
-      "target": "tools/telemetry/ocr-test"
     },
     {
       "file": "docs/reference/dota-ui/README.md",
@@ -10159,7 +10218,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-08T03:47:20.988Z",
+    "generatedAt": "2026-11-08T06:09:33.208Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 76,

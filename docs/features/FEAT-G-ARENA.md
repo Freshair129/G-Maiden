@@ -2,7 +2,7 @@
 title: "FEAT-G-ARENA — สนามกลางและ Hero Inspector"
 doc_id: "FEAT-G-ARENA"
 status: "draft"
-version: "0.1.0"
+version: "0.1.1"
 updated: "2026-11-08"
 owner: "Boss"
 source_of_truth: false
@@ -40,6 +40,8 @@ Routing: body ของ Live > สด เปลี่ยนเป็นสนา
 ใช้ CommandDeck เป็นเจ้าของ useParty/useFriends เดิม. Arena รับ read model จาก owner เดียว; ห้าม mount relay controller ใหม่.
 Prototype ไม่ได้กำหนดให้ลบหรือ disable เมนู production ที่ไม่มีในตัวอย่าง.
 Inner Arena layout ใช้แบบใหม่นี้แทน anatomy เดิมเฉพาะหน้า สนาม; outer stage และ ONE CANVAS จาก [[03-layout]]/[[05-sitemap-ia]] ยังใช้เดิม.
+
+รายละเอียด layout แบบขาวดำและตารางระยะที่วัดจริงอยู่ใน [[arena-layout-dimensional]] (HTML/SVG/JPEG). ใช้เทียบ region/card/inspector; native stage เดิมและค่า [TBD] ไม่ถูกแทนด้วยขนาด viewport ของ prototype.
 
 ## 2. MVP และสิ่งที่ยังไม่รวม
 
@@ -163,4 +165,4 @@ The full runnable local prototype is supplied privately to the incumbent agent; 
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.1.0 | 2026-11-08 | บันทึกแบบ Arena/Hero Inspector ที่ผู้ใช้อนุมัติ พร้อม MVP, data/ownership boundary, production-vs-demo distinction และ acceptance20รายการ. |
-
+| 0.1.1 | 2026-11-08 | Add the measured dimensional layout sheet and distinguish prototype dimensions from native stage constants. |

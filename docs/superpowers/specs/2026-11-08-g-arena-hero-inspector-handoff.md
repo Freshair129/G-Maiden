@@ -2,7 +2,7 @@
 title: "G-Arena Hero Inspector — Implementation Handoff"
 doc_id: "2026-11-08-g-arena-hero-inspector-handoff"
 status: "draft"
-version: "0.1.0"
+version: "0.1.1"
 updated: "2026-11-08"
 owner: "Boss"
 related_docs: ["FEAT-G-ARENA", "software-requirements-specification", "05-sitemap-ia", "FEAT-G-PARTY"]
@@ -32,6 +32,10 @@ Status at handoff: **specification and reference artifacts only; production impl
 Baseline inspected: main **6a26d628992f0267ef4d848d92f2050bdbfa3c0f**, tree **7d4b48edde1e04976e4d60489ce48a28878ff518**.
 PR #154 inspected at head **52fe8754e1239c4ed7b0990b63e24c249c54d56d**, open/draft and conflicting at that observation.
 Re-resolve the current candidate and declarations before changes; these pins document the source used for this specification.
+
+## Dimensional layout reference
+
+Read [[arena-layout-dimensional]] alongside the approved screenshots. The self-contained HTML/SVG/JPEG sheet adds two measured viewport plans and hero-card, skill-row and inventory details. Preserve the existing native stage; V1 native inner safe area and T1 minimum touch target remain [TBD] for measured implementation review. Prototype dimensions are observations, not new native constants.
 
 ## Ordered work slices
 
@@ -85,4 +89,4 @@ The incumbent should acknowledge the PR, owner/head and next slice; preserve its
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.1.0 | 2026-11-08 | Transfer approved Arena design, ordered UI slices, source admission boundaries and implementation acceptance to the incumbent agent. |
-
+| 0.1.1 | 2026-11-08 | Add dimensional drawing reference and native integration TBD boundaries. |

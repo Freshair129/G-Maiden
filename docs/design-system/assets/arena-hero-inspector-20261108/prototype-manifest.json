@@ -62,5 +62,59 @@
     "Play/Pause/Reset mock-clock controls",
     "Disabled demo navigation",
     "Mobile page-scrolling behavior"
-  ]
+  ],
+  "layoutDrawing": {
+    "drawing": "UI-ARENA-001",
+    "revision": "A",
+    "method": "enesozturk/dimensional-drawing",
+    "sourceHead": "4f0ef5179ec11856ea9d5cf296ee5fd969dc2272",
+    "measuredViewports": [
+      [
+        1672,
+        941
+      ],
+      [
+        1280,
+        720
+      ]
+    ],
+    "renderViewport": [
+      1800,
+      1500
+    ],
+    "definedDimensionCodes": 47,
+    "scope": "Measured prototype reference; native safe area and minimum touch target TBD; no production acceptance.",
+    "files": [
+      {
+        "path": "arena-layout-dimensional.html",
+        "bytes": 23406,
+        "sha256": "3686b2abe305706b4c39764bf7368520a7ba7a72bf8700d168353e6a3b1f599a"
+      },
+      {
+        "path": "arena-layout-dimensional.svg",
+        "bytes": 66853,
+        "sha256": "2da8bee3ff33419f23a969b501a27681684fe5656e6bf4e98b2675160cbc5b08"
+      },
+      {
+        "path": "arena-layout-dimensional.jpg",
+        "bytes": 421723,
+        "sha256": "81d0dbfb0d37e2972dace88fac550e74aef031543690ecb0c1200341bc00c8fd"
+      },
+      {
+        "path": "layout-measurements.json",
+        "bytes": 3857,
+        "sha256": "7b2fafa20977a3221a407b1041072f561aabd17465287d0bcae66c8ac25f752e"
+      },
+      {
+        "path": "layout-drawing-qa.json",
+        "bytes": 376,
+        "sha256": "af22dde6402cf925b982c8fec11d805026d0b5f1f50168e91a4334bfd582ad19"
+      },
+      {
+        "path": "drawing-kit-LICENSE.txt",
+        "bytes": 1089,
+        "sha256": "e317a048f70459780e9241ebe2666ae71dba4c7c545ba10e916b638e20b6a649"
+      }
+    ]
+  }
 }

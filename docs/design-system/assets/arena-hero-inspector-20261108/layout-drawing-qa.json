@@ -1,0 +1,13 @@
+{
+  "viewport": {
+    "height": 1500,
+    "width": 1800
+  },
+  "ready": "true",
+  "outside": [],
+  "undefinedCodes": [],
+  "definedCodes": 47,
+  "externalAssets": 0,
+  "visualReview": "One pass fixed compact label crowding, title/dimension collision and two edge labels; final sheet inspected.",
+  "scope": "Documentation drawing only; native UI acceptance not established."
+}
