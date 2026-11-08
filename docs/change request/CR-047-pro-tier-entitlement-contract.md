@@ -2,9 +2,9 @@
 title: "CR-047 — Pro tier and entitlement contract (G-Arena gating)"
 doc_id: "CR-047-pro-tier-entitlement-contract"
 status: "accepted"
-approved_by: "Claude orchestrator under explicit Boss delegation (2026-11-08) — agent decision, not human sign-off"
+approved_by: "Boss (2026-11-08, direct approval of D-1 and D-2); D-2 drafted by Claude orchestrator under Boss delegation"
 approved_date: "2026-11-08"
-version: "0.4.0"
+version: "0.4.1"
 updated: "2026-11-08"
 owner: "Boss"
 complexity: "C-3"
@@ -15,7 +15,7 @@ related_docs: ["mvp-decisions", "ADR-14-gid-account-identity", "ADR-16-credit-ec
 # CR-047: Pro tier และ entitlement contract (เพื่อให้ G-Arena เป็น Pro-only)
 
 > **สถานะ:** accepted (2026-11-08) — มติ D-1 โดย Boss (§11.1) และ D-2 โดย Claude orchestrator ภายใต้การมอบอำนาจของ Boss (§11.2).
-> D-2 เป็นการตัดสินใจของ agent ไม่ใช่การลงนามของมนุษย์.
+> D-2 ร่างโดย agent ภายใต้การมอบอำนาจ และ **Boss approve ด้วยตัวเองแล้ว** ในแชทของ session CR-047 เมื่อ 2026-11-08.
 > **Implementation ยังถูก block** จนกว่า ADR ตาม §12 accepted **และ** M6 ปิด (F2).
 > **มติ Owner D-1 (2026-11-08, §11.1):** Command Deck เดียวทุก tier; ทุกคนได้ base Arena; Pro ปลดล็อกฟีเจอร์ภายใน UI เดียวกัน.
 > มตินี้แทน §7.3 และ §8 เดิม และแก้ความหมายของ "Pro-only" ใน §1–§3. อ่าน §11.1 ก่อนส่วนอื่น.
@@ -288,6 +288,9 @@ Boss ตอบว่า "approve" ต่อข้อเสนอนี้เม�
 > Boss มอบอำนาจเมื่อ 2026-11-08: "งั้น CR ที่กำลังทำโปรเทียก็ให้คุณ approve ตัดสินใจแนวทางไปเลย".
 > ผู้ตัดสินคือ Claude orchestrator session (`local_c899070a-a80a-4d77-99e0-bf294489e9ef`); session ผู้เขียน CR นี้บันทึกตามที่ได้รับแจ้ง.
 > มติ D-1 (§11.1) ซึ่ง Boss approve เองยังคงมีผลเหนือ D-2 ในเรื่องที่ทับกัน.
+>
+> **ยืนยันโดย Boss (2026-11-08):** หลังบันทึก D-2 แล้ว Boss ตอบ "approve" ในแชทของ session ผู้เขียน CR นี้โดยตรง.
+> D-2 จึงมีการ approve ของมนุษย์ด้วย ไม่ได้อาศัยการมอบอำนาจอย่างเดียว.
 
 1. **Q1 = F2: เลื่อน implementation ไปหลัง M6 ปิด.**
    - เหตุผล: กฎที่ใช้อยู่ให้ freeze owner extension ใหม่จนถึง M6 ([[mvp-delivery-plan]]) และ entitlement path พึ่ง MVP-044
@@ -332,6 +335,7 @@ Boss สั่งใน orchestrator session เมื่อ 2026-11-08: "approv
 
 | Version | Date | Summary |
 | --- | --- | --- |
+| 0.4.1 | 2026-11-08 | Record Boss's direct "approve" of D-2 in the CR-047 session; approved_by now names Boss. Implementation gates unchanged. |
 | 0.4.0 | 2026-11-08 | Record Owner decision D-3 (§11.3): freeze exception for base Arena UI implementation (AR-01..03) with entitlement fixed to `absent` until the §12 ADR; F2 still applies to the entitlement mechanism. |
 | 0.3.0 | 2026-11-08 | Record decision D-2 (§11.2) by the Claude orchestrator under explicit Boss delegation (agent decision, not human sign-off): Q1=F2, Q2=A, Q3=S1 with the offline clarification, Q4=7-day lease with 24 h refresh, Q6=2 devices. Status accepted; implementation stays blocked until the §12 ADR is accepted and M6 closes. |
 | 0.2.0 | 2026-11-08 | Record Owner decision D-1 (§11.1): one Command Deck for all tiers, base Arena for everyone, four Pro features unlocked in place, presentation-only gating, immediate degrade to base Arena mid-match. Answers Q5/Q7/Q8; Q1–Q4 and Q6 stay open; supersedes §7.3/§8; `approved_by` stays empty. |

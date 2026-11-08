@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-08T15:49:22.421Z",
+  "generatedAt": "2026-11-08T16:41:48.109Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -5630,19 +5630,19 @@
       "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
       "to": "docs/product/mvp-delivery-plan.md",
       "type": "wikilink",
-      "line": 293
+      "line": 296
     },
     {
       "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 325
+      "line": 328
     },
     {
       "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
       "to": "docs/product/mvp-delivery-plan.md",
       "type": "wikilink",
-      "line": 329
+      "line": 332
     },
     {
       "from": "docs/change request/IMPL-PLAN-DXGI-migration.md",
@@ -10234,7 +10234,7 @@
       "file": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
       "line": null,
       "reason": "version-changelog-mismatch",
-      "frontmatter": "0.4.0",
+      "frontmatter": "0.4.1",
       "changelog": "0.1.0"
     },
     {
@@ -10305,7 +10305,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-08T15:49:27.833Z",
+    "generatedAt": "2026-11-08T16:41:53.521Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 76,
