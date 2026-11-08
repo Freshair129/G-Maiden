@@ -1,16 +1,17 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-11-07T21:04:58.477Z
+สร้างเมื่อ / Generated at: 2026-11-08T03:47:09.335Z
 
-สแกน 180 ไฟล์เอกสาร, 292 nodes, 1351 edges, 26 รายการปัญหา (0 ตัวบล็อก exit code) / scanned 180 doc files, 292 nodes, 1351 edges, 26 violations (0 blocking exit code).
+สแกน 182 ไฟล์เอกสาร, 292 nodes, 1363 edges, 29 รายการปัญหา (3 ตัวบล็อก exit code) / scanned 182 doc files, 292 nodes, 1363 edges, 29 violations (3 blocking exit code).
 
-ผลลัพธ์ / Result: **PASS (exit 0)**
+ผลลัพธ์ / Result: **FAIL (exit 1)**
 
 ## สรุปตามประเภทปัญหา / Summary by violation reason
 
 | Reason | คำอธิบาย / Description | Count | Blocking? |
 | --- | --- | --- | --- |
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 1 | no (informational) |
+| missing-file | symbol link ไปยังไฟล์ที่ไม่มีจริง / symbol link to a missing file | 3 | yes |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 25 | no (informational) |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
@@ -21,7 +22,7 @@
 
 ### docs/DOC-INDEX.md
 
-- [L141] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
+- [L146] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
 
 ### docs/DOCS-IA-REORG-PROPOSAL.md
 
@@ -42,6 +43,10 @@
 ### docs/architecture/assets/design-references/README.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
+
+### docs/architecture/engineering-spec.md
+
+- [L88] **missing-file** — symbol link ไปยังไฟล์ที่ไม่มีจริง / symbol link to a missing file (target="tools/data-provenance/verify_manifest.py")
 
 ### docs/architecture/spikes/S-1-minimap-cv.md
 
@@ -79,6 +84,10 @@
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
+### docs/features/G-SERIES-DATA-LINEAGE.md
+
+- [L115] **missing-file** — symbol link ไปยังไฟล์ที่ไม่มีจริง / symbol link to a missing file (target="tools/data-provenance/verify_manifest.py")
+
 ### docs/guides/scaffold-setup.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
@@ -101,6 +110,7 @@
 
 ### docs/reference/dota-ui/README.md
 
+- [L19] **missing-file** — symbol link ไปยังไฟล์ที่ไม่มีจริง / symbol link to a missing file (target="tools/telemetry/ocr-test")
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
 ### docs/research/assets/dota2-hud-reference.md
