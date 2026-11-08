@@ -1,5 +1,5 @@
 ---
-version: "1.0.1"
+version: "1.0.2"
 created_at: "2026-07-09T00:00:00+07:00,Fable"
 last_update: "2026-07-09T00:00:00+07:00,Fable"
 status: "active"
@@ -9,37 +9,36 @@ attributes:
   language: "th/en"
 title: "07 — Combat HUD (In-game Overlay)"
 doc_id: "07-combat-hud"
-updated: "2026-11-06"
+updated: "2026-11-08"
 owner: "Boss"
 ---
 
 # 07 — Combat HUD (In-game Overlay)
 
-> เอกสารนี้บันทึก **design contract ของ overlay ตามของจริงในโค้ด** (CR-007 กำหนดว่า overlay
-> *ไม่ถูกแตะ* — เอกสารนี้คือ baseline ให้การออกแบบรอบถัดไปอ้าง)
-> Source of truth ของพฤติกรรม: [`src/src/App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) (lite tier), [`src/src/overlay/FullOverlay.tsx`](file:///g:/G-Maiden/src/src/overlay/FullOverlay.tsx),
-> [`src/src/overlay/modules.ts`](file:///g:/G-Maiden/src/src/overlay/modules.ts)
-> (การจัดตำแหน่งย้ายไป G-AnnStudio **Overlay Lab** แล้ว — `LayoutEditor.tsx` ถูกลบ 2026-08-11)
+> The original CR-007 presentation notes below are a historical baseline. The current layout
+> decision is recorded in section 5.1 (owner direction, 2026-11-08).
+> Current sources: [`Overlay.tsx`](../../src/src/app/Overlay.tsx),
+> [`FullOverlay.tsx`](../../src/src/overlay/FullOverlay.tsx),
+> [`modules.ts`](../../src/src/overlay/modules.ts), and the in-app
+> [`OverlayLayoutEditor.tsx`](../../src/src/overlay/OverlayLayoutEditor.tsx).
 
 ## 1. หลักการ (สืบจาก [[01-foundations|01-foundations]] §3)
 
 1. **Passive + click-through เสมอ** — ผู้เล่นห้ามรู้สึกว่ามี "หน้าต่าง" อยู่บนเกม
-2. **ห้ามบัง** minimap / skill bar / stats panel (NFR) — gank banner ยึด top-center,
-   ห้ามลงมุมซ้ายล่างเด็ดขาด
+2. **ห้ามบัง** minimap / skill bar (NFR). The owner-selected stat row is top-left;
+   the announcer banner is top-centre below the game announcement line. Other notification
+   defaults retain the right rail. See section 5.1 for measured reference bounds.
 3. **ห้ามยก chrome ของ Deck มาใส่** — overlay แชร์เฉพาะ token (สี/type/สถานะ)
 4. **งบ FPS ≤3%**: blur จำกัดที่ 16px (เทียบ deck 30px), ไม่มี ambient animation,
    transition เฉพาะ state change 200ms
 5. **เงียบเป็นค่าเริ่มต้น ดังเมื่ออันตราย** — โมดูลข้อมูล opacity ตาม user setting,
    banner เตือนใช้ opacity สูงกว่า (0.82–0.88) เสมอ
 
-## 2. สองระดับ (tier)
+## 2. Current presentation
 
-| Tier | สถานะ | ลักษณะ |
-| --- | --- | --- |
-| **Lite** (default) | stable | ชุด overlay ใน `App.tsx` — stats panel รวม, ตำแหน่ง preset + X/Y slider |
-| **Full** (opt-in, `Settings.uiMode='full'`) | redesign tier | ทุกชิ้นเป็น **โมดูลอิสระ** ลาก-วาง-สเกลได้ผ่าน Layout Editor; glass "Maiden Blue" |
-
-Backend เดียวกันทั้งคู่ (game-tick / gank events) — tier เป็นเรื่อง presentation ล้วน ๆ
+Settings normalize `uiMode` to `full`; `Overlay` renders `FullOverlay`. Each module has its
+own position, scale and enabled flag. GSI-only Lite operation means unavailable CV, not a
+second overlay renderer. Announcer media renders in the separate native GANN surface.
 
 ## 3. Module inventory (Full tier — `modules.ts`)
 
@@ -71,6 +70,53 @@ Backend เดียวกันทั้งคู่ (game-tick / gank events) 
 - แม่เหล็กกริด 5% (`x/y` เก็บเป็น % ของจอ → ทน resolution ต่างกัน)
 - Hover ชื่อโมดูล = solo focus (โมดูลอื่นจาง)
 - Overlay profiles: position preset / custom X-Y / opacity / toggle รายโมดูล — บันทึกได้หลายโปรไฟล์
+
+### 5.1 Owner layout decision — 2026-11-08
+
+Coordinates are centre-anchored screen percentages. `score` is disabled by default; every
+other entry below is enabled. All other `DEFAULT_LAYOUT` entries retain their #91 values.
+No other module needs moving to avoid an overlay-module collision.
+
+| Module | x | y | scale | Basis |
+| --- | --- | --- | --- | --- |
+| `companion` | 93.2 | 3.4 | 0.8 | Target card approximately x759–824/y5–27 in the 849×475 image |
+| `banner` | 50 | 10.5 | 0.45 | Native 306×134px box ≈46–180px; visible art starts ≈73px under the kill/streak line (owner 2026-11-08) |
+| `gmeter` | 50 | 5.5 | 0.65 | RISK strip top-centre under the score/clock cells, 195×23px, above the banner art (owner 2026-11-08) |
+| `kda` `gold` `gpm` `nw` `xpm` | 9.64 / 13.56 / 17.23 / 21.02 / 24.82 | 2.2 | 0.78 | One row level with the hero portraits, ≈150–507px, clear of the hero bar (owner 2026-11-08) |
+| `clock` | 4 | 4 | 1 | Disabled by default (owner 2026-11-08) |
+| `score` | 84.5 | 13 | 1 | Disabled by default (owner 2026-11-08) |
+| `buyback` | 50 | 74.5 | 0.75 | Original buyback card (315×90px) bottom-centre directly above the buff icons (≈760–850px), shown only while dead; kept off the left kill feed (owner 2026-11-08) |
+
+Evidence: owner-supplied `target-20261101.png` and `current-after-reset-20261108.webp`
+in the git-excluded `.codex-evidence/` directory; these private captures are not published
+with the documentation. The target supports the top-left row and top-right presence;
+its downscaled row is not an exact pixel verification of the explicitly supplied stat centres.
+
+At `BOX_REF` 1920×1080, the companion's 190×64 box at scale 0.8 has edges
+x89.24–97.16%, y1.03–5.77%. The banner's 320×190 reference box at scale 0.7 is
+224×133px, with edges x44.17–55.83%, y10.34–22.66% (top 111.7px, bottom 244.7px).
+That reference top clears the captured first-blood line at approximately y80–101px.
+The broad editor HUD regions intentionally still warn about the owner-selected top strip,
+presence and banner; `hudOverlaps` reports warnings and does not suppress rendering.
+
+**Native geometry remains a separate unresolved check:** `gann_native_windows.rs` currently
+uses a 680px reference width and the media aspect ratio, not `MODULE_BOX`. The reference-box
+clearance above is not proof of native banner clearance. Aligning those geometries would
+also resize customized banners and requires the pending owner decision and native validation.
+
+Persisted modules migrate only when all four fields (`x`, `y`, `scale`, `enabled`) exactly
+equal any frozen historical default: pre-#91, #91 through source `6a26d628`, or the older
+banner/standby defaults. `settingsSchema.ts` cites the source commits for each frozen table.
+The destination is the current `DEFAULT_LAYOUT`; customized modules retain their values.
+This applies to saved settings and layout-bearing profiles, including the owner's reset
+banner `{89,44,0.7,true}`. Reapplying the migrated snapshot is idempotent.
+
+Visibility remains separate from placement: FullOverlay uses `layout.enabled`, not legacy
+`showTimer`/`showKda`/`showGold`. Companion requires an active match; stat chips also require
+a fresh tick supplied by `Overlay`. The native banner can render independently of WebView
+content. The supplied screenshot establishes missing chips, but does not establish which
+runtime gate or native-window failure caused them. Render regressions cover both FullOverlay
+and the settings/event path; live diagnosis and acceptance remain pending.
 
 ## 6. Resilience & guard (ของจริงที่ต้องคงไว้)
 
@@ -106,3 +152,4 @@ Backend เดียวกันทั้งคู่ (game-tick / gank events) 
 | 1.0.0-draft | 2026-07-19 | changelog table added per Step-5 SOP (G1.5) |
 | 1.0.0 | 2026-11-06 | status `draft` → `active`: referenced as the design SSOT (CLAUDE.md, code and sibling docs) and describes the shipped deck; not marked accepted because no owner approval is recorded |
 | 1.0.1 | 2026-11-06 | relinked 1 code symbol anchor(s) to the symbol's current definition (or dropped the line anchor where the symbol no longer exists) — no content change |
+| 1.0.2 | 2026-11-08 | Record owner-selected default positions, measured reference edges, exact historical-default migration, render gates and unresolved native geometry/runtime evidence. |
