@@ -1,0 +1,207 @@
+{
+  "schema": 1,
+  "date": "2026-11-08",
+  "units": "CSS px at devicePixelRatio 1",
+  "method": "Read-only DOM getBoundingClientRect and getComputedStyle through browser Playwright API, fonts rendered; all 10 cards and 40 preview tiles surveyed.",
+  "source": "Approved reference-App.jsx / reference-styles.css / reference-data.js, matching the runnable prototype byte-for-byte.",
+  "sourceHead": "4f0ef5179ec11856ea9d5cf296ee5fd969dc2272",
+  "sourceHashes": {
+    "App.jsx": "dff62646286b5281aeb249460bc4f6f9b8bec5b55717c9e45ddebbad095af075",
+    "styles.css": "4ebad8481f7ac76bb7c504bb75a577170c6c3ce0577fd65a6183102e070b6f6f",
+    "data.js": "0dff7ede25aae0c0fdb338b568b858e5ec7d46c40b273aaeb5ab8bcf9306882a"
+  },
+  "wide": {
+    "viewport": [
+      1672,
+      941
+    ],
+    "headerHeight": 46,
+    "padding": [
+      8,
+      26,
+      24,
+      26
+    ],
+    "gap": [
+      14,
+      26
+    ],
+    "columns": [
+      494.625,
+      573.78125,
+      499.59375
+    ],
+    "rows": [
+      142,
+      508,
+      185
+    ],
+    "map": [
+      567.625,
+      210,
+      531.78125,
+      508
+    ],
+    "self": [
+      34,
+      218,
+      456.625,
+      285.796875
+    ],
+    "inspector": [
+      1178.40625,
+      217,
+      467.59375,
+      700
+    ],
+    "enemyFirst": [
+      96,
+      54,
+      302.796875,
+      142
+    ],
+    "enemyGap": 9,
+    "enemyCount": 5,
+    "allyFirst": [
+      90,
+      732,
+      264.34375,
+      185
+    ],
+    "allyGap": 9,
+    "allyCount": 4,
+    "inspectorScroll": [
+      1197.40625,
+      370.1875,
+      429.59375,
+      516.8125
+    ],
+    "skillRow": [
+      1197.40625,
+      400.6875,
+      418.59375,
+      39
+    ],
+    "itemTile": [
+      1197.40625,
+      600.1875,
+      127.53125,
+      74.09375
+    ],
+    "itemGridGap": [
+      8,
+      18
+    ],
+    "inlineSkillDetail": [
+      1197.40625,
+      478.6875,
+      418.59375,
+      140.5
+    ]
+  },
+  "compact": {
+    "viewport": [
+      1280,
+      720
+    ],
+    "headerHeight": 46,
+    "padding": [
+      8,
+      18,
+      12,
+      18
+    ],
+    "gap": [
+      10,
+      18
+    ],
+    "columns": [
+      375.140625,
+      438.9375,
+      393.90625
+    ],
+    "rows": [
+      120,
+      369,
+      145
+    ],
+    "map": [
+      446.109375,
+      184,
+      369,
+      369
+    ],
+    "self": [
+      26,
+      189,
+      363.140625,
+      184.203125
+    ],
+    "inspector": [
+      868.078125,
+      188,
+      393.90625,
+      520
+    ],
+    "enemyFirst": [
+      80,
+      54,
+      229.1875,
+      120
+    ],
+    "enemyGap": 9,
+    "enemyCount": 5,
+    "allyFirst": [
+      74,
+      563,
+      187.265625,
+      145
+    ],
+    "allyGap": 9,
+    "allyCount": 4
+  },
+  "component": {
+    "enemyRadius": 13,
+    "mapRadius": 17,
+    "inspectorRadius": 15,
+    "border": 1,
+    "enemyTopBorder": 4,
+    "enemyPadding": [
+      8,
+      10
+    ],
+    "portrait": [
+      78,
+      63
+    ],
+    "portraitGap": 12,
+    "vitalsGap": 4,
+    "skillPreviewGap": 12,
+    "skillIcon": [
+      37,
+      34
+    ],
+    "skillRowGap": 10,
+    "skillRowHeight": 39,
+    "skillPreviewCount": 40,
+    "skillPreviewWidthRange": [
+      49.4375,
+      84.40625
+    ],
+    "skillPreviewHeightRange": [
+      43.359375,
+      76.71875
+    ]
+  },
+  "interaction": {
+    "skillExpanded": true,
+    "mapAfterSkillOpen": [
+      567.625,
+      210,
+      531.78125,
+      508
+    ],
+    "mapDeltaCssPx": 0
+  },
+  "productionBoundary": "Prototype dimensions are observations, not new Tauri stage constants. Existing authored stage 1420x760 / panel-local 1280x720 and ONE CANVAS remain authoritative. Production inner safe areas and minimum touch targets are TBD."
+}

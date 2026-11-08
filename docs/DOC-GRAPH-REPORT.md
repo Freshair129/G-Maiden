@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-11-08T08:44:45.220Z
+สร้างเมื่อ / Generated at: 2026-11-08T15:49:22.421Z
 
-สแกน 181 ไฟล์เอกสาร, 292 nodes, 1360 edges, 28 รายการปัญหา (2 ตัวบล็อก exit code) / scanned 181 doc files, 292 nodes, 1360 edges, 28 violations (2 blocking exit code).
+สแกน 184 ไฟล์เอกสาร, 295 nodes, 1386 edges, 27 รายการปัญหา (1 ตัวบล็อก exit code) / scanned 184 doc files, 295 nodes, 1386 edges, 27 violations (1 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -12,7 +12,7 @@
 | --- | --- | --- | --- |
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 1 | no (informational) |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 25 | no (informational) |
-| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 2 | yes |
+| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 1 | yes |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
 
@@ -22,8 +22,7 @@
 
 ### docs/DOC-INDEX.md
 
-- [L141] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.14", changelog="0.2.13")
+- [L150] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
 
 ### docs/DOCS-IA-REORG-PROPOSAL.md
 
@@ -71,7 +70,7 @@
 
 ### docs/change request/CR-047-pro-tier-entitlement-contract.md
 
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.3.0", changelog="0.1.0")
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.4.0", changelog="0.1.0")
 
 ### docs/design-system/landing_page_prompt.md
 

@@ -73,6 +73,20 @@
 # existence, so a path+anchor would falsely resolve as "missing").
 
 entries:
+  - id: 3-g-arena
+    title: "G-Arena — map-centered hero cards and reserved inspector"
+    kind: feature
+    phase_target: P3
+    phase_source: doc
+    claimed_status: doc-only
+    source: owner-approved prototype, 2026-11-08; production implementation pending
+    refs:
+      docs: [docs/features/FEAT-G-ARENA.md, docs/product/software-requirements-specification.md, docs/superpowers/specs/2026-11-08-g-arena-hero-inspector-handoff.md]
+      srs: ["§4.1A"]
+      code: []
+      tests: []
+      review: []
+
   # G-Party is an owner-directed extension. Portable integration and UI tests
   # plus independent review are recorded; Windows/live/NFR acceptance is pending.
   - id: 3-g-party

@@ -1,7 +1,7 @@
 ---
-version: "3.0.3"
+version: "3.0.4"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-10-30T00:00:00+07:00,Codex"
+last_update: "2026-11-08T00:00:00+07:00,Codex"
 status: "active"
 supersedes: "docs/architecture/design-system.md (Iceglass v0.1.0b, candidate)"
 attributes:
@@ -10,7 +10,7 @@ attributes:
   language: "th/en"
 title: "G-Maiden Design System — SSOT"
 doc_id: "design-system/README"
-updated: "2026-11-06"
+updated: "2026-11-08"
 owner: "Boss"
 ---
 
@@ -25,6 +25,10 @@ owner: "Boss"
 "สี่เหลี่ยมเต็ม + nav rail ตัน" มาเป็น "panel เว้าแหว่ง + FAB โปร่ง borderless"
 
 ---
+
+## Arena layout reference (planned)
+
+[[arena-layout-dimensional]] เพิ่มแผ่นเขียนแบบของ prototype ที่ผู้ใช้อนุมัติ: desktop/compact plan และ card/inspector/item anatomy. เป็น measured reference ของ [[FEAT-G-ARENA]]; ไม่แทน native stage, ONE CANVAS หรือ token contract เดิม.
 
 ## 1. โครงเอกสาร (อ่านตามลำดับนี้)
 
@@ -118,3 +122,4 @@ owner: "Boss"
 | 3.0.2-draft | 2026-10-19 | Indexed accepted Graphite Clarity and the target flow documents while retaining the accepted product flow-board reference. |
 | 3.0.3-draft | 2026-10-30 | Indexed the measured UI technical drawing atlas as an implementation snapshot separate from the target design contracts. |
 | 3.0.3 | 2026-11-06 | status `draft` → `active`: referenced as the design SSOT (CLAUDE.md, code and sibling docs) and describes the shipped deck; not marked accepted because no owner approval is recorded |
+| 3.0.4 | 2026-11-08 | Register the Arena prototype dimensional sheet while preserving native geometry authority. |

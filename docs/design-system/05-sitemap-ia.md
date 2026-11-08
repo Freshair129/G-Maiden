@@ -1,7 +1,7 @@
 ---
-version: "2.4.6"
+version: "2.4.7"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-11-07T00:00:00+07:00,Codex"
+last_update: "2026-11-08T00:00:00+07:00,Codex"
 status: "active"
 attributes:
   domain: "ui-ux"
@@ -9,7 +9,7 @@ attributes:
   language: "th/en"
 title: "05 — Sitemap & Information Architecture"
 doc_id: "05-sitemap-ia"
-updated: "2026-11-07"
+updated: "2026-11-08"
 owner: "Boss"
 ---
 
@@ -32,6 +32,10 @@ G-Maiden มี **2 หน้าต่าง** (routing ใน [`src/src/App.tsx
 
 Overlay ไม่ใช้ chrome ของ Deck — แชร์แค่ token (สี/type/สถานะ) เพื่อความต่อเนื่องทางสายตา
 Design contract ของ overlay อยู่ที่ [[07-combat-hud|07-combat-hud.md]]
+
+## Arena extension (planned, owner-directed 2026-11-08)
+
+[[FEAT-G-ARENA]] เป็นแบบใหม่ของ body ใน Live > สด (ชื่อหน้า สนาม): แมปกลาง, ศัตรู5ด้านบน, เพื่อน4ด้านล่าง, ตัวเองซ้าย, inspectorขวาที่จองพื้นที่ตลอด. ขอบเขตนี้แทน anatomy เดิมเฉพาะ body ของหน้า สนาม; ไม่เปลี่ยน authored stage 1420×760, panel-local1280×720, ONE CANVAS, --g-* tokens หรือหน้าอื่น. รักษา Build/CV/G-Party tabs และ useParty/useFriends owner เดิม. Prototype navigation/mobile page scroll ไม่ใช่ production routing/geometry contract.
 
 ## 2. Navigation model
 
@@ -188,3 +192,4 @@ Voice Packs → เลือก pack → active → POST /announcer/install (:30
 | 2.4.4 | 2026-11-06 | status `draft` → `active`: referenced as the design SSOT (CLAUDE.md, code and sibling docs) and describes the shipped deck; not marked accepted because no owner approval is recorded |
 | 2.4.5 | 2026-11-06 | relinked 10 code symbol anchor(s) to the symbol's current definition (or dropped the line anchor where the symbol no longer exists) — no content change |
 | 2.4.6 | 2026-11-07 | Added the Ctrl+Alt+V G-Voice PTT hotkey and its remapping location in Settings. |
+| 2.4.7 | 2026-11-08 | Register the approved Arena body and fixed inspector while retaining outer stage, ONE CANVAS and existing routes. |
