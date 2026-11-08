@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-08T16:41:48.109Z",
+  "generatedAt": "2026-11-08T18:15:08.908Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -9294,6 +9294,12 @@
     },
     {
       "from": "docs/product/mvp-backlog.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 181
+    },
+    {
+      "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-MEMORY.md",
       "type": "wikilink",
       "line": 240
@@ -10305,7 +10311,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-08T16:41:53.521Z",
+    "generatedAt": "2026-11-08T18:15:14.284Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 76,

@@ -2,8 +2,8 @@
 title: "G-Maiden MVP Backlog"
 doc_id: "mvp-backlog"
 status: "draft"
-version: "0.4.2"
-updated: "2026-11-07"
+version: "0.4.3"
+updated: "2026-11-09"
 owner: "Boss"
 related_docs: ["roadmap", "mvp-execution-dag", "software-requirements-specification", "G-SERIES-DATA-LINEAGE", "FEAT-G-VOICE", "FEAT-G-MEMORY", "FEAT-G-COACH", "EXEC-PLAN-CR-034-iam-remediation", "FEAT-G-PARTY", "CR-037-party-gsi-own-stat-sharing", "2026-11-01-g-party-gsi-sharing", "FEAT-G-FRIENDS", "ADR-20", "CR-038-party-friends-presence-invitations", "2026-11-01-g-party-friends"]
 ---
@@ -178,7 +178,7 @@ Owner อนุมัติสถานะด้านล่างเมื่�
 
 | ID | P / Size | สถานะ | Depends on | งานและเกณฑ์รับ |
 | --- | --- | --- | --- | --- |
-| MVP-008 | P0 / L | READY | MVP-001, MVP-004; MVP-043–045 ถ้าคง account gate | **ปรับ entry/runtime ตาม access policy ที่เลือกและตรวจใน release build.** MVP-004 ตั้ง account_gate_required=false; ใน source baseline นี้ App.tsx mount CommandDeck โดยตรง และไม่พบ GmadFirstRunGate component หรือ mount จึงห้ามอ้างไฟล์ gate เป็นหลักฐานว่ามี active gate หรือว่าการย้าย access flow เสร็จแล้ว. ทำ local core startup โดยไม่พึ่ง account/entitlement พร้อมคง server-side authorization สำหรับ protected account actions; ตรวจ signed-out, cold offline, network loss, revoke, account switch, new device และ Terms/version ตาม contract. ปิดได้เมื่อ frontend/native/channel/runtime matrix และ security gate ที่ใช้จริงผ่านบน integrated SHA; ห้ามถอด guard ฝั่งเดียวหรืออนุมาน approval จากเอกสาร |
+| MVP-008 | P0 / L | IN_PROGRESS | MVP-001, MVP-004; MVP-043–045 ถ้าคง account gate | **ปรับ entry/runtime ตาม access policy ที่เลือกและตรวจใน release build.** MVP-004 ตั้ง account_gate_required=false; ใน source baseline นี้ App.tsx mount CommandDeck โดยตรง และไม่พบ GmadFirstRunGate component หรือ mount จึงห้ามอ้างไฟล์ gate เป็นหลักฐานว่ามี active gate หรือว่าการย้าย access flow เสร็จแล้ว. ทำ local core startup โดยไม่พึ่ง account/entitlement พร้อมคง server-side authorization สำหรับ protected account actions; ตรวจ signed-out, cold offline, network loss, revoke, account switch, new device และ Terms/version ตาม contract. ปิดได้เมื่อ frontend/native/channel/runtime matrix และ security gate ที่ใช้จริงผ่านบน integrated SHA; ห้ามถอด guard ฝั่งเดียวหรืออนุมาน approval จากเอกสาร. หลักฐานระดับ frontend/source: เพิ่ม `src/src/__tests__/localCoreAccessMatrix.test.tsx` และแก้ initial session recovery ใน `useAuth` ให้ fail closed พร้อมจบ loading; native/release/channel matrix และ design/threat review ตาม [[mvp-decisions]] ยัง pending จึงยังปิด MVP-008 ไม่ได้ |
 | MVP-009 | P0 / M | DONE | MVP-001, MVP-002 | **ย้าย settings initialization ไป startup.** โหลด/validate settings หนึ่งจุดก่อนเริ่ม gameplay และ sync Control/Overlay/native; cold restart โดยไม่เข้าหน้า Settings คืน voice, sensitivity, persona, backend/model, privacy และ layout ครบ ไม่มี default cloud call ก่อน hydrate |
 | MVP-010 | P0 / M | IN_PROGRESS | MVP-001, MVP-002 | **ทำ GSI setup และ port health.** แยก config exists/config valid/listening/waiting/live, แจ้ง port 3000 conflict ที่กระทบ GSI/OAuth, มี retry และเลือก/ซ่อม Dota path ที่ควบคุมขอบเขตได้; negative cases แสดงวิธีแก้โดยไม่ใช้ terminal |
 | MVP-011 | P0 / M | IN_PROGRESS | MVP-009, MVP-010; ขั้น B รอ MVP-016, MVP-017, MVP-024 | **แทน readiness สมมติด้วยผลจริง.** ขั้น A ทำ contract/UI ที่แสดง unknown เมื่อยังไม่มี producer; ขั้น B ต่อ capture coverage/audio health จริงก่อนปิดงาน; ตรวจ resources, live GSI, overlay preview และ audible confirmation; null ไม่เป็น pass, overlay ไม่ pass ตายตัว และ Lite mode ชัด |
@@ -378,3 +378,4 @@ Status:
 | 0.4.0 | 2026-11-07 | Draft status reconciliation against origin/main `455c4b0e`: add IN_PROGRESS to the legend; propose READY for 007/008/013/020/027/038 and IN_PROGRESS for 010/011/016/039/048/051 with evidence; no task marked DONE; record DAG/roadmap/release contradictions and unmapped merged work. |
 | 0.4.1 | 2026-11-07 | Owner approved the v0.4.0 status reconciliation and IN_PROGRESS legend; link the accepted mvp-delivery-plan. |
 | 0.4.2 | 2026-11-07 | Owner confirmed MVP-043/044 are in MVP scope: 043 CONDITIONAL → READY, 044 CONDITIONAL → TODO (depends on 043). |
+| 0.4.3 | 2026-11-09 | บันทึก MVP-008 เป็น IN_PROGRESS พร้อม frontend access-matrix suite และ useAuth fail-closed recovery; คง native/release/channel matrix และ design/threat review เป็น pending ไม่อ้าง runtime acceptance. |
