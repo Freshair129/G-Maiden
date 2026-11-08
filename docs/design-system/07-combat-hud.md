@@ -79,15 +79,11 @@ No other module needs moving to avoid an overlay-module collision.
 
 | Module | x | y | scale | Basis |
 | --- | --- | --- | --- | --- |
-| `clock` | 4 | 4 | 1 | Explicit owner-selected pre-#91 stat row |
-| `kda` | 9.5 | 4 | 1 | Same row |
-| `gold` | 15 | 4 | 1 | Same row |
-| `gpm` | 20.5 | 4 | 1 | Same row |
-| `nw` | 26 | 4 | 1 | Same row |
 | `companion` | 93.2 | 3.4 | 0.8 | Target card approximately x759–824/y5–27 in the 849×475 image |
-| `banner` | 50 | 13 | 0.45 | Native 306×134px at 1920×1080; top ≈73px, just below the hero-bar lane labels (owner 2026-11-08) |
+| `banner` | 50 | 10.5 | 0.45 | Native 306×134px box ≈46–180px; visible art starts ≈73px under the kill/streak line (owner 2026-11-08) |
 | `gmeter` | 7.5 | 71 | 0.9 | Directly above the minimap (owner 2026-11-08) |
-| `xpm` | 31.5 | 4 | 1 | Enabled; continues the top-left stat-chip row (owner 2026-11-08) |
+| `kda` `gold` `gpm` `nw` `xpm` | 9.64 / 13.56 / 17.23 / 21.02 / 24.82 | 2.2 | 0.78 | One row level with the hero portraits, ≈150–507px, clear of the hero bar (owner 2026-11-08) |
+| `clock` | 4 | 4 | 1 | Disabled by default (owner 2026-11-08) |
 | `score` | 84.5 | 13 | 1 | Disabled by default (owner 2026-11-08) |
 
 Evidence: owner-supplied `target-20261101.png` and `current-after-reset-20261108.webp`

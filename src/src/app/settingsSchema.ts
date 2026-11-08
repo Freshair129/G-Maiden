@@ -139,6 +139,13 @@ const POST_91_DEFAULT_LAYOUT = Object.freeze({
 // machine on 2026-11-08 before the owner asked for a smaller, higher banner.
 const PR166_R1_DEFAULT_LAYOUT = Object.freeze({
   banner: Object.freeze({ x: 50, y: 20, scale: 0.7, enabled: true }),
+  // Second round (90c24c68): xpm at the end of the y4 stat row covered the hero bar.
+  xpm: Object.freeze({ x: 31.5, y: 4, scale: 1, enabled: true }),
+})
+
+// Second-round banner default (90c24c68), superseded the same day (owner: higher).
+const PR166_R2_DEFAULT_LAYOUT = Object.freeze({
+  banner: Object.freeze({ x: 50, y: 13, scale: 0.45, enabled: true }),
 })
 
 // Frozen pre-#90 defaults from a71d07a47c64379a8a2be6d8038e19c22ebc46bd^:
@@ -153,7 +160,7 @@ function migrateLegacyDefaultPositions(value: unknown): unknown {
   if (!saved) return value
 
   const next = { ...saved }
-  for (const defaults of [PRE_91_DEFAULT_LAYOUT, POST_91_DEFAULT_LAYOUT, PR166_R1_DEFAULT_LAYOUT, LEGACY_DEFAULT_POSITIONS]) {
+  for (const defaults of [PRE_91_DEFAULT_LAYOUT, POST_91_DEFAULT_LAYOUT, PR166_R1_DEFAULT_LAYOUT, PR166_R2_DEFAULT_LAYOUT, LEGACY_DEFAULT_POSITIONS]) {
     for (const [id, legacy] of Object.entries(defaults)) {
       const current = asRecord(saved[id])
       if (current && current.x === legacy.x && current.y === legacy.y

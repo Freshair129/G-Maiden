@@ -4,7 +4,7 @@ import { DEFAULTS, type Settings } from '../app/types'
 import { FullOverlay } from './FullOverlay'
 import { OVERLAY_PREVIEW_TICK } from './preview'
 
-const chips = ['clock', 'kda', 'gold', 'gpm', 'xpm', 'nw', 'companion'] as const
+const chips = ['kda', 'gold', 'gpm', 'xpm', 'nw', 'companion'] as const
 
 function renderOverlay(s: Settings = DEFAULTS) {
   return renderToStaticMarkup(<FullOverlay tick={OVERLAY_PREVIEW_TICK} s={s} gank={null}
@@ -17,7 +17,7 @@ describe('enabled in-game overlay chips', () => {
   it('renders every enabled stat and Maiden chip despite false legacy stat flags and unavailable CV', () => {
     const html = renderOverlay()
     for (const id of chips) expect(html).toContain(`data-overlay-module="${id}"`)
-    expect(html).toContain('10:00')
+    expect(html).not.toContain('data-overlay-module="clock"') // owner 2026-11-08: no clock chip by default
     expect(html).toContain('4/2/7')
     expect(html).toContain('Maiden')
   })
