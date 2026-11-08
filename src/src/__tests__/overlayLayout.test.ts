@@ -12,6 +12,8 @@ describe('screenshot-based overlay layout', () => {
     companion: ['เครือข่าย'], banner: ['ฮีโร่ / เวลา / คะแนน', 'ประกาศของเกม'],
     // Owner 2026-11-08: xpm continues the stat row; G-Meter sits directly above the minimap.
     xpm: ['เมนู / สถิติ Dota'], gmeter: ['Kill feed'],
+    // Owner 2026-11-08 (#167): buyback strip in the top bar's centre column, shown only while dead.
+    buyback: ['ฮีโร่ / เวลา / คะแนน'],
   }
   it.each(MODULE_META.filter(m => DEFAULT_LAYOUT[m.id].enabled))('$id stays on screen with only owner-approved HUD warnings', ({ id }) => {
     const cfg = DEFAULT_LAYOUT[id]
@@ -38,11 +40,28 @@ describe('screenshot-based overlay layout', () => {
     const enabled = MODULE_META.filter(m => DEFAULT_LAYOUT[m.id].enabled)
     enabled.forEach((a, i) => enabled.slice(i + 1).forEach(b => {
       if (a.id === 'standby' || b.id === 'standby') return // pre-game only
+      // buyback renders only while the player is dead; announcer banners are personal kill/streak/
+      // signal events that cannot fire while dead (death has no GANN pair), so they never coexist.
+      if ([a.id, b.id].includes('buyback') && [a.id, b.id].includes('banner')) return
       const r = moduleRect(a.id, DEFAULT_LAYOUT[a.id])
       const s = moduleRect(b.id, DEFAULT_LAYOUT[b.id])
       const overlaps = r.x < s.x + s.w && r.x + r.w > s.x && r.y < s.y + s.h && r.y + r.h > s.y
       expect(overlaps, `${a.id} overlaps ${b.id}`).toBe(false)
     }))
+  })
+  it('keeps the buyback strip centred within the score/clock cells at 1920×1080', () => {
+    const rect = moduleRect('buyback', DEFAULT_LAYOUT.buyback)
+    // Score cell → clock → score cell spans about 860–1062px (44.8–55.3%) at the reference.
+    expect(rect.x + rect.w / 2).toBeCloseTo(50)
+    expect(rect.x).toBeGreaterThanOrEqual(44.8)
+    expect(rect.x + rect.w).toBeLessThanOrEqual(55.3)
+    expect(rect.y + rect.h).toBeLessThan(10)
+  })
+  it('moves an untouched old bottom-right buyback default to the top strip, keeping custom positions', () => {
+    const legacy = { ...DEFAULT_LAYOUT, buyback: { x: 89, y: 84, scale: 0.75, enabled: true } }
+    expect(normalizeSettings({ layout: legacy }).layout.buyback).toEqual(DEFAULT_LAYOUT.buyback)
+    const custom = { ...DEFAULT_LAYOUT, buyback: { x: 70, y: 40, scale: 0.75, enabled: true } }
+    expect(normalizeSettings({ layout: custom }).layout.buyback).toEqual(custom.buyback)
   })
   it('clamps the entire scaled card when dragged beyond an edge', () => {
     const cfg = clampModule('banner', { x: 100, y: -10, scale: 1.6, enabled: true })
