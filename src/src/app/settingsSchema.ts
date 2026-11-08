@@ -86,22 +86,74 @@ function normalizeLayout(value: unknown, fallback: Layout): Layout {
   return next
 }
 
-const LEGACY_DEFAULT_POSITIONS = {
-  banner: { x: 50, y: 34, scale: 1, enabled: true },
-  standby: { x: 50, y: 5, scale: 1, enabled: true },
-} as const
+// Frozen DEFAULT_LAYOUT at 4f19eb83ed80146a4cffe8b8de9baeb20eb3ded5^:
+// src/src/overlay/modules.ts, immediately before the #91 right-side layout.
+const PRE_91_DEFAULT_LAYOUT = Object.freeze({
+  alert: Object.freeze({ x: 50, y: 20, scale: 1, enabled: true }),
+  gmeter: Object.freeze({ x: 7, y: 47, scale: 1, enabled: true }),
+  toast: Object.freeze({ x: 50, y: 24, scale: 1, enabled: true }),
+  companion: Object.freeze({ x: 7, y: 39, scale: 1, enabled: true }),
+  advice: Object.freeze({ x: 50, y: 72, scale: 1, enabled: true }),
+  buyback: Object.freeze({ x: 50, y: 63, scale: 1, enabled: true }),
+  missing: Object.freeze({ x: 88, y: 12, scale: 1, enabled: true }),
+  banner: Object.freeze({ x: 84, y: 27, scale: 1, enabled: true }),
+  lowhp: Object.freeze({ x: 50, y: 44, scale: 1, enabled: true }),
+  vol: Object.freeze({ x: 20, y: 95, scale: 1, enabled: true }),
+  standby: Object.freeze({ x: 92, y: 14, scale: 1, enabled: true }),
+  clock: Object.freeze({ x: 4, y: 4, scale: 1, enabled: true }),
+  kda: Object.freeze({ x: 9.5, y: 4, scale: 1, enabled: true }),
+  gold: Object.freeze({ x: 15, y: 4, scale: 1, enabled: true }),
+  gpm: Object.freeze({ x: 20.5, y: 4, scale: 1, enabled: true }),
+  xpm: Object.freeze({ x: 20.5, y: 10, scale: 1, enabled: false }),
+  nw: Object.freeze({ x: 26, y: 4, scale: 1, enabled: true }),
+  score: Object.freeze({ x: 75, y: 4, scale: 1, enabled: false }),
+  hero: Object.freeze({ x: 14, y: 33, scale: 1, enabled: false }),
+} satisfies Layout)
+
+// Frozen #91 defaults: 4f19eb83ed80146a4cffe8b8de9baeb20eb3ded5:
+// src/src/overlay/modules.ts; unchanged through 6a26d628992f0267ef4d848d92f2050bdbfa3c0f.
+// Includes the owner's 2026-11-08 reset. Never derive historical values from DEFAULT_LAYOUT.
+const POST_91_DEFAULT_LAYOUT = Object.freeze({
+  alert: Object.freeze({ x: 89, y: 54, scale: 0.75, enabled: true }),
+  gmeter: Object.freeze({ x: 89, y: 26, scale: 0.9, enabled: true }),
+  toast: Object.freeze({ x: 89, y: 67, scale: 0.7, enabled: true }),
+  companion: Object.freeze({ x: 82, y: 5, scale: 0.8, enabled: true }),
+  advice: Object.freeze({ x: 89, y: 75, scale: 0.75, enabled: true }),
+  buyback: Object.freeze({ x: 89, y: 84, scale: 0.75, enabled: true }),
+  missing: Object.freeze({ x: 89, y: 33, scale: 0.8, enabled: true }),
+  banner: Object.freeze({ x: 89, y: 44, scale: 0.7, enabled: true }),
+  lowhp: Object.freeze({ x: 89, y: 61, scale: 0.8, enabled: true }),
+  vol: Object.freeze({ x: 78, y: 94, scale: 0.8, enabled: true }),
+  standby: Object.freeze({ x: 93, y: 10, scale: 0.85, enabled: true }),
+  clock: Object.freeze({ x: 78, y: 13, scale: 1, enabled: true }),
+  score: Object.freeze({ x: 84.5, y: 13, scale: 1, enabled: true }),
+  kda: Object.freeze({ x: 91, y: 13, scale: 1, enabled: true }),
+  gold: Object.freeze({ x: 97, y: 13, scale: 1, enabled: true }),
+  gpm: Object.freeze({ x: 84.5, y: 19, scale: 1, enabled: true }),
+  xpm: Object.freeze({ x: 91, y: 19, scale: 1, enabled: false }),
+  nw: Object.freeze({ x: 97, y: 19, scale: 1, enabled: true }),
+  hero: Object.freeze({ x: 79.5, y: 35, scale: 0.8, enabled: false }),
+} satisfies Layout)
+
+// Frozen pre-#90 defaults from a71d07a47c64379a8a2be6d8038e19c22ebc46bd^:
+// src/src/overlay/modules.ts, retained from the original notification migration.
+const LEGACY_DEFAULT_POSITIONS = Object.freeze({
+  banner: Object.freeze({ x: 50, y: 34, scale: 1, enabled: true }),
+  standby: Object.freeze({ x: 50, y: 5, scale: 1, enabled: true }),
+})
 
 function migrateLegacyDefaultPositions(value: unknown): unknown {
   const saved = asRecord(value)
   if (!saved) return value
 
   const next = { ...saved }
-  for (const id of ['banner', 'standby'] as const) {
-    const current = asRecord(saved[id])
-    const legacy = LEGACY_DEFAULT_POSITIONS[id]
-    if (current?.x === legacy.x && current.y === legacy.y
-      && current.scale === legacy.scale && current.enabled === legacy.enabled) {
-      next[id] = { ...DEFAULT_LAYOUT[id] }
+  for (const defaults of [PRE_91_DEFAULT_LAYOUT, POST_91_DEFAULT_LAYOUT, LEGACY_DEFAULT_POSITIONS]) {
+    for (const [id, legacy] of Object.entries(defaults)) {
+      const current = asRecord(saved[id])
+      if (current && current.x === legacy.x && current.y === legacy.y
+        && current.scale === legacy.scale && current.enabled === legacy.enabled) {
+        next[id] = { ...DEFAULT_LAYOUT[id as ModuleId] }
+      }
     }
   }
   return next

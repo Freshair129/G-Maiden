@@ -1,17 +1,35 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_LAYOUT, MODULE_META } from '../overlay/modules'
+import { DEFAULT_LAYOUT, MODULE_META, type ModuleId } from '../overlay/modules'
 import { clampModule, hudOverlaps, moduleRect, normalizeLayout } from '../overlay/layoutGeometry'
 import { normalizeSettings } from '../app/settingsSchema'
 
 describe('screenshot-based overlay layout', () => {
-  it.each(MODULE_META.filter(m => DEFAULT_LAYOUT[m.id].enabled))('$id clears reserved HUD areas and stays on screen', ({ id }) => {
+  // Owner-approved top strip and presence overlap these conservative editor warning
+  // regions. The measured first-blood line ends above the banner's 111.7px top.
+  const approvedWarnings: Partial<Record<ModuleId, string[]>> = {
+    clock: ['เมนู / สถิติ Dota'], kda: ['เมนู / สถิติ Dota'], gold: ['เมนู / สถิติ Dota'],
+    gpm: ['เมนู / สถิติ Dota'], nw: ['เมนู / สถิติ Dota', 'ฮีโร่ / เวลา / คะแนน'],
+    companion: ['เครือข่าย'], banner: ['ประกาศของเกม', 'พื้นที่เล่นกลางจอ'],
+  }
+  it.each(MODULE_META.filter(m => DEFAULT_LAYOUT[m.id].enabled))('$id stays on screen with only owner-approved HUD warnings', ({ id }) => {
     const cfg = DEFAULT_LAYOUT[id]
-    expect(hudOverlaps(id, cfg)).toEqual([])
+    expect(hudOverlaps(id, cfg)).toEqual(approvedWarnings[id] ?? [])
     const rect = moduleRect(id, cfg)
     expect(rect.x).toBeGreaterThanOrEqual(0)
     expect(rect.y).toBeGreaterThanOrEqual(0)
     expect(rect.x + rect.w).toBeLessThanOrEqual(100)
     expect(rect.y + rect.h).toBeLessThanOrEqual(100)
+  })
+  it('keeps the banner below the captured first-blood line and above the centre aim point', () => {
+    // Mirrors src-tauri/src/gann_native_windows.rs `place`: banners render natively at
+    // min(680px, 72% screen) × scale wide, 960:420 aspect, centred on (x, y).
+    const { x, y, scale } = DEFAULT_LAYOUT.banner
+    const width = Math.min(680, 1920 * 0.72) * scale
+    const height = width * 420 / 960
+    const top = 1080 * y / 100 - height / 2
+    expect(x).toBe(50)
+    expect(top).toBeGreaterThan(101) // first-blood / kill-feed line ends ≈101px
+    expect(top + height).toBeLessThan(1080 / 2) // stays above the centre aim point
   })
   it('does not stack enabled default modules on each other', () => {
     const enabled = MODULE_META.filter(m => DEFAULT_LAYOUT[m.id].enabled)
