@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-08T18:40:15.507Z",
+  "generatedAt": "2026-11-08T19:33:25.035Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -127,6 +127,13 @@
       "path": "docs/architecture/adr/ADR-20.md",
       "title": "ADR-20: Optional Friends and brokered G-Party invitations",
       "status": "active"
+    },
+    {
+      "id": "docs/architecture/adr/ADR-21-event-taxonomy-sot.md",
+      "type": "doc",
+      "path": "docs/architecture/adr/ADR-21-event-taxonomy-sot.md",
+      "title": "ADR-21: Single event-taxonomy source of truth (g-events.toml) and pack version contract",
+      "status": "accepted"
     },
     {
       "id": "docs/architecture/assets/design-references/README.md",
@@ -672,6 +679,13 @@
       "type": "doc",
       "path": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
       "title": "CR-047 — Pro tier and entitlement contract (G-Arena gating)",
+      "status": "accepted"
+    },
+    {
+      "id": "docs/change request/CR-049-event-taxonomy-sot.md",
+      "type": "doc",
+      "path": "docs/change request/CR-049-event-taxonomy-sot.md",
+      "title": "CR-049 — Event taxonomy SOT (g-events.toml), codegen and pack version contract",
       "status": "accepted"
     },
     {
@@ -2053,69 +2067,81 @@
     },
     {
       "from": "docs/DOC-INDEX.md",
+      "to": "docs/architecture/adr/ADR-21-event-taxonomy-sot.md",
+      "type": "wikilink",
+      "line": 131
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
       "to": "docs/features/README.md",
       "type": "wikilink",
-      "line": 142
+      "line": 143
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "type": "wikilink",
-      "line": 144
+      "line": 145
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/features/FEAT-G-PARTY.md",
       "type": "wikilink",
-      "line": 146
+      "line": 147
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/features/FEAT-G-FRIENDS.md",
       "type": "wikilink",
-      "line": 148
+      "line": 149
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
       "type": "wikilink",
-      "line": 165
+      "line": 166
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/change request/CR-049-event-taxonomy-sot.md",
+      "type": "wikilink",
+      "line": 167
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/operations/g-party-social-operations.md",
       "type": "wikilink",
-      "line": 170
+      "line": 172
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/scaffold-setup.md",
       "type": "wikilink",
-      "line": 189
+      "line": 191
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/small-model-prompting.md",
       "type": "wikilink",
-      "line": 191
+      "line": 193
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/research/concepts/subagent-context-scoping.md",
       "type": "wikilink",
-      "line": 196
+      "line": 198
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
       "type": "wikilink",
-      "line": 207
+      "line": 209
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/superpowers/plans/2026-11-01-g-party-friends.md",
       "type": "wikilink",
-      "line": 209
+      "line": 211
     },
     {
       "from": "docs/README.md",
@@ -2650,6 +2676,12 @@
       "to": "docs/operations/g-party-social-operations.md",
       "type": "wikilink",
       "line": 57
+    },
+    {
+      "from": "docs/architecture/adr/ADR-21-event-taxonomy-sot.md",
+      "to": "docs/architecture/gann-event-media-contract.md",
+      "type": "wikilink",
+      "line": 62
     },
     {
       "from": "docs/architecture/design-system.md",
@@ -5662,6 +5694,12 @@
       "to": "docs/product/mvp-delivery-plan.md",
       "type": "wikilink",
       "line": 332
+    },
+    {
+      "from": "docs/change request/CR-049-event-taxonomy-sot.md",
+      "to": "docs/architecture/adr/ADR-21-event-taxonomy-sot.md",
+      "type": "wikilink",
+      "line": 17
     },
     {
       "from": "docs/change request/IMPL-PLAN-DXGI-migration.md",
@@ -10190,7 +10228,7 @@
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 150,
+      "line": 151,
       "reason": "glob-slug",
       "slug": "FEAT-G-*"
     },
@@ -10213,6 +10251,11 @@
       "file": "docs/README.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/architecture/adr/ADR-21-event-taxonomy-sot.md",
+      "line": null,
+      "reason": "missing-changelog"
     },
     {
       "file": "docs/architecture/assets/design-references/README.md",
@@ -10356,7 +10399,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-08T18:40:20.700Z",
+    "generatedAt": "2026-11-08T19:33:31.186Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 76,
