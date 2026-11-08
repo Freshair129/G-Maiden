@@ -2,8 +2,8 @@
 title: "FEAT-G-SENSORY — Overlay & Hardware Optimization"
 doc_id: "FEAT-G-SENSORY"
 status: "active"
-version: "0.2.10"
-updated: 2026-11-06
+version: "0.2.11"
+updated: "2026-11-08"
 owner: "Boss"
 source_of_truth: false
 complexity: "C-2"
@@ -202,6 +202,10 @@ Natural completion permits the queued current=0 lifecycle state while its audio 
 
 Local visual receipts distinguish warmed/cold, wait count, first nontransparent presented frame (frame1 rather than transparent frame0), frame/drop deltas excluding preparation, full media duration and ended/cleared/error. Native acceptance must separately verify FirstBlood, DoubleKill, Rampage, quiet drops, complete fade and rapid differing-event insertion. Target ready first present<=100ms and quiet drops<=1% per clip. Source/asset tests do not establish these native gates or acoustic/whole-match/FPS acceptance. Aggregate RAM ceiling900000000bytes, original Nakhom, local-only data and filesystem-only persistence remain unchanged. Evidence: target/vrzo-ready-20261030 and Studio workspace/vrzo-smooth-v4; native results are recorded there without rewriting failed v3 evidence.
 
+## Arena control surface
+
+[[FEAT-G-ARENA]] กำหนดหน้า สนาม ใน Control window และ reserved Hero Inspector ตาม prototype ที่อนุมัติ. ไม่ใช่การเปลี่ยน Combat HUD overlay หรือเพิ่ม enemy/peer data acquisition. ใช้ source admission และ NFR เดิม; planned/doc-only จนมี implementation/evidence.
+
 ## Changelog
 | Version | Date | Summary |
 | --- | --- | --- |
@@ -219,3 +223,4 @@ Local visual receipts distinguish warmed/cold, wait count, first nontransparent 
 | 0.2.8 | 2026-10-30 | Record larger60fps ID visuals, predictive bounded cache and owner-authorized visual/audio retirement. |
 | 0.2.9 | 2026-10-30 | Record revision4 paused decoder preparation, VP8 media and bounded natural-completion grace. |
 | 0.2.10 | 2026-11-06 | relinked 4 code symbol anchor(s) to the symbol's current definition (or dropped the line anchor where the symbol no longer exists) — no content change |
+| 0.2.11 | 2026-11-08 | Link the approved Arena control-window specification; preserve overlay, data admission and acceptance boundaries. |

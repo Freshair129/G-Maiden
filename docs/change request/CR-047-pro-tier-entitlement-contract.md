@@ -4,7 +4,7 @@ doc_id: "CR-047-pro-tier-entitlement-contract"
 status: "accepted"
 approved_by: "Claude orchestrator under explicit Boss delegation (2026-11-08) — agent decision, not human sign-off"
 approved_date: "2026-11-08"
-version: "0.3.0"
+version: "0.4.0"
 updated: "2026-11-08"
 owner: "Boss"
 complexity: "C-3"
@@ -305,6 +305,19 @@ Boss ตอบว่า "approve" ต่อข้อเสนอนี้เม�
 entitlement table + RLS + audit ledger, admin procedure). ADR นั้นต้องผ่าน acceptance ของตัวเองก่อน implementation.
 PRO-AC-001..009 (§9.1 ตามที่ D-1 แก้) ยังเป็นเงื่อนไขรับงาน.
 
+### 11.3 มติ Owner D-3 (2026-11-08) — เริ่ม implementation ของ base Arena
+
+Boss สั่งใน orchestrator session เมื่อ 2026-11-08: "approve all action and start imp".
+มตินี้เป็นการอนุมัติของมนุษย์ (Boss) และแก้ Q1 ของ D-2 เฉพาะส่วนที่ระบุ:
+
+1. **ข้อยกเว้น freeze (F1) เฉพาะ Arena UI:** เริ่ม AR-01..AR-03 ของ #165 ได้ก่อน M6 ปิด
+   (read model, canvas, interactions, Pro presentation path) โดยใช้ข้อมูลจาก producer ที่ admitted แล้วเท่านั้น.
+2. **ยังไม่มี entitlement authority:** ระหว่างที่ ADR ตาม §12 ยังไม่ accepted, Arena อ่านผลสิทธิ์เป็น `absent` เสมอ
+   จึงแสดง base Arena ให้ทุกคน. ห้ามสร้าง lease, key, Edge Function, schema, migration หรือ UI-local grant.
+   Pro presentation ทดสอบได้เฉพาะ fixture/test input ใน dev build.
+3. **F2 ยังใช้กับ entitlement mechanism:** ADR, backend, key และการเปิด Pro จริงยังรอ ADR accepted และ M6 ตาม D-2.
+4. Pro timer ยังรอ native store ของ #154; live skill ยังรอ CR-039 ownership admission (ไม่เปลี่ยน).
+
 ## 12. Follow-up (ไม่ได้ทำใน CR นี้)
 
 1. **ADR ใหม่ (จำเป็น)** — เลข ADR ถัดไปที่ว่าง: "Pro entitlement lease and signing-key management". บันทึก S1/S2, lease schema, key storage/rotation/compromise runbook,
@@ -319,6 +332,7 @@ PRO-AC-001..009 (§9.1 ตามที่ D-1 แก้) ยังเป็น�
 
 | Version | Date | Summary |
 | --- | --- | --- |
+| 0.4.0 | 2026-11-08 | Record Owner decision D-3 (§11.3): freeze exception for base Arena UI implementation (AR-01..03) with entitlement fixed to `absent` until the §12 ADR; F2 still applies to the entitlement mechanism. |
 | 0.3.0 | 2026-11-08 | Record decision D-2 (§11.2) by the Claude orchestrator under explicit Boss delegation (agent decision, not human sign-off): Q1=F2, Q2=A, Q3=S1 with the offline clarification, Q4=7-day lease with 24 h refresh, Q6=2 devices. Status accepted; implementation stays blocked until the §12 ADR is accepted and M6 closes. |
 | 0.2.0 | 2026-11-08 | Record Owner decision D-1 (§11.1): one Command Deck for all tiers, base Arena for everyone, four Pro features unlocked in place, presentation-only gating, immediate degrade to base Arena mid-match. Answers Q5/Q7/Q8; Q1–Q4 and Q6 stay open; supersedes §7.3/§8; `approved_by` stays empty. |
 | 0.1.0 | 2026-11-08 | Draft Pro tier + entitlement contract for Pro-only G-Arena: server issuer, signed-lease vs server-check options, C-3 threat model, offline/revocation/mid-match rules, non-Pro state, local-core boundary and freeze options; pending Boss decision. |

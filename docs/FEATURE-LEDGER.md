@@ -3,7 +3,7 @@
 # FEATURE-LEDGER
 
 > **GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs**  
-> Source manifest: `docs/feature-ledger.manifest.yaml` · generated `2026-11-08T15:38:06.745Z` · `--run-tests`=false · rows=75
+> Source manifest: `docs/feature-ledger.manifest.yaml` · generated `2026-11-08T16:04:49.971Z` · `--run-tests`=false · rows=76
 
 One row per feature / FR / NFR. **Computed** status is derived structurally from evidence on disk (never from a claim); **Claimed** is the manifest row's `claimed_status`; **Drift** flags where a claim outruns the evidence; **Evidence gaps** lists exactly what is missing to advance.
 
@@ -13,7 +13,7 @@ One row per feature / FR / NFR. **Computed** status is derived structurally from
 
 | Kind | Rows |
 | --- | --- |
-| feature | 50 |
+| feature | 51 |
 | fr | 19 |
 | nfr | 6 |
 
@@ -22,6 +22,7 @@ One row per feature / FR / NFR. **Computed** status is derived structurally from
 | Computed status | Rows |
 | --- | --- |
 | doc-only | 30 |
+| designed | 1 |
 | in-code | 11 |
 | code+needs-test-or-review | 19 |
 | code+tests-present [(unrun)] | 15 |
@@ -31,7 +32,7 @@ One row per feature / FR / NFR. **Computed** status is derived structurally from
 | Drift | Rows |
 | --- | --- |
 | status-inflation | 0 |
-| status-understated | 1 |
+| status-understated | 2 |
 | aligned | 68 |
 | unclaimed | 6 |
 
@@ -39,6 +40,7 @@ One row per feature / FR / NFR. **Computed** status is derived structurally from
 
 | Row | Type | Blocking | Detail |
 | --- | --- | --- | --- |
+| 3-g-arena | status-understated | no | claimed=doc-only below computed=designed |
 | 3-g-party | status-understated | no | claimed=code+needs-test-or-review below computed=code+tests-present (unrun) |
 | fr-4.2.2 | unbacked-phase-source | no | phase_source: doc but no refs.docs entry both resolves on disk and states a phase (**Phase:** line) — phase_target rendered as derived |
 
@@ -46,6 +48,7 @@ One row per feature / FR / NFR. **Computed** status is derived structurally from
 
 | ID | Title | Phase | Computed | Claimed | Drift | Evidence gaps | Source |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| 3-g-arena | G-Arena — map-centered hero cards and reserved inspector | P3 | designed | doc-only | status-understated | no code mapped | owner-approved prototype, 2026-11-08; production implementation pending |
 | 3-g-party | G-Party — cooperative own-GSI status sharing with separate consent | P3 | code+tests-present (unrun) | code+needs-test-or-review | status-understated | tests not run (--run-tests) | owner-directed extension, 2026-11-01; tested implementation candidate, Windows/live/NFR acceptance pending |
 | 1.1-g-sentry | G-Sentry — fog-of-war monitor (enemies missing from vision) | P2 | code+needs-test-or-review | code+needs-test-or-review | aligned | review record missing | bootstrap-extraction, pruned 2026-07-20 |
 | 1.1-g-motion | G-Motion — last-seen history and heading-aware risk heuristic; heatmap/path prediction is a target | P3 | code+needs-test-or-review | code+needs-test-or-review | aligned | review record missing | bootstrap-extraction, pruned 2026-07-20 |
