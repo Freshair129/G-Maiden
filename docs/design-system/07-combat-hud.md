@@ -73,9 +73,9 @@ second overlay renderer. Announcer media renders in the separate native GANN sur
 
 ### 5.1 Owner layout decision — 2026-11-08
 
-Coordinates are centre-anchored screen percentages. All entries below remain enabled;
-all other `DEFAULT_LAYOUT` entries retain their #91 values, including `score` at
-`{84.5, 13, 1}`. No other module needs moving to avoid an overlay-module collision.
+Coordinates are centre-anchored screen percentages. `score` is disabled by default; every
+other entry below is enabled. All other `DEFAULT_LAYOUT` entries retain their #91 values.
+No other module needs moving to avoid an overlay-module collision.
 
 | Module | x | y | scale | Basis |
 | --- | --- | --- | --- | --- |
@@ -85,7 +85,10 @@ all other `DEFAULT_LAYOUT` entries retain their #91 values, including `score` at
 | `gpm` | 20.5 | 4 | 1 | Same row |
 | `nw` | 26 | 4 | 1 | Same row |
 | `companion` | 93.2 | 3.4 | 0.8 | Target card approximately x759–824/y5–27 in the 849×475 image |
-| `banner` | 50 | 20 | 0.7 | Native 476×208px at 1920×1080; top ≈112px clears the hero bar and first-blood line |
+| `banner` | 50 | 13 | 0.45 | Native 306×134px at 1920×1080; top ≈73px, just below the hero-bar lane labels (owner 2026-11-08) |
+| `gmeter` | 7.5 | 71 | 0.9 | Directly above the minimap (owner 2026-11-08) |
+| `xpm` | 31.5 | 4 | 1 | Enabled; continues the top-left stat-chip row (owner 2026-11-08) |
+| `score` | 84.5 | 13 | 1 | Disabled by default (owner 2026-11-08) |
 
 Evidence: owner-supplied `target-20261101.png` and `current-after-reset-20261108.webp`
 in the git-excluded `.codex-evidence/` directory; these private captures are not published

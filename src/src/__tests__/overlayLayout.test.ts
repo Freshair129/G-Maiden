@@ -5,11 +5,13 @@ import { normalizeSettings } from '../app/settingsSchema'
 
 describe('screenshot-based overlay layout', () => {
   // Owner-approved top strip and presence overlap these conservative editor warning
-  // regions. The measured first-blood line ends above the banner's 111.7px top.
+  // regions. Banner/G-Meter/xpm positions follow the owner's 2026-11-08 decision.
   const approvedWarnings: Partial<Record<ModuleId, string[]>> = {
     clock: ['เมนู / สถิติ Dota'], kda: ['เมนู / สถิติ Dota'], gold: ['เมนู / สถิติ Dota'],
     gpm: ['เมนู / สถิติ Dota'], nw: ['เมนู / สถิติ Dota', 'ฮีโร่ / เวลา / คะแนน'],
-    companion: ['เครือข่าย'], banner: ['ประกาศของเกม', 'พื้นที่เล่นกลางจอ'],
+    companion: ['เครือข่าย'], banner: ['ประกาศของเกม'],
+    // Owner 2026-11-08: xpm continues the stat row; G-Meter sits directly above the minimap.
+    xpm: ['ฮีโร่ / เวลา / คะแนน'], gmeter: ['Kill feed'],
   }
   it.each(MODULE_META.filter(m => DEFAULT_LAYOUT[m.id].enabled))('$id stays on screen with only owner-approved HUD warnings', ({ id }) => {
     const cfg = DEFAULT_LAYOUT[id]
@@ -28,7 +30,8 @@ describe('screenshot-based overlay layout', () => {
     const height = width * 420 / 960
     const top = 1080 * y / 100 - height / 2
     expect(x).toBe(50)
-    expect(top).toBeGreaterThan(101) // first-blood / kill-feed line ends ≈101px
+    expect(top).toBeGreaterThan(68) // below the hero-bar lane labels (≈67px)
+    expect(height).toBeLessThan(140) // owner: compact banner
     expect(top + height).toBeLessThan(1080 / 2) // stays above the centre aim point
   })
   it('does not stack enabled default modules on each other', () => {
