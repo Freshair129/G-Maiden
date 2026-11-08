@@ -3,7 +3,7 @@
 # FEATURE-ORPHAN-REPORT
 
 > **GENERATED — do not hand-edit; re-run tools/doc-graph/orphan-report.mjs**  
-> Generated `2026-11-08T05:21:31.316Z` · candidates=18
+> Generated `2026-11-08T05:54:09.344Z` · candidates=18
 
 ## Summary
 

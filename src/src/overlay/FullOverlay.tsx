@@ -239,14 +239,17 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, war
             const secs = t && !t.alive && t.respawn_seconds > 0
               ? t.respawn_seconds
               : Math.max(0, Math.round(a.natural_respawn_remaining))
+            // Compact strip under Dota's score/clock row (MODULE_BOX 196×40):
+            // two single lines; long text is ellipsised, never wrapped.
+            const line: React.CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }
+            const detail = buyback.narrative || a.reason
             return (
-              <div style={{ ...glass(op), padding: '12px 18px', maxWidth: 420, fontSize: 13, lineHeight: 1.5, border: `1px solid ${accent}` }}>
-                <div style={{ fontSize: 10, color: accent, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span>💀 Buyback</span>
-                  <span style={{ background: accent, color: '#08090c', borderRadius: 6, padding: '1px 7px', fontWeight: 700 }}>{verdict}</span>
+              <div title={detail} style={{ ...glass(op), boxSizing: 'border-box', width: 196, height: 40, padding: '3px 8px', borderRadius: 8, border: `1px solid ${accent}`, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 1, lineHeight: 1.25 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5 }}>
+                  <span style={{ flex: 'none', background: accent, color: '#08090c', borderRadius: 4, padding: '0 5px', fontWeight: 700 }}>💀 {verdict}</span>
+                  <span style={{ ...line, color: C.mut }}>เกิดใน <b style={{ color: C.txt }}>{secs}s</b>{a.affordable === false ? ' · เงินไม่พอซื้อเกิด' : ''}</span>
                 </div>
-                <div>{buyback.narrative || a.reason}</div>
-                <div style={{ fontSize: 11, color: C.mut, marginTop: 4 }}>เกิดเองใน {secs}s{a.affordable === false ? ' · เงินไม่พอซื้อเกิด' : ''}</div>
+                <div style={{ ...line, fontSize: 10.5, color: C.txt }}>{detail}</div>
               </div>
             )
           })())
