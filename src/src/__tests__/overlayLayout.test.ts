@@ -12,8 +12,8 @@ describe('screenshot-based overlay layout', () => {
     companion: ['เครือข่าย'], banner: ['ฮีโร่ / เวลา / คะแนน', 'ประกาศของเกม'],
     // Owner 2026-11-08: xpm continues the stat row; G-Meter sits directly above the minimap.
     xpm: ['เมนู / สถิติ Dota'],
-    // Owner 2026-11-08: RISK strip top-centre under the score/clock cells; buyback above the minimap.
-    gmeter: ['ฮีโร่ / เวลา / คะแนน'], buyback: ['Kill feed'],
+    // Owner 2026-11-08: RISK strip top-centre under the score/clock cells; buyback bottom-centre above the buff icons.
+    gmeter: ['ฮีโร่ / เวลา / คะแนน'], buyback: ['แชต'],
   }
   it.each(MODULE_META.filter(m => DEFAULT_LAYOUT[m.id].enabled))('$id stays on screen with only owner-approved HUD warnings', ({ id }) => {
     const cfg = DEFAULT_LAYOUT[id]
@@ -57,10 +57,11 @@ describe('screenshot-based overlay layout', () => {
     expect(rect.x + rect.w).toBeLessThanOrEqual(55.3)
     expect((rect.y + rect.h) * 1080 / 100).toBeLessThan(73) // above the banner art
   })
-  it('keeps the buyback strip above the minimap', () => {
+  it('keeps the buyback strip bottom-centre above the buff icons, off the left kill feed', () => {
     const rect = moduleRect('buyback', DEFAULT_LAYOUT.buyback)
-    expect((rect.y + rect.h) * 1080 / 100).toBeLessThanOrEqual(788)
-    expect(rect.x).toBeGreaterThanOrEqual(0)
+    expect(rect.x + rect.w / 2).toBeCloseTo(50)
+    expect((rect.y + rect.h) * 1080 / 100).toBeLessThanOrEqual(852) // buff icons start ≈857px
+    expect(rect.x).toBeGreaterThan(28) // kill-feed zone ends at x 28%
   })
   it('moves an untouched old bottom-right buyback default to the new default, keeping custom positions', () => {
     const legacy = { ...DEFAULT_LAYOUT, buyback: { x: 89, y: 84, scale: 0.75, enabled: true } }
