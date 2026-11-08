@@ -11,6 +11,7 @@
 - **เอกสาร G-Party และการทดสอบ** — เพิ่ม FEAT/CR-037/implementation plan, สัญญา peer-sharing แยกจาก AI consent และ CI สำหรับ relay/portable Rust โดยคง 62 MVP tasks เดิม
 
 ### Fixed
+- **MVP-010 สถานะตั้งค่า GSI** — หน้าตั้งค่าและหน้าเริ่มใช้งานครั้งแรกแสดงสถานะ GSI ห้าขั้นร่วมกัน และเตือนว่าลงชื่อเข้าใช้ Google ไม่ได้ขณะ GSI ใช้พอร์ตสำรอง; native/live acceptance ยังรอการตรวจยืนยัน
 - **Overlay layout ตั้งต้นใหม่** — ชิปสถิติเรียงแถวเดียวกับรูปฮีโร่ (ไม่มีเวลา, มี XPM), Maiden มุมขวาบน, แบนเนอร์ announcer เล็กลงอยู่กลางบน, แถบ RISK กลางบนใต้ช่องคะแนน/เวลา, การ์ดซื้อเกิด (G-Revive) แบบเต็มกลางล่างเหนือไอคอนบัฟ ไม่บังช่องไอเทมและ feed; layout ที่ยังเป็นค่าตั้งต้นรุ่นเก่าจะย้ายให้อัตโนมัติ ส่วนตำแหน่งที่ผู้เล่นลากไว้เองคงเดิม
 - **One Canvas UI** — Voice pack inventory paginates within its available space, Account content uses a bounded scroll region, Insights links to Account when Steam is not linked.
 
