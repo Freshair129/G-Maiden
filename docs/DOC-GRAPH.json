@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-08T16:41:48.109Z",
+  "generatedAt": "2026-11-08T19:07:32.145Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -9296,37 +9296,37 @@
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-MEMORY.md",
       "type": "wikilink",
-      "line": 240
+      "line": 242
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-COACH.md",
       "type": "wikilink",
-      "line": 240
+      "line": 242
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-VOICE.md",
       "type": "wikilink",
-      "line": 255
+      "line": 257
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 255
+      "line": 257
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/releases/README.md",
       "type": "wikilink",
-      "line": 285
+      "line": 287
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/releases/release-channel-architecture.md",
       "type": "wikilink",
-      "line": 285
+      "line": 287
     },
     {
       "from": "docs/product/mvp-decisions.md",
@@ -10207,13 +10207,37 @@
     },
     {
       "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 94,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/gsi.rs",
+      "anchor": 783,
+      "symbol": "announcer_install"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
       "line": null,
       "reason": "no-metadata"
     },
     {
       "file": "docs/change request/CR-008-login-hardening.md",
+      "line": 80,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/gsi.rs",
+      "anchor": 973,
+      "symbol": "oauth_callback"
+    },
+    {
+      "file": "docs/change request/CR-008-login-hardening.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 47,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/gsi.rs",
+      "anchor": 783,
+      "symbol": "announcer_install"
     },
     {
       "file": "docs/change request/CR-010-overlay-exact-kill-victim.md",
@@ -10278,6 +10302,14 @@
       "reason": "no-metadata"
     },
     {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 28,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/gsi.rs",
+      "anchor": 783,
+      "symbol": "announcer_install"
+    },
+    {
       "file": "docs/reference/dota-ui/README.md",
       "line": null,
       "reason": "no-metadata"
@@ -10305,7 +10337,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-08T16:41:53.521Z",
+    "generatedAt": "2026-11-08T19:07:40.198Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 76,
