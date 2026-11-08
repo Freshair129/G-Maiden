@@ -1,6 +1,6 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-11-08T08:44:45.220Z
+สร้างเมื่อ / Generated at: 2026-11-08T16:20:18.894Z
 
 สแกน 181 ไฟล์เอกสาร, 292 nodes, 1360 edges, 28 รายการปัญหา (2 ตัวบล็อก exit code) / scanned 181 doc files, 292 nodes, 1360 edges, 28 violations (2 blocking exit code).
 
@@ -71,7 +71,7 @@
 
 ### docs/change request/CR-047-pro-tier-entitlement-contract.md
 
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.3.0", changelog="0.1.0")
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.3.1", changelog="0.1.0")
 
 ### docs/design-system/landing_page_prompt.md
 

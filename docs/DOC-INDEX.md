@@ -153,7 +153,7 @@ attributes:
   - `docs/change request/CR-035-selected-target-hud-cv-and-action-lethality.md` — proposed selected-target HUD CV + single-action G-Damage, Issue #71
   - `docs/change request/CR-037-party-gsi-own-stat-sharing.md` — owner-authorized cooperative own-stat sharing; detailed implementation decisions and acceptance boundaries
   - `docs/change request/CR-038-party-friends-presence-invitations.md` — supervised Friends implementation through protected PR merge, issue #106
-  - `docs/change request/CR-047-pro-tier-entitlement-contract.md` — [[CR-047-pro-tier-entitlement-contract]] accepted Pro tier + entitlement contract (D-1 by Boss; D-2 by Claude orchestrator under Boss delegation, agent decision); one Command Deck, base Arena for all; implementation blocked until the §12 ADR is accepted and M6 closes
+  - `docs/change request/CR-047-pro-tier-entitlement-contract.md` — [[CR-047-pro-tier-entitlement-contract]] accepted Pro tier + entitlement contract (D-1 and D-2 approved by Boss; D-2 drafted by Claude orchestrator under delegation); one Command Deck, base Arena for all; implementation blocked until the §12 ADR is accepted and M6 closes
   - `docs/change request/CR-*.md` — เอกสาร CR อื่นๆ ทั้งหมดตั้งแต่ CR-001 ถึง CR-038
 
 ## Operations
