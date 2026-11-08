@@ -146,6 +146,20 @@ entries:
       tests: [cargo:signal::tests::, cargo:capture::backend::tests::]
       review: [docs/audits/2026-07-07-independent-full-audit.md, docs/change request/CR-001-REVIEW-and-execution-plan.md]
 
+  - id: 1.1-g-announcer
+    title: "G-Announcer — announcer event detection and g-events.toml taxonomy SOT"
+    kind: feature
+    phase_target: P3
+    phase_source: doc
+    claimed_status: code+tests-present
+    source: CR-049 (2026-11-09)
+    refs:
+      docs: [docs/features/FEAT-G-ANNOUNCER.md, docs/architecture/adr/ADR-21-event-taxonomy-sot.md]
+      srs: []
+      code: [src-tauri/src/announcer.rs, src-tauri/src/events.rs, src-tauri/events/g-events.toml]
+      tests: [cargo:announcer::tests::, cargo:voice_api::tests::taxonomy::]
+      review: [docs/change request/CR-049-event-taxonomy-sot.md]
+
   - id: 1.1-g-master
     title: "G-Master — strategic/financial advisor (skill/item build vs enemy)"
     kind: feature
