@@ -1,9 +1,9 @@
 ---
 title: "Documentation Index"
 doc_id: "DOC-INDEX"
-version: "0.2.14"
+version: "0.2.16"
 created_at: "2026-07-19T00:00:00+07:00,Unknown"
-last_update: "2026-11-01T00:00:00+07:00,Codex"
+last_update: "2026-11-08T00:00:00+07:00,Codex"
 status: "active"
 updated: "2026-11-08"
 owner: "Boss"
@@ -15,6 +15,15 @@ attributes:
 ---
 
 # Documentation Index
+
+## Arena dimensional layout
+
+- [[arena-layout-dimensional]] — measured monochrome desktop/compact layout, card/inspector/item details and variable tables.
+
+## Arena UI extension
+
+- [[FEAT-G-ARENA]] — approved map-centered prototype, data contracts and hero interaction acceptance.
+- [[2026-11-08-g-arena-hero-inspector-handoff]] — incumbent implementation scope and ordered slices.
 
 ## Product
 
@@ -225,5 +234,7 @@ attributes:
 | 0.2.10 | 2026-11-01 | Register G-Party feature, CR-037 and implementation plan with explicit consent and pending acceptance. |
 | 0.2.11 | 2026-11-01 | Index CR-038, ADR-20, G-Friends feature, design/implementation plan and social operations/evidence runbook. |
 | 0.2.12 | 2026-11-06 | Replace the in-repo Orchestration section with a pointer to the standalone G-Orchestra repository (#134). |
-| 0.2.14 | 2026-11-08 | Mark CR-047 accepted (D-1 by Boss, D-2 agent decision under Boss delegation); implementation blocked until the §12 ADR and M6. |
 | 0.2.13 | 2026-11-08 | Index draft CR-047 (Pro tier + entitlement contract); pending Boss decision. |
+| 0.2.14 | 2026-11-08 | Mark CR-047 accepted (D-1 by Boss, D-2 agent decision under Boss delegation); implementation blocked until the §12 ADR and M6. |
+| 0.2.15 | 2026-11-08 | Index the approved Arena UI feature and implementation handoff. |
+| 0.2.16 | 2026-11-08 | Index the measured Arena dimensional drawing and evidence. |

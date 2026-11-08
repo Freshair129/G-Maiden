@@ -2,8 +2,8 @@
 title: "G-Series Feature Specifications"
 doc_id: "features/README"
 status: "active"
-version: "0.4.0"
-updated: "2026-11-01"
+version: "0.4.1"
+updated: "2026-11-08"
 owner: "Boss"
 related_docs: ["mvp-decisions", "G-SERIES-DATA-LINEAGE", "software-requirements-specification", "FEAT-G-PARTY", "CR-037-party-gsi-own-stat-sharing", "FEAT-G-FRIENDS", "ADR-20", "CR-038-party-friends-presence-invitations"]
 ---
@@ -15,6 +15,11 @@ related_docs: ["mvp-decisions", "G-SERIES-DATA-LINEAGE", "software-requirements-
 
 > MVP P0/P1 scope, access, cloud allowlist, and measurable acceptance are governed by
 > [[mvp-decisions]]. A P0 label is required scope, not proof that runtime implementation is complete.
+
+## Owner-directed Arena UI (planned)
+
+- [[FEAT-G-ARENA]] — สนามกลางและ Hero Inspector ตาม prototype ที่อนุมัติ; source admission และ 20 acceptance cases.
+- [[2026-11-08-g-arena-hero-inspector-handoff]] — ordered implementation slices; production implementation/native acceptance pending.
 
 ## Cross-feature data contract
 
@@ -100,3 +105,4 @@ G-Coach (post-match) ◄── G-Memory
 | 0.2.0 | 2026-10-10 | Reconciled module index, G-Signal hard-max label, local Voice/Memory routing, G-Motion heuristic scope, and MVP decision precedence |
 | 0.3.0 | 2026-11-01 | Register owner-directed G-Party extension and separate consent/lineage boundaries; align the touched RAM summary with the accepted 900MB ceiling without claiming acceptance. |
 | 0.4.0 | 2026-11-01 | Register G-Friends optional account social extension, private projection and consent boundaries alongside guest G-Party; preserve independent live/operational acceptance. |
+| 0.4.1 | 2026-11-08 | Register planned Arena UI and implementation handoff without claiming production delivery. |

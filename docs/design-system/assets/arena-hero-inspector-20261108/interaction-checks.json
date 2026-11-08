@@ -1,0 +1,176 @@
+{
+  "checks": [
+    {
+      "hero": "Pudge",
+      "correct": true,
+      "skills": 4,
+      "items": 6,
+      "mapStable": true
+    },
+    {
+      "hero": "Lion",
+      "correct": true,
+      "skills": 4,
+      "items": 6,
+      "mapStable": true
+    },
+    {
+      "hero": "Axe",
+      "correct": true,
+      "skills": 4,
+      "items": 6,
+      "mapStable": true
+    },
+    {
+      "hero": "Phantom Assassin",
+      "correct": true,
+      "skills": 4,
+      "items": 6,
+      "mapStable": true
+    },
+    {
+      "hero": "Invoker",
+      "correct": true,
+      "skills": 6,
+      "items": 6,
+      "mapStable": true
+    },
+    {
+      "hero": "Crystal Maiden",
+      "correct": true,
+      "skills": 4,
+      "items": 6,
+      "mapStable": true
+    },
+    {
+      "hero": "Juggernaut",
+      "correct": true,
+      "skills": 4,
+      "items": 6,
+      "mapStable": true
+    },
+    {
+      "hero": "Ember Spirit",
+      "correct": true,
+      "skills": 4,
+      "items": 6,
+      "mapStable": true
+    },
+    {
+      "hero": "Mars",
+      "correct": true,
+      "skills": 4,
+      "items": 6,
+      "mapStable": true
+    },
+    {
+      "hero": "Rubick",
+      "correct": true,
+      "skills": 4,
+      "items": 6,
+      "mapStable": true
+    },
+    {
+      "test": "own timer expires",
+      "passed": true,
+      "value": "Frostbite\nพร้อม"
+    },
+    {
+      "test": "pause freezes clock",
+      "passed": true
+    },
+    {
+      "test": "manual expiry stays estimated",
+      "passed": true,
+      "value": "Finger of Death\nคาดว่าพร้อม"
+    },
+    {
+      "test": "manual cancel returns unknown",
+      "passed": true
+    },
+    {
+      "test": "enemy item manual countdown",
+      "passed": true
+    },
+    {
+      "test": "close inspector preserves map",
+      "passed": true
+    },
+    {
+      "test": "map marker selects hero",
+      "passed": true
+    },
+    {
+      "test": "extra abilities open Sun Strike",
+      "passed": true
+    },
+    {
+      "test": "inventory Magic Wand",
+      "passed": true
+    },
+    {
+      "test": "inventory Tranquil Boots",
+      "passed": true
+    },
+    {
+      "test": "inventory Glimmer Cape",
+      "passed": true
+    },
+    {
+      "test": "inventory Force Staff",
+      "passed": true
+    },
+    {
+      "test": "inventory Observer Ward",
+      "passed": true
+    },
+    {
+      "test": "inventory Smoke",
+      "passed": true
+    },
+    {
+      "test": "backpack disclosure",
+      "passed": true
+    },
+    {
+      "test": "Escape closes detail first",
+      "passed": true
+    },
+    {
+      "test": "Escape closes inspector and restores focus",
+      "passed": true
+    },
+    {
+      "test": "keyboard hero selection",
+      "passed": true
+    },
+    {
+      "test": "unknown inventory is not empty",
+      "passed": true
+    },
+    {
+      "test": "passive has no timer editor",
+      "passed": true
+    }
+  ],
+  "finalMetrics": {
+    "brokenImages": [],
+    "devicePixelRatio": 1,
+    "height": 941,
+    "inspectorHeight": 517,
+    "inspectorScroll": 530,
+    "map": {
+      "bottom": 718,
+      "height": 508,
+      "left": 567.625,
+      "right": 1099.40625,
+      "top": 210,
+      "width": 531.78125,
+      "x": 567.625,
+      "y": 210
+    },
+    "scrollWidth": 1672,
+    "width": 1672
+  },
+  "console": []
+}
