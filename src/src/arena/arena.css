@@ -1,0 +1,50 @@
+.arena-page { height: 100%; min-height: 0; min-width: 0; overflow: hidden; display: grid; grid-template-columns: minmax(0, 220fr) minmax(0, 520fr) minmax(0, 330fr); grid-template-rows: 86px minmax(0, 1fr) 86px; gap: 12px; padding: 12px; box-sizing: border-box; color: var(--g-text); font: 13px/1.5 var(--g-font-ui); }
+.arena-page * { box-sizing: border-box; }
+.arena-page button { font: inherit; color: var(--g-text); background: var(--g-card); border: 1px solid var(--g-hairline-2); border-radius: var(--g-r-sm); padding: 6px 9px; cursor: pointer; }
+.arena-page button:focus-visible { outline: 2px solid var(--g-ice-500); outline-offset: 2px; }
+.arena-page button[aria-pressed="true"], .arena-tabs [aria-selected="true"] { border-color: var(--g-ice-500); background: var(--g-glass-a); }
+.arena-enemies { grid-column: 1 / 4; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; min-width: 0; }
+.arena-allies { grid-column: 1 / 3; grid-row: 3; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; min-width: 0; }
+.arena-page .arena-hero-card { display: flex; align-items: center; gap: 9px; text-align: left; min-width: 0; padding: 9px; border-top: 2px solid var(--g-ice-dim); }
+.arena-page .arena-hero-card[data-team="enemy"] { border-top-color: var(--g-danger); }
+.arena-page .arena-hero-card[data-team="ally"] { border-top-color: var(--g-ok); }
+.arena-portrait { flex: 0 0 40px; width: 40px; height: 44px; display: grid; place-items: center; border: 1px solid var(--g-hairline-2); border-radius: var(--g-r-sm); background: var(--g-instrument-2); font: 16px var(--g-font-mono); }
+.arena-hero-copy { min-width: 0; }
+.arena-hero-copy > strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.arena-presence { color: var(--g-text-dim); font-size: 12px; display: block; }
+.arena-presence small { display: block; font-size: 11px; }
+.arena-self { grid-column: 1; grid-row: 2; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+.arena-self .arena-hero-card { flex-wrap: wrap; }
+.arena-vitals { width: 100%; display: grid; gap: 3px; padding-block: 8px; }
+.arena-vitals > span { display: flex; justify-content: space-between; gap: 8px; }
+.arena-vitals strong { font-family: var(--g-font-mono); }
+.arena-skill-preview { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+.arena-page .arena-skill-preview button { overflow-wrap: anywhere; font-size: 12px; }
+.arena-missing { padding: 12px; background: var(--g-instrument); border: 1px solid var(--g-warn); border-radius: var(--g-r-card); }
+.arena-missing > strong { color: var(--g-warn); }
+.arena-missing p { margin-block: 6px; overflow-wrap: anywhere; }
+.arena-maiden { display: flex; align-items: center; gap: 8px; color: var(--g-text-dim); margin-top: auto; }
+.arena-maiden img { width: 40px; height: 40px; }
+.arena-maiden small { display: block; font-size: 11px; }
+.arena-map-region { grid-column: 2; grid-row: 2; min-height: 0; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.arena-map-fit { flex: 1; min-width: 0; min-height: 0; container-type: size; display: grid; place-items: center; }
+.arena-map-frame { position: relative; width: min(100cqw, 100cqh); aspect-ratio: 1; overflow: hidden; background: var(--g-instrument); border: 1px solid var(--g-ice-dim); border-radius: var(--g-r-panel); }
+.arena-map-frame :is(img,canvas) { width: 100%; height: 100%; position: absolute; inset: 0; object-fit: contain; }
+.arena-map-reference { opacity: .32; }
+.arena-map-frame .gm-minimap-ref-badge { position: absolute; bottom: 8px; left: 8px; right: 8px; text-align: center; font-size: 12px; }
+.arena-map-unavailable { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; background: var(--g-glass-b); }
+.arena-map-caption { text-align: center; color: var(--g-text-dim); font-size: 12px; }
+.arena-page .arena-marker { position: absolute; transform: translate(-50%, -50%); border-radius: var(--g-r-pill); padding: 2px; }
+.arena-marker .arena-portrait { width: 26px; height: 26px; font-size: 11px; border-radius: var(--g-r-pill); }
+.arena-right { grid-column: 3; grid-row: 2 / 4; position: relative; display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; padding: 12px; border: 1px solid var(--g-hairline-2); border-radius: var(--g-r-panel); background: var(--g-instrument); }
+.arena-tabs { display: flex; gap: 6px; flex-shrink: 0; }
+.arena-region-title { font-size: 16px; margin: 12px 30px 8px 0; overflow-wrap: anywhere; }
+.arena-region-scroll { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; padding: 3px; overflow-wrap: anywhere; }
+.arena-region-scroll h3 { font-size: 14px; }
+.arena-region-scroll small, .arena-events time { color: var(--g-text-dim); }
+.arena-page .arena-close { position: absolute; top: 56px; right: 12px; font-size: 20px; padding: 0 8px; }
+.arena-detail-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-block: 6px; }
+.arena-inline-detail { border-top: 1px solid var(--g-ice-dim); padding-block: 8px; }
+.arena-inline-detail > button { display: block; margin-top: 8px; }
+.arena-events p { padding-block: 6px; border-bottom: 1px solid var(--g-hairline); }
+.arena-selection-announcement { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }

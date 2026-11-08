@@ -25,6 +25,7 @@ import { fetchOpenDotaProfile, type OpenDotaProfile } from "./live/opendota";
 import { loadIdentity, saveIdentity, IDENTITY_EVENT } from "./live/identity";
 import { heroName } from "./live/heroNames";
 import { allowsSessionLifecycleAdvance, sessionEpochRelation } from "./live/session";
+import type { ArenaSource } from "./arena/model";
 
 const STEAMID64_BASE = 76561197960265728n;
 
@@ -34,6 +35,7 @@ export type CompanionTone = "info" | "warn" | "danger" | "good";
 export type HeroState = "visible" | "missing" | "dead" | "empty";
 
 export type CompanionData = {
+  arenaSource?: ArenaSource;
   updatedAt: number;
   match: {
     clock: string;
@@ -531,6 +533,7 @@ export const MOCK: CompanionData = {
 // (governor), weeklyReport + insights ← OpenDota, history + learnedMatches ←
 // local G-Log files, agentSector status ← live GSI.
 type LiveState = {
+  arenaRevision: number;
   tick: GameTick | null;
   status: GsiStatus | null;
   session: MatchSessionMetadata | null;
@@ -586,6 +589,7 @@ type LiveState = {
 };
 
 const EMPTY_LIVE: LiveState = {
+  arenaRevision: 0,
   tick: null, status: null, session: null, cv: null, gank: null, heroHud: null, warningReady: false, missing: new Map(), visibleHeroes: new Set(), missingPos: new Map(),
   enemySlots: new Map(),
   active: false, od: null, stats: null, health: null, advice: null, logs: null, activityLog: [], mom: EMPTY_MOMENTUM, roster: null,
@@ -677,6 +681,7 @@ function resetMatchScopedState(
   syncMinimapSession(session, null);
   return {
     ...state,
+    arenaRevision: state.arenaRevision + 1,
     ...(clearTick ? { tick: null } : {}),
     session,
     cv: null,
@@ -767,6 +772,19 @@ function buildCompanionData(live: LiveState): CompanionData {
   const currentTick = live.status?.gsi_freshness === "fresh" ? live.tick : null;
   return {
     ...d,
+    arenaSource: {
+      epoch: live.session?.session_epoch ?? null,
+      generation: `${live.session?.session_epoch ?? 'unknown'}:${live.arenaRevision}:${identityRequestSeq}`,
+      freshness: live.status?.gsi_freshness ?? 'unavailable',
+      ageMs: live.status?.gsi_age_ms ?? null,
+      own: live.tick ? {
+        session_epoch: live.tick.session_epoch, hero: live.tick.hero, team_name: live.tick.team_name,
+        level: live.tick.level, alive: live.tick.alive, respawn_seconds: live.tick.respawn_seconds,
+        hp_percent: live.tick.hp_percent, mana_percent: live.tick.mana_percent,
+      } : null,
+      roster: live.roster, enemySlots: [...live.enemySlots], visible: [...live.visibleHeroes],
+      missing: [...live.missing], phase: live.phase, warningReady: live.warningReady, health: live.health, cv: live.cv,
+    },
     heroCv: {
       roster: live.roster,
       hud: live.heroHud,
@@ -1003,7 +1021,8 @@ function ensureRuntime() {
         inGame: p.in_game,
         clockSeconds: p.clock_time
       });
-      return { ...base, tick: p, session: incomingSession, active: true, mom, phase };
+      const identityChanged = base.tick && (base.tick.steamid !== p.steamid || base.tick.hero !== p.hero || base.tick.team_name !== p.team_name);
+      return { ...base, arenaRevision: base.arenaRevision + (identityChanged ? 1 : 0), tick: p, session: incomingSession, active: true, mom, phase };
     })
   );
   sub<GsiStatus>("gsi-status", (p) =>
@@ -1184,7 +1203,7 @@ function ensureRuntime() {
     profileRequestSeq++;
     lastOpenDotaAccountId = null;
     lastAutoSteamId = liveState.tick?.steamid ?? null;
-    updateLive((s) => s.od ? { ...s, od: null } : s, true);
+    updateLive((s) => ({ ...s, arenaRevision: s.arenaRevision + 1, od: null }), true);
     void loadIdentity().then((id) => {
       if (request !== identityRequestSeq) return;
       identityPending = false;
