@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-11-08T06:44:37.443Z
+สร้างเมื่อ / Generated at: 2026-11-08T15:37:11.656Z
 
-สแกน 180 ไฟล์เอกสาร, 291 nodes, 1348 edges, 30 รายการปัญหา (4 ตัวบล็อก exit code) / scanned 180 doc files, 291 nodes, 1348 edges, 30 violations (4 blocking exit code).
+สแกน 181 ไฟล์เอกสาร, 292 nodes, 1360 edges, 32 รายการปัญหา (6 ตัวบล็อก exit code) / scanned 181 doc files, 292 nodes, 1360 edges, 32 violations (6 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -13,6 +13,7 @@
 | anchor-symbol-mismatch | anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) | 4 | yes |
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 1 | no (informational) |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 25 | no (informational) |
+| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 2 | yes |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
 
@@ -23,6 +24,7 @@
 ### docs/DOC-INDEX.md
 
 - [L141] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.14", changelog="0.2.13")
 
 ### docs/DOCS-IA-REORG-PROPOSAL.md
 
@@ -73,6 +75,10 @@
 ### docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
+
+### docs/change request/CR-047-pro-tier-entitlement-contract.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.3.0", changelog="0.1.0")
 
 ### docs/design-system/landing_page_prompt.md
 
