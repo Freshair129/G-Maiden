@@ -3,7 +3,7 @@
 # FEATURE-ORPHAN-REPORT
 
 > **GENERATED — do not hand-edit; re-run tools/doc-graph/orphan-report.mjs**  
-> Generated `2026-11-08T16:41:53.849Z` · candidates=20
+> Generated `2026-11-08T19:05:40.625Z` · candidates=20
 
 ## Summary
 
@@ -22,7 +22,7 @@
 | ID | Path | Lifecycle | Classification | Strong anchors | Weak anchors | Replacement | Reason |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | CR-004-voice-command-browser | docs/change request/CR-004-voice-command-browser.md | historical | archived | — | — | — | Lifecycle explicitly marks the document as retained history. |
-| CR-047-pro-tier-entitlement-contract | docs/change request/CR-047-pro-tier-entitlement-contract.md | accepted | weakly-anchored | — | docs/DOC-INDEX.md, docs/design-system/arena-layout-dimensional.md, docs/features/FEAT-G-ARENA.md, docs/product/software-requirements-specification.md, docs/superpowers/specs/2026-11-08-g-arena-hero-inspector-handoff.md | — | Only active document references remain; no strong registry/code anchor found. |
+| CR-047-pro-tier-entitlement-contract | docs/change request/CR-047-pro-tier-entitlement-contract.md | accepted | weakly-anchored | — | docs/DOC-INDEX.md, docs/design-system/arena-layout-dimensional.md, docs/features/FEAT-G-ARENA.md, docs/operations/mvp-043-auth-remediation-verification.md, docs/product/software-requirements-specification.md, docs/superpowers/specs/2026-11-08-g-arena-hero-inspector-handoff.md | — | Only active document references remain; no strong registry/code anchor found. |
 | FEAT-G-ARENA | docs/features/FEAT-G-ARENA.md | accepted | archived | feature-ledger, features-readme | docs/design-system/05-sitemap-ia.md, docs/design-system/arena-layout-dimensional.md, docs/design-system/README.md, docs/DOC-INDEX.md, docs/features/FEAT-G-SENSORY.md, docs/features/README.md, docs/product/software-requirements-specification.md, docs/superpowers/specs/2026-11-08-g-arena-hero-inspector-handoff.md | — | Lifecycle explicitly marks the document as retained history. |
 | FEAT-G-COACH | docs/features/FEAT-G-COACH.md | active | planned | feature-ledger, features-readme, project-feature-map | docs/features/README.md, docs/product/mvp-backlog.md, docs/product/roadmap.md, docs/features/G-SERIES-DATA-LINEAGE.md | — | Document is explicitly planned and remains visible in active registry/docs. |
 | FEAT-G-DAMAGE | docs/features/FEAT-G-DAMAGE.md | draft | archived | feature-ledger, code-evidence, features-readme | docs/architecture/adr/ADR-19-local-hud-observation-and-action-lethality.md, docs/change request/CR-035-selected-target-hud-cv-and-action-lethality.md, docs/features/G-SERIES-DATA-LINEAGE.md, docs/features/README.md, docs/product/competitive-brief.md, docs/README.md | — | Lifecycle explicitly marks the document as retained history. |

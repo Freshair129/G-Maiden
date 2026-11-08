@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Tests/Docs
+- **MVP-043 auth remediation** — Add sign-out concurrency, retry, transport-failure, local-data preservation and late-event regression coverage; record the pinned verification matrix, blocked OAuth start and remaining execution/native/live gates.
+
 ### Release
 - เตรียม candidate 0.13.6 หลัง workflow ของ 0.13.5 ล้มเหลวในขั้นสร้าง Dev PR โดยรักษาไฟล์และหลักฐาน candidate เดิม
 
