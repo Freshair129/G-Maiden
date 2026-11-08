@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-08T09:08:43.858Z",
+  "generatedAt": "2026-11-08T09:13:37.835Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -7486,6 +7486,18 @@
       "line": 15
     },
     {
+      "from": "docs/design-system/arena-layout-dimensional.md",
+      "to": "docs/features/FEAT-G-ARENA.md",
+      "type": "wikilink",
+      "line": 26
+    },
+    {
+      "from": "docs/design-system/arena-layout-dimensional.md",
+      "to": "docs/design-system/05-sitemap-ia.md",
+      "type": "wikilink",
+      "line": 37
+    },
+    {
       "from": "docs/design-system/assets/wireframes/design-qa.md",
       "to": "docs/design-system/05-sitemap-ia.md",
       "type": "wikilink",
@@ -7519,25 +7531,31 @@
       "from": "docs/features/FEAT-G-ARENA.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 17
-    },
-    {
-      "from": "docs/features/FEAT-G-ARENA.md",
-      "to": "docs/design-system/03-layout.md",
-      "type": "wikilink",
-      "line": 42
+      "line": 18
     },
     {
       "from": "docs/features/FEAT-G-ARENA.md",
       "to": "docs/design-system/05-sitemap-ia.md",
       "type": "wikilink",
-      "line": 42
+      "line": 40
+    },
+    {
+      "from": "docs/features/FEAT-G-ARENA.md",
+      "to": "docs/design-system/03-layout.md",
+      "type": "wikilink",
+      "line": 43
+    },
+    {
+      "from": "docs/features/FEAT-G-ARENA.md",
+      "to": "docs/design-system/05-sitemap-ia.md",
+      "type": "wikilink",
+      "line": 43
     },
     {
       "from": "docs/features/FEAT-G-ARENA.md",
       "to": "docs/design-system/arena-layout-dimensional.md",
       "type": "wikilink",
-      "line": 44
+      "line": 45
     },
     {
       "from": "docs/features/FEAT-G-COACH.md",
@@ -9637,19 +9655,19 @@
       "from": "docs/product/software-requirements-specification.md",
       "to": "docs/features/FEAT-G-PARTY.md",
       "type": "wikilink",
-      "line": 257
+      "line": 269
     },
     {
       "from": "docs/product/software-requirements-specification.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 259
+      "line": 271
     },
     {
       "from": "docs/product/software-requirements-specification.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 277
+      "line": 289
     },
     {
       "from": "docs/rca/2026-07-10-release-gate-drift-v0.9.0.md",
@@ -10033,19 +10051,19 @@
       "from": "docs/superpowers/specs/2026-11-08-g-arena-hero-inspector-handoff.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 18
+      "line": 16
     },
     {
       "from": "docs/superpowers/specs/2026-11-08-g-arena-hero-inspector-handoff.md",
       "to": "docs/features/FEAT-G-ARENA.md",
       "type": "wikilink",
-      "line": 18
+      "line": 16
     },
     {
       "from": "docs/superpowers/specs/2026-11-08-g-arena-hero-inspector-handoff.md",
       "to": "docs/features/FEAT-G-ARENA.md",
       "type": "wikilink",
-      "line": 26
+      "line": 25
     },
     {
       "from": "docs/superpowers/specs/2026-11-08-g-arena-hero-inspector-handoff.md",
@@ -10057,7 +10075,13 @@
       "from": "docs/superpowers/specs/2026-11-08-g-arena-hero-inspector-handoff.md",
       "to": "docs/features/FEAT-G-ARENA.md",
       "type": "wikilink",
-      "line": 76
+      "line": 55
+    },
+    {
+      "from": "docs/superpowers/specs/2026-11-08-g-arena-hero-inspector-handoff.md",
+      "to": "docs/features/FEAT-G-ARENA.md",
+      "type": "wikilink",
+      "line": 78
     }
   ],
   "violations": [
@@ -10195,7 +10219,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-08T09:08:52.480Z",
+    "generatedAt": "2026-11-08T09:13:47.039Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 76,

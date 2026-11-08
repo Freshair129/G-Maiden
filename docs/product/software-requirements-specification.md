@@ -2,7 +2,7 @@
 title: "G-Maiden Software Requirements Specification"
 doc_id: "software-requirements-specification"
 status: "active"
-version: "0.6.1"
+version: "0.6.2"
 updated: "2026-11-08"
 owner: "Boss"
 source_of_truth: true
@@ -224,33 +224,45 @@ Strict DTO/signature byte contract, rate/size/retention limits, session-before-p
 
 ### 4.1A สนามกลางและ Hero Inspector — owner-approved prototype, planned
 
-แบบที่ผู้ใช้อนุมัติเมื่อ 2026-11-08 เป็นเป้าหมาย UI ของ Live > สด (แสดงชื่อหน้า **สนาม**):
+มติ D-1 และ UX review 2026-11-08 กำหนด Arena เป็น body ของ Live > สด สำหรับทุก tier ใน Command Deck เดียว (คง tab label สด):
 แมปใหญ่ตรงกลาง, ศัตรู 5 ใบด้านบน, เพื่อน 4 ใบด้านล่าง, ฮีโร่ตัวเองด้านซ้าย และรายละเอียดด้านขวา.
 รายละเอียดและภาพอ้างอิงอยู่ใน [[FEAT-G-ARENA]]; ลำดับส่งต่ออยู่ใน [[2026-11-08-g-arena-hero-inspector-handoff]].
 สถานะข้อกำหนดชุดนี้คือ **planned / doc-only**; การอนุมัติแบบและผลทดสอบ prototype ไม่ใช่ผลตรวจรับ G-Maiden จริง.
+Tier authority และ offline semantics อ้าง [CR-047 §11.1 D-1 / §11.2 D-2](https://github.com/Freshair129/G-Maiden/blob/7c1e30c66bca8fb524a0d86c7b15698986027323/docs/change%20request/CR-047-pro-tier-entitlement-contract.md) ([PR #169](https://github.com/Freshair129/G-Maiden/pull/169)) โดยไม่กำหนด entitlement mechanism ซ้ำ; ผู้ใช้ยืนยันใช้ D-2 ล่าสุด. Implementation รอ owner approval ของ #165, explicit orchestrator assignment และ CR-047 prerequisites; Pro timers รอ reviewed #154 native store.
+
+| Capability | Base ทุกคน | Pro ที่ authority ยืนยัน |
+| --- | --- | --- |
+| Arena / own hero / map / enemy seen-missing + last-seen age | มี ตาม admitted source | เหมือน base |
+| Full skills/items inspector, G-Cooldown timers, G-Party ally detail, G-Review integration | ไม่มี Pro presentation/actions | เปิดใน UI เดียวกันตาม admission/consent ของแต่ละฟีเจอร์ |
+| Existing local event timeline | มี ผ่าน ดูเหตุการณ์ | มีเหมือน base; แยกจาก G-Review |
+| G-Signal, voice alerts, overlay, GSI, local core | ไม่ gate ตาม tier | ไม่ gate ตาม tier |
 
 | Requirement | ข้อกำหนด MVP | ตรวจรับ |
 | --- | --- | --- |
-| ARENA-FR-001 | แทน body ของ Live > สด ด้วยสนามตามแบบ; คง navigation, shortcuts, account/party lifecycle และหน้าอื่นเดิม. | ARENA-AC-001 |
+| ARENA-FR-001 | แทน body ของ Live > สด ด้วย Arena สำหรับทุก tier; คง 7-page ONE CANVAS nav, Live tabs [สด / บิลด์ / ฮีโร่ CV / G-Party], shortcuts และ account/party owner เดิม; prototype top nav ไม่ใช่ production chrome. | ARENA-AC-001 |
 | ARENA-FR-002 | แสดงช่องศัตรู 5, เพื่อน 4, ตัวเอง 1; slot ที่ยังไม่รู้ต้องว่างแบบ unknown ไม่เติม fixture. แมปเป็นพื้นที่หลักตรงกลาง. | ARENA-AC-002 |
-| ARENA-FR-003 | การ์ดมี portrait/name/team, level เมื่อทราบ, HP/MP และ preview สกิล 4 ช่องพร้อม +N; ใช้รายการจริงแบบ variable length ใน inspector. | ARENA-AC-003 |
-| ARENA-FR-004 | คลิกการ์ดใดหรือ marker ที่ระบุตัวตนได้แล้วต้องเลือกฮีโร่เดียวกัน; แสดง highlight บนการ์ด/marker/inspector ที่สัมพันธ์กัน. | ARENA-AC-004 |
-| ARENA-FR-005 | Inspector เป็นคอลัมน์ขวาที่จองพื้นที่ตลอด; เปิด/ปิด/สลับ/ขยายรายละเอียดต้องไม่บังหรือย้ายแมป (ความต่าง bounds ไม่เกิน 1 CSS px ณ viewport เดิม). | ARENA-AC-005 |
-| ARENA-FR-006 | คลิกสกิลแล้วแสดงชื่อ ไอคอน hotkey/rank เมื่อทราบ คำอธิบายตาม catalog revision และสถานะคูลดาวน์; รายละเอียดขยายเฉพาะ inspector. | ARENA-AC-006 |
+| ARENA-FR-003 | Own card แสดง admitted portrait/name/team/level/HP/MP; Pro skill preview สูงสุด 4 +N เฉพาะข้อมูลที่รองรับ และ inspector ใช้ variable list. Enemy/unknown-ally cards ใช้รูปแบบย่อตาม FR-023; ไม่บังคับทุกการ์ดมี skill slots. | ARENA-AC-003 |
+| ARENA-FR-004 | เริ่มทุก tier โดยไม่มี selected hero/inspector. User click card หรือ known marker จึงเลือก HeroKey เดียวและ highlight ที่สัมพันธ์กัน; Pro เปิด full inspector, base คง base summary/neutral; live refresh ไม่เปิดเอง. | ARENA-AC-004 |
+| ARENA-FR-005 | จองคอลัมน์ขวาคงที่ทั้ง neutral/base/Pro/event feed; open/close/switch/expand/degrade ต้องไม่บังหรือย้ายแมป (bounds delta ≤1 CSS px ณ viewport เดิมและ frozen input). | ARENA-AC-005 |
+| ARENA-FR-006 | Pro เลือก admitted skill จึงแสดง icon/name/catalog description/hotkey/rank เท่าที่ทราบและสถานะตาม source ใน inspector; unknown-only skill rows ถูกซ่อน; base ไม่มี full detail. | ARENA-AC-006 |
 | ARENA-FR-007 | แยก ready, cooldown, passive, not-learned, unknown, stale และ manual estimate; จำนวนวินาทีเป็น 0 ไม่เพียงพอให้สรุป castable. | ARENA-AC-007 |
-| ARENA-FR-008 | คลิกไอเท็มดูรายละเอียดได้: main 6 ช่อง, backpack 3 และ special slots ตามข้อมูลที่รองรับ; แยก known empty กับ unknown, charges กับ stack/count และ cast cooldown กับ recharge. | ARENA-AC-008 |
+| ARENA-FR-008 | Pro เลือก admitted item เพื่อดู main6/backpack3/special slots เท่าที่ source รองรับ; แยก known empty/unknown, charge/stack และ cooldown/recharge. ซ่อน unknown-only rows ไม่เติม ? ต่อช่อง. | ARENA-AC-008 |
 | ARENA-FR-009 | X ปิด inspector; Esc ปิดรายละเอียดที่ขยายก่อน แล้วจึงปิด inspector/คืน focus. สลับฮีโร่ต้อง reset detail/backpack/scroll โดยไม่ล้าง timer store. | ARENA-AC-009 |
 | ARENA-FR-010 | การเลือกผูกกับ session epoch + team/player slot; เปลี่ยนแมตช์/source generation/hero identity ต้องล้าง selection และปฏิเสธ response เก่า. | ARENA-AC-010 |
-| ARENA-FR-011 | ข้อมูลทุก field มี source, availability, age/revision ตาม contract; unknown ใช้ — ไม่ใช้ 0. ไม่อนุมาน MP max จากเปอร์เซ็นต์ และไม่แสดง peer HP/MP เมื่อ relay ถอน sample. | ARENA-AC-011 |
+| ARENA-FR-011 | Field ใช้ source/availability/age/revision เดิม; field unknown ใช้ — ไม่ใช่ 0 แต่ unknown-only skill/item rows ให้ซ่อน. ไม่อนุมาน MP max จากเปอร์เซ็นต์; relay ถอน sample ต้องถอน peer HP/MP และยุบ unknown ally. | ARENA-AC-011 |
 | ARENA-FR-012 | Own GSI, CV และ Party ใช้ admission/freshness เดิม; GSI ability selected-unit candidate ต้องไม่ออก UI จนผ่าน ownership gate แยก. ห้ามส่ง skill/item/position เพิ่มผ่าน Party. | ARENA-AC-012 |
 | ARENA-FR-013 | ตำแหน่ง marker ใช้ CV ที่ผ่าน health/session/geometry checks; แปลง pixel ด้วย region.side ก่อน render. ไม่สร้าง enemy GSI position, trajectory หรือ marker สดจากค่าที่หายไป. | ARENA-AC-013 |
-| ARENA-FR-014 | Timer production ใช้ native authoritative game clock/store และ scope G-Cooldown ที่ review แล้วเท่านั้น; manual expiry แสดง estimated-ready ไม่ใช่ observed-ready. | ARENA-AC-014 |
-| ARENA-FR-015 | Play/Pause/Reset เวลา, self simulate, timer arbitrary skill/item และ seed roster/inventory ของ prototype อยู่เฉพาะ fixture harness; ไม่เป็น control ของ live game. | ARENA-AC-015 |
+| ARENA-FR-014 | Pro timers ใช้ native authoritative game clock/store และ reviewed G-Cooldown scope จาก #154; manual expiry เป็น estimated-ready. Base ไม่มี Pro timer actions; tier transition ไม่ทำให้ Arena เป็น timer owner. | ARENA-AC-014 |
+| ARENA-FR-015 | CM preselection, seed roster/inventory, Play/Pause/Reset เวลา, self simulate และ arbitrary timers อยู่เฉพาะ fixture harness; production เริ่ม neutral และเปิด inspector ด้วย user selection เท่านั้น. | ARENA-AC-015 |
 | ARENA-FR-016 | รองรับ mouse/keyboard, focus ที่มองเห็น, accessible names ที่ไม่กล่าวค่า unknown เป็น 0 และสถานะที่อ่านได้โดยไม่อาศัยสีอย่างเดียว. | ARENA-AC-016 |
 | ARENA-FR-017 | คง authored Deck stage 1420×760 / panel-local 1280×720, ONE CANVAS, token --g-*; scroll ได้เฉพาะ bounded inspector. แยก Maiden mascot ออกจาก hero portrait. | ARENA-AC-017 |
 | ARENA-FR-018 | Waiting/no-match/Lite/stale/disconnected/asset-missing ต้องมีสถานะชัด; การเลือกการ์ดไม่ join party, ขอ consent, cast/buy item หรือ focus เกม. | ARENA-AC-018 |
 | ARENA-FR-019 | UI ไม่เพิ่ม cloud/AI/Memory/Log egress, ไม่ขวาง Rust G-Signal hot path และไม่ลด NFR/consent/access gates ที่ยอมรับอยู่แล้ว. | ARENA-AC-019 |
 | ARENA-FR-020 | ส่งมอบ source, deterministic interaction tests, viewport screenshots และ native/live evidence แยกกัน; browser fixture ผ่านอย่างเดียวห้ามปิด native/live acceptance. | ARENA-AC-020 |
+| ARENA-FR-021 | ใช้ base/Pro capability table ใน Command Deck เดียว; gate เฉพาะ presentation ของ inspector/timers/ally detail/review ด้วย authority ของ CR-047. Pro ไม่ขยาย source/consent; G-Signal/voice alerts/overlay/GSI/local core ไม่ถูก gate. | ARENA-AC-021 |
+| ARENA-FR-022 | ใช้ CR-047 D-2: offline ที่ lease ยังใช้ได้คง Pro; lapsed/revoked/unverifiable หรือ authority ถอนสิทธิ์ให้ลด base ทันที ไม่มี blank/stuck/modal/toast/เสียง. ถอน Pro detail/controls และ late responses, คืน focus อย่างปลอดภัย; คง map/own/base/feed และ native producers/store. Regain ไม่ preselect. | ARENA-AC-022 |
+| ARENA-FR-023 | Enemy และ unknown-ally cards ยุบเป็น portrait + admitted seen/missing + last-seen age; unknown age ใช้ —. ซ่อน unknown skill/item rows แทน ? ต่อ slot. Map เป็น visual priority แรก, missing-enemy alert ที่สอง. | ARENA-AC-023 |
+| ARENA-FR-024 | ทุก tier เปิด ดูเหตุการณ์ ไป existing local event timeline ใน bounded right-region tab ได้; empty/stale state ตามจริง, ไม่ขยับแมปหรือเพิ่ม page scroll. แยกจาก Pro G-Review integration; ไม่เพิ่ม log schema, cloud หรือ replay backend. | ARENA-AC-024 |
 
 ### **4.2 อินเตอร์เฟสทางซอฟต์แวร์ (Software Interface)**
 
@@ -300,3 +312,4 @@ Strict DTO/signature byte contract, rate/size/retention limits, session-before-p
 | 0.5.0 | 2026-11-01 | เพิ่ม G-Party source/consent/transport/freshness contract และ optional peer route โดยรักษา AI denylist, local-core resilience และ pending native/live acceptance. |
 | 0.6.0 | 2026-11-01 | เพิ่ม G-Friends social/privacy/consent/transaction requirements และ runtime boundaries โดยรักษา guest/core, GSI allowlist และ NFR เดิม. |
 | 0.6.1 | 2026-11-08 | เพิ่ม Arena/Hero Inspector 20 requirements ตาม prototype ที่อนุมัติ โดยคง source admission, ONE CANVAS และแยก fixture ออกจาก production acceptance. |
+| 0.6.2 | 2026-11-08 | Align Arena D-1/D-2 base/Pro access and transitions, compact honest cards, explicit inspector selection, local event timeline and unchanged Deck navigation; extend traceability to 24 requirements. |
