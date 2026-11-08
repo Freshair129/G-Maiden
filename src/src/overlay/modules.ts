@@ -68,9 +68,9 @@ export const MODULE_META: { id: ModuleId; label: string }[] = [
  * Settings migration replaces exact historical defaults only, preserving custom modules. */
 export const DEFAULT_LAYOUT: Layout = {
   alert: { x: 89, y: 54, scale: 0.75, enabled: true },
-  // Owner 2026-11-08: directly above the minimap (minimap top edge ≈788px at 1920×1080);
-  // 270×32px at scale 0.9 → y ≈751–783px, x ≈9–279px.
-  gmeter: { x: 7.5, y: 71, scale: 0.9, enabled: true },
+  // Owner 2026-11-08: the RISK bar is the strip that sits top-centre under the score/clock
+  // cells (≈860–1062px). 300×36 × 0.65 → 195×23px, y ≈48–71px, just above the banner art.
+  gmeter: { x: 50, y: 5.5, scale: 0.65, enabled: true },
   toast: { x: 89, y: 67, scale: 0.7, enabled: true },
   // Target card ≈x759–824/y5–27, centre ≈791/16 = 93.2%/3.4%.
   // 190×64 at 0.8 projects to 67.2×22.5 target pixels; reference edges
@@ -79,7 +79,9 @@ export const DEFAULT_LAYOUT: Layout = {
   advice: { x: 89, y: 75, scale: 0.75, enabled: true },
   // Owner direction 2026-11-08: a compact strip under Dota's score/clock row,
   // no wider than the two score cells, clear of the inventory and stash.
-  buyback: { x: 50, y: 6, scale: 1, enabled: true },
+  // Owner 2026-11-08: buyback strip (dead-only) takes the slot directly above the minimap
+  // (minimap top ≈788px): 196×40px, y ≈743–783px, x ≈46–242px.
+  buyback: { x: 7.5, y: 70.6, scale: 1, enabled: true },
   missing: { x: 89, y: 33, scale: 0.8, enabled: true },
   // Announcer banners render NATIVELY (src-tauri/src/gann_native_windows.rs `place`):
   // width = min(680px, 72% screen) × scale, height = width × 420/960, centred on (x, y).
@@ -124,7 +126,7 @@ export const MODULE_BOX: Record<ModuleId, { w: number; h: number }> = {
   toast: { w: 460, h: 80 },
   companion: { w: 190, h: 64 },  // minWidth 142 + 44px portrait
   advice: { w: 420, h: 120 },
-  buyback: { w: 196, h: 40 },     // score cell → clock → score cell; clock-strip height
+  buyback: { w: 196, h: 40 },     // compact two-line strip
   missing: { w: 300, h: 84 },
   banner: { w: 320, h: 190 },    // compact art frame; captions keep their type size and may overflow
   lowhp: { w: 300, h: 38 },      // pad 9/22, one line

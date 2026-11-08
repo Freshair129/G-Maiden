@@ -81,11 +81,11 @@ No other module needs moving to avoid an overlay-module collision.
 | --- | --- | --- | --- | --- |
 | `companion` | 93.2 | 3.4 | 0.8 | Target card approximately x759–824/y5–27 in the 849×475 image |
 | `banner` | 50 | 10.5 | 0.45 | Native 306×134px box ≈46–180px; visible art starts ≈73px under the kill/streak line (owner 2026-11-08) |
-| `gmeter` | 7.5 | 71 | 0.9 | Directly above the minimap (owner 2026-11-08) |
+| `gmeter` | 50 | 5.5 | 0.65 | RISK strip top-centre under the score/clock cells, 195×23px, above the banner art (owner 2026-11-08) |
 | `kda` `gold` `gpm` `nw` `xpm` | 9.64 / 13.56 / 17.23 / 21.02 / 24.82 | 2.2 | 0.78 | One row level with the hero portraits, ≈150–507px, clear of the hero bar (owner 2026-11-08) |
 | `clock` | 4 | 4 | 1 | Disabled by default (owner 2026-11-08) |
 | `score` | 84.5 | 13 | 1 | Disabled by default (owner 2026-11-08) |
-| `buyback` | 50 | 6 | 1 | Compact 196×40px strip under the score/clock cells, shown only while dead; may share the top-centre column with the banner because they never coexist (owner 2026-11-08, from #167) |
+| `buyback` | 7.5 | 70.6 | 1 | Compact 196×40px strip directly above the minimap, shown only while dead (owner 2026-11-08) |
 
 Evidence: owner-supplied `target-20261101.png` and `current-after-reset-20261108.webp`
 in the git-excluded `.codex-evidence/` directory; these private captures are not published

@@ -148,6 +148,13 @@ const PR166_R2_DEFAULT_LAYOUT = Object.freeze({
   banner: Object.freeze({ x: 50, y: 13, scale: 0.45, enabled: true }),
 })
 
+// Third-round values applied on the owner's machine on 2026-11-08 (05914d2b): G-Meter above
+// the minimap and the #167 buyback top strip, swapped by the owner the same day.
+const PR166_R3_DEFAULT_LAYOUT = Object.freeze({
+  gmeter: Object.freeze({ x: 7.5, y: 71, scale: 0.9, enabled: true }),
+  buyback: Object.freeze({ x: 50, y: 6, scale: 1, enabled: true }),
+})
+
 // Frozen pre-#90 defaults from a71d07a47c64379a8a2be6d8038e19c22ebc46bd^:
 // src/src/overlay/modules.ts, retained from the original notification migration.
 const LEGACY_DEFAULT_POSITIONS = Object.freeze({
@@ -160,7 +167,7 @@ function migrateLegacyDefaultPositions(value: unknown): unknown {
   if (!saved) return value
 
   const next = { ...saved }
-  for (const defaults of [PRE_91_DEFAULT_LAYOUT, POST_91_DEFAULT_LAYOUT, PR166_R1_DEFAULT_LAYOUT, PR166_R2_DEFAULT_LAYOUT, LEGACY_DEFAULT_POSITIONS]) {
+  for (const defaults of [PRE_91_DEFAULT_LAYOUT, POST_91_DEFAULT_LAYOUT, PR166_R1_DEFAULT_LAYOUT, PR166_R2_DEFAULT_LAYOUT, PR166_R3_DEFAULT_LAYOUT, LEGACY_DEFAULT_POSITIONS]) {
     for (const [id, legacy] of Object.entries(defaults)) {
       const current = asRecord(saved[id])
       if (current && current.x === legacy.x && current.y === legacy.y

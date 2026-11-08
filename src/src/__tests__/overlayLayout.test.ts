@@ -11,9 +11,9 @@ describe('screenshot-based overlay layout', () => {
     gpm: ['เมนู / สถิติ Dota'], nw: ['เมนู / สถิติ Dota'],
     companion: ['เครือข่าย'], banner: ['ฮีโร่ / เวลา / คะแนน', 'ประกาศของเกม'],
     // Owner 2026-11-08: xpm continues the stat row; G-Meter sits directly above the minimap.
-    xpm: ['เมนู / สถิติ Dota'], gmeter: ['Kill feed'],
-    // Owner 2026-11-08 (#167): buyback strip in the top bar's centre column, shown only while dead.
-    buyback: ['ฮีโร่ / เวลา / คะแนน'],
+    xpm: ['เมนู / สถิติ Dota'],
+    // Owner 2026-11-08: RISK strip top-centre under the score/clock cells; buyback above the minimap.
+    gmeter: ['ฮีโร่ / เวลา / คะแนน'], buyback: ['Kill feed'],
   }
   it.each(MODULE_META.filter(m => DEFAULT_LAYOUT[m.id].enabled))('$id stays on screen with only owner-approved HUD warnings', ({ id }) => {
     const cfg = DEFAULT_LAYOUT[id]
@@ -40,24 +40,29 @@ describe('screenshot-based overlay layout', () => {
     const enabled = MODULE_META.filter(m => DEFAULT_LAYOUT[m.id].enabled)
     enabled.forEach((a, i) => enabled.slice(i + 1).forEach(b => {
       if (a.id === 'standby' || b.id === 'standby') return // pre-game only
-      // buyback renders only while the player is dead; announcer banners are personal kill/streak/
-      // signal events that cannot fire while dead (death has no GANN pair), so they never coexist.
-      if ([a.id, b.id].includes('buyback') && [a.id, b.id].includes('banner')) return
+      // The banner box (native, 306×134 at y≈46px) starts with ≈27px of transparent padding;
+      // its art begins ≈73px, below the RISK strip's bottom edge (≈71px), so they never overlap visibly.
+      if ([a.id, b.id].includes('gmeter') && [a.id, b.id].includes('banner')) return
       const r = moduleRect(a.id, DEFAULT_LAYOUT[a.id])
       const s = moduleRect(b.id, DEFAULT_LAYOUT[b.id])
       const overlaps = r.x < s.x + s.w && r.x + r.w > s.x && r.y < s.y + s.h && r.y + r.h > s.y
       expect(overlaps, `${a.id} overlaps ${b.id}`).toBe(false)
     }))
   })
-  it('keeps the buyback strip centred within the score/clock cells at 1920×1080', () => {
-    const rect = moduleRect('buyback', DEFAULT_LAYOUT.buyback)
+  it('keeps the RISK strip centred within the score/clock cells at 1920×1080', () => {
+    const rect = moduleRect('gmeter', DEFAULT_LAYOUT.gmeter)
     // Score cell → clock → score cell spans about 860–1062px (44.8–55.3%) at the reference.
     expect(rect.x + rect.w / 2).toBeCloseTo(50)
     expect(rect.x).toBeGreaterThanOrEqual(44.8)
     expect(rect.x + rect.w).toBeLessThanOrEqual(55.3)
-    expect(rect.y + rect.h).toBeLessThan(10)
+    expect((rect.y + rect.h) * 1080 / 100).toBeLessThan(73) // above the banner art
   })
-  it('moves an untouched old bottom-right buyback default to the top strip, keeping custom positions', () => {
+  it('keeps the buyback strip above the minimap', () => {
+    const rect = moduleRect('buyback', DEFAULT_LAYOUT.buyback)
+    expect((rect.y + rect.h) * 1080 / 100).toBeLessThanOrEqual(788)
+    expect(rect.x).toBeGreaterThanOrEqual(0)
+  })
+  it('moves an untouched old bottom-right buyback default to the new default, keeping custom positions', () => {
     const legacy = { ...DEFAULT_LAYOUT, buyback: { x: 89, y: 84, scale: 0.75, enabled: true } }
     expect(normalizeSettings({ layout: legacy }).layout.buyback).toEqual(DEFAULT_LAYOUT.buyback)
     const custom = { ...DEFAULT_LAYOUT, buyback: { x: 70, y: 40, scale: 0.75, enabled: true } }
