@@ -101,7 +101,7 @@ export function OverlayLayoutEditor({ settings, onChange, onEnterFullscreen }: {
       </select>
       <label><input type="checkbox" checked={cfg.enabled} onChange={e => update(selected, { enabled: e.target.checked })} /> แสดง</label>
       <label><input type="checkbox" checked={zones} onChange={e => showZones(e.target.checked)} /> เขต HUD เกม</label>
-      <button style={field} onClick={() => onChange(normalizeLayout(DEFAULT_LAYOUT))}>ใช้เลย์เอาท์เริ่มต้นด้านขวา</button>
+      <button style={field} onClick={() => onChange(normalizeLayout(DEFAULT_LAYOUT))}>ใช้เลย์เอาท์เริ่มต้น</button>
     </div>
     <div ref={frame} style={expanded ? { flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' } : { width: '100%' }}>
     <div ref={canvas} style={{ position: 'relative', width: expanded ? width : '100%', flexShrink: 0, aspectRatio: '16 / 9', overflow: 'hidden', background: '#0a1119', border: '1px solid #42627b', borderRadius: 8 }}>
