@@ -1,12 +1,12 @@
 {
   "_generated": "GENERATED — do not hand-edit; re-run tools/doc-graph/orphan-report.mjs",
-  "generatedAt": "2026-11-08T09:13:47.490Z",
+  "generatedAt": "2026-11-08T15:49:28.106Z",
   "baselineOrphanCandidates": 0,
-  "rowCount": 19,
+  "rowCount": 20,
   "summary": {
     "anchored": 5,
     "planned": 9,
-    "weakly-anchored": 0,
+    "weakly-anchored": 1,
     "superseded": 0,
     "archived": 5,
     "orphan-candidate": 0,
@@ -26,10 +26,28 @@
       "reason": "Lifecycle explicitly marks the document as retained history."
     },
     {
+      "id": "CR-047-pro-tier-entitlement-contract",
+      "slug": "CR-047-pro-tier-entitlement-contract",
+      "path": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
+      "lifecycle": "accepted",
+      "classification": "weakly-anchored",
+      "strongAnchors": [],
+      "weakAnchors": [
+        "docs/DOC-INDEX.md",
+        "docs/design-system/arena-layout-dimensional.md",
+        "docs/features/FEAT-G-ARENA.md",
+        "docs/product/software-requirements-specification.md",
+        "docs/superpowers/specs/2026-11-08-g-arena-hero-inspector-handoff.md"
+      ],
+      "supersededBy": null,
+      "supersededByExists": true,
+      "reason": "Only active document references remain; no strong registry/code anchor found."
+    },
+    {
       "id": "FEAT-G-ARENA",
       "slug": "FEAT-G-ARENA",
       "path": "docs/features/FEAT-G-ARENA.md",
-      "lifecycle": "draft",
+      "lifecycle": "accepted",
       "classification": "archived",
       "strongAnchors": [
         "feature-ledger",

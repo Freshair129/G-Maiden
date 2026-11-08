@@ -2,7 +2,7 @@
 title: "G-Maiden Software Requirements Specification"
 doc_id: "software-requirements-specification"
 status: "active"
-version: "0.6.2"
+version: "0.6.3"
 updated: "2026-11-08"
 owner: "Boss"
 source_of_truth: true
@@ -228,7 +228,7 @@ Strict DTO/signature byte contract, rate/size/retention limits, session-before-p
 แมปใหญ่ตรงกลาง, ศัตรู 5 ใบด้านบน, เพื่อน 4 ใบด้านล่าง, ฮีโร่ตัวเองด้านซ้าย และรายละเอียดด้านขวา.
 รายละเอียดและภาพอ้างอิงอยู่ใน [[FEAT-G-ARENA]]; ลำดับส่งต่ออยู่ใน [[2026-11-08-g-arena-hero-inspector-handoff]].
 สถานะข้อกำหนดชุดนี้คือ **planned / doc-only**; การอนุมัติแบบและผลทดสอบ prototype ไม่ใช่ผลตรวจรับ G-Maiden จริง.
-Tier authority และ offline semantics อ้าง [CR-047 §11.1 D-1 / §11.2 D-2](https://github.com/Freshair129/G-Maiden/blob/7c1e30c66bca8fb524a0d86c7b15698986027323/docs/change%20request/CR-047-pro-tier-entitlement-contract.md) ([PR #169](https://github.com/Freshair129/G-Maiden/pull/169)) โดยไม่กำหนด entitlement mechanism ซ้ำ; ผู้ใช้ยืนยันใช้ D-2 ล่าสุด. Implementation รอ owner approval ของ #165, explicit orchestrator assignment และ CR-047 prerequisites; Pro timers รอ reviewed #154 native store.
+Tier authority และ offline semantics อ้าง [CR-047 §11.1 D-1 / §11.2 D-2](../change%20request/CR-047-pro-tier-entitlement-contract.md) ([PR #169](https://github.com/Freshair129/G-Maiden/pull/169)) โดยไม่กำหนด entitlement mechanism ซ้ำ; ผู้ใช้ยืนยันใช้ D-2 ล่าสุด. Boss อนุมัติและสั่งเริ่ม implementation ของ base Arena (AR-01..03) ตาม CR-047 §11.3 D-3 เมื่อ 2026-11-08; entitlement เป็น `absent` จนกว่า ADR ตาม CR-047 §12 accepted; Pro timers รอ reviewed #154 native store.
 
 | Capability | Base ทุกคน | Pro ที่ authority ยืนยัน |
 | --- | --- | --- |
@@ -313,3 +313,4 @@ Tier authority และ offline semantics อ้าง [CR-047 §11.1 D-1 / §1
 | 0.6.0 | 2026-11-01 | เพิ่ม G-Friends social/privacy/consent/transaction requirements และ runtime boundaries โดยรักษา guest/core, GSI allowlist และ NFR เดิม. |
 | 0.6.1 | 2026-11-08 | เพิ่ม Arena/Hero Inspector 20 requirements ตาม prototype ที่อนุมัติ โดยคง source admission, ONE CANVAS และแยก fixture ออกจาก production acceptance. |
 | 0.6.2 | 2026-11-08 | Align Arena D-1/D-2 base/Pro access and transitions, compact honest cards, explicit inspector selection, local event timeline and unchanged Deck navigation; extend traceability to 24 requirements. |
+| 0.6.3 | 2026-11-08 | Record Boss approval and base Arena implementation start (CR-047 D-3); link CR-047 on main. |

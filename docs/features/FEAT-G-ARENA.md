@@ -1,8 +1,10 @@
 ---
 title: "FEAT-G-ARENA — สนามกลางและ Hero Inspector"
 doc_id: "FEAT-G-ARENA"
-status: "draft"
-version: "0.1.2"
+status: "accepted"
+approved_by: "Boss — \"approve all action and start imp\" in orchestrator session"
+approved_date: "2026-11-08"
+version: "0.2.0"
 updated: "2026-11-08"
 owner: "Boss"
 source_of_truth: false
@@ -13,8 +15,8 @@ related_docs: ["software-requirements-specification", "FEAT-G-SENSORY", "FEAT-G-
 
 # FEAT-G-ARENA — สนามกลางและ Hero Inspector
 
-**Phase:** P3 extension · **Status:** planned / doc-only · **Design direction:** D-1 + UX review 2026-11-08; implementation รอ explicit orchestrator assignment และ prerequisites ใน handoff.
-อำนาจเรื่อง tier และ offline behavior อ้าง [CR-047 §11.1 D-1 / §11.2 D-2](https://github.com/Freshair129/G-Maiden/blob/7c1e30c66bca8fb524a0d86c7b15698986027323/docs/change%20request/CR-047-pro-tier-entitlement-contract.md) ([PR #169](https://github.com/Freshair129/G-Maiden/pull/169)); ผู้ใช้ยืนยันให้ #165 ใช้ D-2 ล่าสุด. เอกสารนี้ไม่กำหนด entitlement mechanism, schema, key หรือ policy ใหม่.
+**Phase:** P3 extension · **Status:** accepted 2026-11-08 (Boss) · implementation assigned for base Arena AR-01..03 ตาม [CR-047 §11.3 D-3](../change%20request/CR-047-pro-tier-entitlement-contract.md); entitlement ยังเป็น `absent` จนกว่า ADR ตาม CR-047 §12 accepted.
+อำนาจเรื่อง tier และ offline behavior อ้าง [CR-047 §11.1 D-1 / §11.2 D-2](../change%20request/CR-047-pro-tier-entitlement-contract.md) ([PR #169](https://github.com/Freshair129/G-Maiden/pull/169)); ผู้ใช้ยืนยันให้ #165 ใช้ D-2 ล่าสุด. เอกสารนี้ไม่กำหนด entitlement mechanism, schema, key หรือ policy ใหม่.
 ข้อกำหนด authoritative คือ [[software-requirements-specification]] §4.1A; เอกสารนี้กำหนด behavior/data contract และ test oracle.
 ไม่ใช่ declaration ว่า production UI, ownership admission, native timer หรือ live acceptance เสร็จแล้ว.
 
@@ -205,3 +207,4 @@ The full runnable local prototype is supplied privately to the incumbent agent; 
 | 0.1.0 | 2026-11-08 | บันทึกแบบ Arena/Hero Inspector ที่ผู้ใช้อนุมัติ พร้อม MVP, data/ownership boundary, production-vs-demo distinction และ acceptance20รายการ. |
 | 0.1.1 | 2026-11-08 | Add the measured dimensional layout sheet and distinguish prototype dimensions from native stage constants. |
 | 0.1.2 | 2026-11-08 | Align base/Pro presentation with CR-047 D-1/D-2, honest-data density, explicit selection, local timeline and preserved navigation; add AC-021–024 and implementation prerequisites. |
+| 0.2.0 | 2026-11-08 | Boss approved the spec and started implementation (CR-047 D-3): base Arena AR-01..03 assigned, entitlement fixed to `absent` until the entitlement ADR. |

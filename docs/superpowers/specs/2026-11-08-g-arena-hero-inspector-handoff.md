@@ -1,8 +1,10 @@
 ---
 title: "G-Arena Hero Inspector — Implementation Handoff"
 doc_id: "2026-11-08-g-arena-hero-inspector-handoff"
-status: "draft"
-version: "0.1.2"
+status: "accepted"
+approved_by: "Boss — \"approve all action and start imp\" in orchestrator session"
+approved_date: "2026-11-08"
+version: "0.2.0"
 updated: "2026-11-08"
 owner: "Boss"
 related_docs: ["FEAT-G-ARENA", "software-requirements-specification", "05-sitemap-ia", "FEAT-G-PARTY"]
@@ -13,11 +15,11 @@ related_docs: ["FEAT-G-ARENA", "software-requirements-specification", "05-sitema
 ## Outcome and authority
 
 The owner-approved outcome is one Command Deck with base Arena for every tier: large center map, compact enemy cards above, four ally slots below and own hero at left. Pro unlocks the full inspector, G-Cooldown timers, G-Party ally detail and G-Review integration inside that same UI, subject to source admission.
-The canonical requirements are [[software-requirements-specification]] §4.1A and [[FEAT-G-ARENA]]. Entitlement authority and offline semantics are owned by [CR-047 §11.1 D-1 / §11.2 D-2](https://github.com/Freshair129/G-Maiden/blob/7c1e30c66bca8fb524a0d86c7b15698986027323/docs/change%20request/CR-047-pro-tier-entitlement-contract.md) ([PR #169](https://github.com/Freshair129/G-Maiden/pull/169)). The owner explicitly selected the latest D-2 semantics for this revision; do not implement the older blanket offline downgrade.
+The canonical requirements are [[software-requirements-specification]] §4.1A and [[FEAT-G-ARENA]]. Entitlement authority and offline semantics are owned by [CR-047 §11.1 D-1 / §11.2 D-2](../../change%20request/CR-047-pro-tier-entitlement-contract.md) ([PR #169](https://github.com/Freshair129/G-Maiden/pull/169)). The owner explicitly selected the latest D-2 semantics for this revision; do not implement the older blanket offline downgrade.
 
-**Current authorization: documentation only.** This handoff does not authorize production code, migrations, keys, new APIs or native builds. Implementation requires owner approval of #165, the CR-047 prerequisites (accepted follow-up ADR and M6 closure under D-2), and an explicit orchestrator assignment. Pro timers additionally require the reviewed native #154 G-Cooldown store. Keep #165 Draft and leave approval metadata unchanged.
+**Current authorization (2026-11-08, CR-047 §11.3 D-3):** Boss approved #165 and ordered implementation start. The orchestrator assigns **AR-01..AR-03** (read model, canvas, interactions, Pro presentation path) to one writer on a new branch from main. Entitlement input is fixed to `absent` until the CR-047 §12 ADR is accepted; no lease, key, schema, Edge Function or UI-local grant. Pro presentation is exercised only by fixture/test input. AR-04 Pro timers wait for the reviewed #154 store; live skills wait for CR-039 ownership admission.
 
-Status: **specification and historical fixture references; production implementation blocked by prerequisites and assignment**.
+Status: **AR-00 recorded; AR-01..03 assigned; AR-04/05 partially blocked as above**.
 
 ## Read first
 
@@ -93,3 +95,4 @@ The incumbent should acknowledge the revised PR and prerequisites, not start AR-
 | 0.1.0 | 2026-11-08 | Transfer approved Arena design, ordered UI slices, source admission boundaries and implementation acceptance to the incumbent agent. |
 | 0.1.1 | 2026-11-08 | Add dimensional drawing reference and native integration TBD boundaries. |
 | 0.1.2 | 2026-11-08 | Apply owner D-1/D-2 and four UX adjustments to AR-00–05; make code authorization conditional on explicit assignment/dependencies, preserve navigation and add tier/timeline acceptance. |
+| 0.2.0 | 2026-11-08 | Record AR-00: Boss approval and implementation assignment for AR-01..03 under CR-047 D-3; entitlement fixed to `absent`. |

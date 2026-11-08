@@ -2,7 +2,7 @@
 title: "Arena layout dimensional drawing"
 doc_id: "arena-layout-dimensional"
 status: "draft"
-version: "0.1.1"
+version: "0.1.2"
 updated: "2026-11-08"
 owner: "Boss"
 source_of_truth: false
@@ -23,7 +23,7 @@ related_docs: ["FEAT-G-ARENA", "software-requirements-specification", "03-layout
 
 ## Production overrides — D-1/D-2 และ UX review
 
-ใช้ [CR-047 §11.1 D-1 / §11.2 D-2](https://github.com/Freshair129/G-Maiden/blob/7c1e30c66bca8fb524a0d86c7b15698986027323/docs/change%20request/CR-047-pro-tier-entitlement-contract.md) ([PR #169](https://github.com/Freshair129/G-Maiden/pull/169)) สำหรับ authority/offline semantics; ตาราง capability และ transition ของ [[FEAT-G-ARENA]] §2.1–2.2 เป็น oracle สำหรับ implementation. ไม่คัดลอก entitlement mechanism มาออกแบบในแผ่น layout.
+ใช้ [CR-047 §11.1 D-1 / §11.2 D-2](../change%20request/CR-047-pro-tier-entitlement-contract.md) ([PR #169](https://github.com/Freshair129/G-Maiden/pull/169)) สำหรับ authority/offline semantics; ตาราง capability และ transition ของ [[FEAT-G-ARENA]] §2.1–2.2 เป็น oracle สำหรับ implementation. ไม่คัดลอก entitlement mechanism มาออกแบบในแผ่น layout.
 
 | Region / fixture element | Production override |
 | --- | --- |
@@ -91,3 +91,4 @@ Drawing helpers ดัดแปลงจาก `examples/card-sheet.html` ขอ
 | --- | --- | --- |
 | 0.1.0 | 2026-11-08 | เพิ่ม measured monochrome layout sheet พร้อมสอง viewport, card/skill/item details, variable tables และ native geometry boundary. |
 | 0.1.1 | 2026-11-08 | Mark existing sheets as historical fixture measurements and specify D-1/D-2 base/Pro, compact cards, selection-only inspector, timeline and preserved chrome overrides without changing stage/TBDs. |
+| 0.1.2 | 2026-11-08 | Link CR-047 on main after #169 merged. |
