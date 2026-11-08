@@ -20,8 +20,9 @@ function skillStatus(skill: SkillView) {
   if (value(skill.canCast) === false) return 'ยังใช้ไม่ได้';
   return 'ยังไม่ทราบความพร้อม';
 }
+const SOURCE_LABEL: Record<FieldState<unknown>['source'], string> = { 'own-gsi': 'GSI ของคุณ', party: 'G-Party', cv: 'CV แมป', catalog: 'catalog' };
 function provenance(field: FieldState<unknown>) {
-  return `${field.source}${field.source === 'catalog' ? ' · catalog-only' : ''} · อายุ ${age(field.ageMs)}${field.availability === 'stale' ? ' · ข้อมูลเก่า' : ''}`;
+  return `${SOURCE_LABEL[field.source]}${field.source === 'catalog' ? ' · catalog-only' : ''} · อายุ ${age(field.ageMs)}${field.availability === 'stale' ? ' · ข้อมูลเก่า' : ''}`;
 }
 function Vitals({ hero }: { hero: HeroView }) {
   const hp = value(hero.hp), max = value(hero.maxHp), percent = value(hero.hpPercent), mana = value(hero.manaPercent);
@@ -34,6 +35,8 @@ function Vitals({ hero }: { hero: HeroView }) {
 }
 function Presence({ hero }: { hero: HeroView }) {
   const seen = value(hero.visibility);
+  // An empty slot (no admitted identity and no observation) stays quiet instead of repeating dashes.
+  if (value(hero.identity) === null && seen === null) return null;
   return <span className="arena-presence">{seen === 'seen' ? 'พบในแมป' : seen === 'missing' ? 'หายจากแมป' : 'การมองเห็น —'}<small>พบล่าสุด {age(value(hero.lastSeenAgeMs))}</small></span>;
 }
 function Portrait({ hero }: { hero: HeroView }) {

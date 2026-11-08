@@ -141,10 +141,22 @@ it('AC-010 fences selection and late controls across match, source and identity 
   }
 });
 it('AC-023 renders compact enemies and allies without unknown matrices or invented last-seen times', async () => {
-  await render(fixture(), pro);
+  const model = fixture();
+  model.enemies[0].identity = known('pudge', 'cv');
+  model.allies[0].identity = known('axe', 'cv');
+  await render(model, pro);
   for (const card of container.querySelectorAll('[data-hero-card]:not([data-team="self"])')) {
-    expect(card.textContent).toContain('พบล่าสุด —'); expect(card.textContent).not.toMatch(/HP|MP|Skill|\?/);
+    expect(card.textContent).not.toMatch(/HP|MP|Skill|\?/);
   }
+  const named = [...container.querySelectorAll('[data-hero-card]')].filter(card => /Pudge|Axe/.test(card.textContent ?? ''));
+  expect(named).toHaveLength(2);
+  for (const card of named) expect(card.textContent).toContain('พบล่าสุด —');
+});
+it('AC-023 keeps empty slots quiet: no repeated visibility/last-seen dashes without an identity', async () => {
+  await render(buildArena(null));
+  const empty = [...container.querySelectorAll('[data-hero-card]:not([data-team="self"])')];
+  expect(empty).toHaveLength(9);
+  for (const card of empty) expect(card.textContent).not.toMatch(/การมองเห็น|พบล่าสุด/);
 });
 it('AC-017/024 bounds local activity/events inside the reserved region for both tiers, including empty/stale', async () => {
   const style = document.createElement('style'); style.textContent = arenaCss;
