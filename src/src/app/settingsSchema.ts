@@ -89,6 +89,7 @@ function normalizeLayout(value: unknown, fallback: Layout): Layout {
 const LEGACY_DEFAULT_POSITIONS = {
   banner: { x: 50, y: 34, scale: 1, enabled: true },
   standby: { x: 50, y: 5, scale: 1, enabled: true },
+  buyback: { x: 89, y: 84, scale: 0.75, enabled: true },
 } as const
 
 function migrateLegacyDefaultPositions(value: unknown): unknown {
@@ -96,7 +97,7 @@ function migrateLegacyDefaultPositions(value: unknown): unknown {
   if (!saved) return value
 
   const next = { ...saved }
-  for (const id of ['banner', 'standby'] as const) {
+  for (const id of ['banner', 'standby', 'buyback'] as const) {
     const current = asRecord(saved[id])
     const legacy = LEGACY_DEFAULT_POSITIONS[id]
     if (current?.x === legacy.x && current.y === legacy.y
