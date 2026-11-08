@@ -1,11 +1,11 @@
 ---
 title: "Documentation Index"
 doc_id: "DOC-INDEX"
-version: "0.2.12"
+version: "0.2.13"
 created_at: "2026-07-19T00:00:00+07:00,Unknown"
 last_update: "2026-11-01T00:00:00+07:00,Codex"
 status: "active"
-updated: "2026-11-06"
+updated: "2026-11-08"
 owner: "Boss"
 attributes:
   domain: "documentation-governance"
@@ -153,6 +153,7 @@ attributes:
   - `docs/change request/CR-035-selected-target-hud-cv-and-action-lethality.md` — proposed selected-target HUD CV + single-action G-Damage, Issue #71
   - `docs/change request/CR-037-party-gsi-own-stat-sharing.md` — owner-authorized cooperative own-stat sharing; detailed implementation decisions and acceptance boundaries
   - `docs/change request/CR-038-party-friends-presence-invitations.md` — supervised Friends implementation through protected PR merge, issue #106
+  - `docs/change request/CR-047-pro-tier-entitlement-contract.md` — [[CR-047-pro-tier-entitlement-contract]] draft Pro tier + entitlement contract for Pro-only G-Arena (#165); pending Boss decision, not approved
   - `docs/change request/CR-*.md` — เอกสาร CR อื่นๆ ทั้งหมดตั้งแต่ CR-001 ถึง CR-038
 
 ## Operations
@@ -224,3 +225,4 @@ attributes:
 | 0.2.10 | 2026-11-01 | Register G-Party feature, CR-037 and implementation plan with explicit consent and pending acceptance. |
 | 0.2.11 | 2026-11-01 | Index CR-038, ADR-20, G-Friends feature, design/implementation plan and social operations/evidence runbook. |
 | 0.2.12 | 2026-11-06 | Replace the in-repo Orchestration section with a pointer to the standalone G-Orchestra repository (#134). |
+| 0.2.13 | 2026-11-08 | Index draft CR-047 (Pro tier + entitlement contract); pending Boss decision. |

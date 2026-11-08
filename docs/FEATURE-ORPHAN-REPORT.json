@@ -1,12 +1,12 @@
 {
   "_generated": "GENERATED — do not hand-edit; re-run tools/doc-graph/orphan-report.mjs",
-  "generatedAt": "2026-11-08T06:24:32.212Z",
-  "baselineOrphanCandidates": 0,
-  "rowCount": 18,
+  "generatedAt": "2026-11-08T07:09:29.752Z",
+  "baselineOrphanCandidates": 1,
+  "rowCount": 19,
   "summary": {
     "anchored": 5,
     "planned": 9,
-    "weakly-anchored": 0,
+    "weakly-anchored": 1,
     "superseded": 0,
     "archived": 4,
     "orphan-candidate": 0,
@@ -24,6 +24,20 @@
       "supersededBy": null,
       "supersededByExists": true,
       "reason": "Lifecycle explicitly marks the document as retained history."
+    },
+    {
+      "id": "CR-047-pro-tier-entitlement-contract",
+      "slug": "CR-047-pro-tier-entitlement-contract",
+      "path": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
+      "lifecycle": "draft",
+      "classification": "weakly-anchored",
+      "strongAnchors": [],
+      "weakAnchors": [
+        "docs/DOC-INDEX.md"
+      ],
+      "supersededBy": null,
+      "supersededByExists": true,
+      "reason": "Only active document references remain; no strong registry/code anchor found."
     },
     {
       "id": "FEAT-G-COACH",

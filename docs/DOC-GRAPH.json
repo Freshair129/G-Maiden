@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-08T06:24:26.120Z",
+  "generatedAt": "2026-11-08T07:09:22.701Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -659,6 +659,13 @@
       "path": "docs/change request/CR-046-demo-mvp-announcer-gank-slice.md",
       "title": "CR-046 — First demo slice: Announcer Pack + Gank Meter + missing-hero alert",
       "status": "accepted"
+    },
+    {
+      "id": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
+      "type": "doc",
+      "path": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
+      "title": "CR-047 — Pro tier and entitlement contract (G-Arena gating)",
+      "status": "draft"
     },
     {
       "id": "docs/change request/DXGI-task-assignment.md",
@@ -2024,39 +2031,45 @@
     },
     {
       "from": "docs/DOC-INDEX.md",
+      "to": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
+      "type": "wikilink",
+      "line": 156
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
       "to": "docs/operations/g-party-social-operations.md",
       "type": "wikilink",
-      "line": 160
+      "line": 161
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/scaffold-setup.md",
       "type": "wikilink",
-      "line": 179
+      "line": 180
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/small-model-prompting.md",
       "type": "wikilink",
-      "line": 181
+      "line": 182
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/research/concepts/subagent-context-scoping.md",
       "type": "wikilink",
-      "line": 186
+      "line": 187
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
       "type": "wikilink",
-      "line": 197
+      "line": 198
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/superpowers/plans/2026-11-01-g-party-friends.md",
       "type": "wikilink",
-      "line": 199
+      "line": 200
     },
     {
       "from": "docs/README.md",
@@ -5525,6 +5538,66 @@
       "to": "docs/architecture/gann-event-media-contract.md",
       "type": "wikilink",
       "line": 172
+    },
+    {
+      "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 30
+    },
+    {
+      "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
+      "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
+      "type": "wikilink",
+      "line": 31
+    },
+    {
+      "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
+      "to": "docs/architecture/adr/ADR-16-credit-economy-and-mint-oracle.md",
+      "type": "wikilink",
+      "line": 32
+    },
+    {
+      "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
+      "to": "docs/change request/CR-003-account-phase1-wallet-billing.md",
+      "type": "wikilink",
+      "line": 33
+    },
+    {
+      "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
+      "to": "docs/product/mvp-delivery-plan.md",
+      "type": "wikilink",
+      "line": 34
+    },
+    {
+      "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
+      "to": "docs/architecture/gann-event-media-contract.md",
+      "type": "wikilink",
+      "line": 37
+    },
+    {
+      "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
+      "to": "docs/architecture/oauth-jwt-client-authorization-flows.md",
+      "type": "wikilink",
+      "line": 107
+    },
+    {
+      "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
+      "to": "docs/product/mvp-delivery-plan.md",
+      "type": "wikilink",
+      "line": 217
+    },
+    {
+      "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 240
+    },
+    {
+      "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
+      "to": "docs/product/mvp-delivery-plan.md",
+      "type": "wikilink",
+      "line": 244
     },
     {
       "from": "docs/change request/IMPL-PLAN-DXGI-migration.md",
@@ -10042,7 +10115,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-08T06:24:31.841Z",
+    "generatedAt": "2026-11-08T07:09:29.322Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,
