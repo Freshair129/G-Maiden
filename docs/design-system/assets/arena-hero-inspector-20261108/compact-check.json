@@ -1,0 +1,30 @@
+{
+  "before": {
+    "bottom": 553,
+    "height": 369,
+    "left": 446.109375,
+    "right": 815.109375,
+    "top": 184,
+    "width": 369,
+    "x": 446.109375,
+    "y": 184
+  },
+  "after": {
+    "allyTop": 563,
+    "clippedSkills": 0,
+    "coachBottom": 530.703125,
+    "height": 720,
+    "map": {
+      "bottom": 553,
+      "height": 369,
+      "left": 446.109375,
+      "right": 815.109375,
+      "top": 184,
+      "width": 369,
+      "x": 446.109375,
+      "y": 184
+    },
+    "pageHeight": 720
+  },
+  "mapStable": true
+}

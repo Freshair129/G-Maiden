@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "approvedOn": "2026-11-08",
+  "status": "approved design reference; production implementation pending",
+  "sourceBaseline": "6a26d628992f0267ef4d848d92f2050bdbfa3c0f",
+  "evidenceBoundary": "Synthetic browser prototype only. No native GSI/CV/Party, live-game, NFR or release acceptance.",
+  "runnablePrototype": "Supplied privately to the incumbent on the shared host. Reference source here is not imported by production and omits the runtime asset bundle.",
+  "referenceFiles": [
+    {
+      "path": "desktop-approved.jpg",
+      "source": "evidence/desktop-final.jpg",
+      "bytes": 339554,
+      "sha256": "10f6e980e7ef5fa524ea03d17420911046a394edb484def2c8b43453ade5f0ce"
+    },
+    {
+      "path": "compact-approved.jpg",
+      "source": "evidence/default-1280x720.jpg",
+      "bytes": 212001,
+      "sha256": "736d3ebd06e94942f42af2a3b287161dc9a5374af6e4479e5d0826b6ada48381"
+    },
+    {
+      "path": "interaction-checks.json",
+      "source": "evidence/interaction-checks.json",
+      "bytes": 3303,
+      "sha256": "eefe1830eda410e67292c916ccbb165123412f85eb3837ad230dfc0312fe7107"
+    },
+    {
+      "path": "compact-check.json",
+      "source": "evidence/compact-check.json",
+      "bytes": 522,
+      "sha256": "3d636fffb5130c04b551d253d78048e1a73bde4bd3f840da458bf5e8538c39e3"
+    },
+    {
+      "path": "reference-App.jsx",
+      "source": "src/App.jsx",
+      "bytes": 20623,
+      "sha256": "dff62646286b5281aeb249460bc4f6f9b8bec5b55717c9e45ddebbad095af075"
+    },
+    {
+      "path": "reference-data.js",
+      "source": "src/data.js",
+      "bytes": 7359,
+      "sha256": "0dff7ede25aae0c0fdb338b568b858e5ec7d46c40b273aaeb5ab8bcf9306882a"
+    },
+    {
+      "path": "reference-styles.css",
+      "source": "src/styles.css",
+      "bytes": 30575,
+      "sha256": "4ebad8481f7ac76bb7c504bb75a577170c6c3ce0577fd65a6183102e070b6f6f"
+    }
+  ],
+  "credits": {
+    "heroSkillItemArtwork": "Valve Dota 2; prototype references Steam CDN assets",
+    "icons": "Phosphor (MIT)",
+    "font": "Noto Sans Thai (OFL)",
+    "map": "Generated synthetic design artwork, not a live map or calibration source",
+    "mascot": "Supplied G-Maiden project asset"
+  },
+  "productionExclusions": [
+    "Fixture roster, inventory, health and coordinates",
+    "Browser authoritative countdown and arbitrary skill/item timers",
+    "Play/Pause/Reset mock-clock controls",
+    "Disabled demo navigation",
+    "Mobile page-scrolling behavior"
+  ]
+}
