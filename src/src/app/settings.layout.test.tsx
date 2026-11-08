@@ -58,7 +58,7 @@ describe.each([
     const settings = mergeStoredSettings(null, { layout: ownerLayout }, null)
 
     expect(settings.layout).toEqual(DEFAULT_LAYOUT)
-    expect(settings.layout.banner).toEqual({ x: 50, y: 13, scale: 0.45, enabled: true })
+    expect(settings.layout.banner).toEqual({ x: 50, y: 10.5, scale: 0.45, enabled: true })
     expect(settings.layout.standby).toEqual(ownerLayout.standby)
     expect(JSON.stringify(ownerLayout)).toBe(original)
   })

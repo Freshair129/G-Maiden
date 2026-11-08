@@ -21,7 +21,7 @@ import { Overlay } from './Overlay'
 
 let root: Root
 let container: HTMLDivElement
-const chips = ['clock', 'kda', 'gold', 'gpm', 'xpm', 'nw', 'companion'] as const
+const chips = ['kda', 'gold', 'gpm', 'xpm', 'nw', 'companion'] as const
 const session = { session_epoch: 1, session_lifecycle: 'live', match_id: 'fixture-match' }
 
 beforeEach(async () => {
@@ -60,7 +60,7 @@ it('renders the real FullOverlay after a live tick and layout reset with false l
     expect(module(id)!.style.left).toBe(`${DEFAULT_LAYOUT[id].x}%`)
     expect(module(id)!.style.top).toBe(`${DEFAULT_LAYOUT[id].y}%`)
   }
-  expect(module('clock')!.textContent).toContain('10:00')
+  expect(module('clock')).toBeNull() // owner 2026-11-08: no clock chip by default
 })
 
 it('preserves freshness and match gates instead of displaying stale own-state to force chips visible', async () => {

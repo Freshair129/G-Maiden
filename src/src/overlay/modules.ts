@@ -81,21 +81,26 @@ export const DEFAULT_LAYOUT: Layout = {
   missing: { x: 89, y: 33, scale: 0.8, enabled: true },
   // Announcer banners render NATIVELY (src-tauri/src/gann_native_windows.rs `place`):
   // width = min(680px, 72% screen) × scale, height = width × 420/960, centred on (x, y).
-  // Owner 2026-11-08: smaller and higher. At 1920×1080, scale 0.45 → 306×134px; y13 puts
-  // the top edge at ≈73px (just below the hero-bar lane labels) and the bottom at ≈207px.
+  // Owner 2026-11-08: smaller and higher. At 1920×1080, scale 0.45 → 306×134px; y10.5 puts
+  // the box at ≈46–180px. The art starts ≈27px below the box top (transparent padding),
+  // so the visible frame begins ≈73px, just under Dota's kill/streak announcement line.
   // (The 320×190 MODULE_BOX below is only the editor preview frame.)
-  banner: { x: 50, y: 13, scale: 0.45, enabled: true },
+  banner: { x: 50, y: 10.5, scale: 0.45, enabled: true },
   lowhp: { x: 89, y: 61, scale: 0.8, enabled: true },
   vol: { x: 78, y: 94, scale: 0.8, enabled: true },
   standby: { x: 93, y: 10, scale: 0.85, enabled: true },
   // Owner-specified pre-#91 centres at y43.2px; labelled-chip top 21.7px.
-  clock: { x: 4, y: 4, scale: 1, enabled: true },
+  // Owner 2026-11-08: stat chips form one row level with Dota's hero portraits (centre y≈24px),
+  // scale 0.78, packed between Dota's menu icons (end ≈140px) and the hero-bar zone
+  // (layoutGeometry x >= 27 percent = 518px) at 1920×1080: kda→xpm span ≈150–507px. No clock chip.
+  // Owner 2026-11-08: no clock chip.
+  clock: { x: 4, y: 4, scale: 1, enabled: false },
   score: { x: 84.5, y: 13, scale: 1, enabled: false },
-  kda: { x: 9.5, y: 4, scale: 1, enabled: true },
-  gold: { x: 15, y: 4, scale: 1, enabled: true },
-  gpm: { x: 20.5, y: 4, scale: 1, enabled: true },
-  xpm: { x: 31.5, y: 4, scale: 1, enabled: true },
-  nw: { x: 26, y: 4, scale: 1, enabled: true },
+  kda: { x: 9.64, y: 2.2, scale: 0.78, enabled: true },
+  gold: { x: 13.56, y: 2.2, scale: 0.78, enabled: true },
+  gpm: { x: 17.23, y: 2.2, scale: 0.78, enabled: true },
+  xpm: { x: 24.82, y: 2.2, scale: 0.78, enabled: true },
+  nw: { x: 21.02, y: 2.2, scale: 0.78, enabled: true },
   hero: { x: 79.5, y: 35, scale: 0.8, enabled: false },
 }
 
