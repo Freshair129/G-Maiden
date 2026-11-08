@@ -79,9 +79,10 @@ export const DEFAULT_LAYOUT: Layout = {
   advice: { x: 89, y: 75, scale: 0.75, enabled: true },
   // Owner direction 2026-11-08: a compact strip under Dota's score/clock row,
   // no wider than the two score cells, clear of the inventory and stash.
-  // Owner 2026-11-08: buyback strip (dead-only) takes the slot directly above the minimap
-  // (minimap top ≈788px): 196×40px, y ≈743–783px, x ≈46–242px.
-  buyback: { x: 7.5, y: 70.6, scale: 1, enabled: true },
+  // Owner 2026-11-08: buyback strip (dead-only) sits bottom-centre, directly above the round
+  // buff/status icons over the ability bar (icon top ≈857px): 196×40px, x ≈862–1058px,
+  // y ≈809–849px. Not on the left — that covers the kill feed.
+  buyback: { x: 50, y: 76.8, scale: 1, enabled: true },
   missing: { x: 89, y: 33, scale: 0.8, enabled: true },
   // Announcer banners render NATIVELY (src-tauri/src/gann_native_windows.rs `place`):
   // width = min(680px, 72% screen) × scale, height = width × 420/960, centred on (x, y).
