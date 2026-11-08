@@ -85,7 +85,7 @@ No other module needs moving to avoid an overlay-module collision.
 | `kda` `gold` `gpm` `nw` `xpm` | 9.64 / 13.56 / 17.23 / 21.02 / 24.82 | 2.2 | 0.78 | One row level with the hero portraits, ≈150–507px, clear of the hero bar (owner 2026-11-08) |
 | `clock` | 4 | 4 | 1 | Disabled by default (owner 2026-11-08) |
 | `score` | 84.5 | 13 | 1 | Disabled by default (owner 2026-11-08) |
-| `buyback` | 50 | 76.8 | 1 | Compact 196×40px strip bottom-centre directly above the buff icons (≈809–849px), shown only while dead; kept off the left kill feed (owner 2026-11-08) |
+| `buyback` | 50 | 74.5 | 0.75 | Original buyback card (315×90px) bottom-centre directly above the buff icons (≈760–850px), shown only while dead; kept off the left kill feed (owner 2026-11-08) |
 
 Evidence: owner-supplied `target-20261101.png` and `current-after-reset-20261108.webp`
 in the git-excluded `.codex-evidence/` directory; these private captures are not published

@@ -160,6 +160,11 @@ const PR166_R4_DEFAULT_LAYOUT = Object.freeze({
   buyback: Object.freeze({ x: 7.5, y: 70.6, scale: 1, enabled: true }),
 })
 
+const PR166_R5_DEFAULT_LAYOUT = Object.freeze({
+  // Fifth round (5bd9c920): compact strip bottom-centre; the owner restored the full card.
+  buyback: Object.freeze({ x: 50, y: 76.8, scale: 1, enabled: true }),
+})
+
 // Frozen pre-#90 defaults from a71d07a47c64379a8a2be6d8038e19c22ebc46bd^:
 // src/src/overlay/modules.ts, retained from the original notification migration.
 const LEGACY_DEFAULT_POSITIONS = Object.freeze({
@@ -172,7 +177,7 @@ function migrateLegacyDefaultPositions(value: unknown): unknown {
   if (!saved) return value
 
   const next = { ...saved }
-  for (const defaults of [PRE_91_DEFAULT_LAYOUT, POST_91_DEFAULT_LAYOUT, PR166_R1_DEFAULT_LAYOUT, PR166_R2_DEFAULT_LAYOUT, PR166_R3_DEFAULT_LAYOUT, PR166_R4_DEFAULT_LAYOUT, LEGACY_DEFAULT_POSITIONS]) {
+  for (const defaults of [PRE_91_DEFAULT_LAYOUT, POST_91_DEFAULT_LAYOUT, PR166_R1_DEFAULT_LAYOUT, PR166_R2_DEFAULT_LAYOUT, PR166_R3_DEFAULT_LAYOUT, PR166_R4_DEFAULT_LAYOUT, PR166_R5_DEFAULT_LAYOUT, LEGACY_DEFAULT_POSITIONS]) {
     for (const [id, legacy] of Object.entries(defaults)) {
       const current = asRecord(saved[id])
       if (current && current.x === legacy.x && current.y === legacy.y

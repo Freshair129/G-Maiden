@@ -57,7 +57,7 @@ describe('screenshot-based overlay layout', () => {
     expect(rect.x + rect.w).toBeLessThanOrEqual(55.3)
     expect((rect.y + rect.h) * 1080 / 100).toBeLessThan(73) // above the banner art
   })
-  it('keeps the buyback strip bottom-centre above the buff icons, off the left kill feed', () => {
+  it('keeps the buyback card bottom-centre above the buff icons, off the left kill feed', () => {
     const rect = moduleRect('buyback', DEFAULT_LAYOUT.buyback)
     expect(rect.x + rect.w / 2).toBeCloseTo(50)
     expect((rect.y + rect.h) * 1080 / 100).toBeLessThanOrEqual(852) // buff icons start ≈857px
