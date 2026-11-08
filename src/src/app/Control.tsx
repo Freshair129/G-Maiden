@@ -59,7 +59,8 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
     localStorage.setItem('gm-profiles', JSON.stringify(updated))
   }
   const applyProfile = (p: OverlayProfile) => {
-    setS(prev => ({ ...prev, opacity: p.opacity, layout: p.layout ? normalizeLayout(p.layout) : normalizeLayout({ ...prev.layout, clock: { ...prev.layout.clock, enabled: p.showTimer }, score: { ...prev.layout.score, enabled: p.showScore }, hero: { ...prev.layout.hero, enabled: p.showHeroBar }, kda: { ...prev.layout.kda, enabled: p.showKda }, gold: { ...prev.layout.gold, enabled: p.showGold } }) }))
+    // The settings provider migrates exact saved defaults before validation; editor clamping would alter that input.
+    setS(prev => ({ ...prev, opacity: p.opacity, layout: p.layout ?? normalizeLayout({ ...prev.layout, clock: { ...prev.layout.clock, enabled: p.showTimer }, score: { ...prev.layout.score, enabled: p.showScore }, hero: { ...prev.layout.hero, enabled: p.showHeroBar }, kda: { ...prev.layout.kda, enabled: p.showKda }, gold: { ...prev.layout.gold, enabled: p.showGold } }) }))
   }
   const deleteProfile = (name: string) => {
     const updated = profiles.filter(x => x.name !== name)

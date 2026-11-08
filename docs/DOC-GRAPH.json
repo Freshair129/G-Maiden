@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-07T21:22:22.123Z",
+  "generatedAt": "2026-11-08T06:45:21.740Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -1720,11 +1720,6 @@
       "id": "src-tauri/src/",
       "type": "code",
       "path": "src-tauri/src/"
-    },
-    {
-      "id": "src/src/overlay/modules.ts",
-      "type": "code",
-      "path": "src/src/overlay/modules.ts"
     },
     {
       "id": "src-tauri/data/heroes.json",
@@ -7005,37 +7000,19 @@
       "from": "docs/design-system/07-combat-hud.md",
       "to": "docs/design-system/01-foundations.md",
       "type": "wikilink",
-      "line": 24
-    },
-    {
-      "from": "docs/design-system/07-combat-hud.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 20
+      "line": 25
     },
     {
       "from": "docs/design-system/07-combat-hud.md",
       "to": "src/src/overlay/FullOverlay.tsx",
       "type": "symbol",
-      "line": 20
-    },
-    {
-      "from": "docs/design-system/07-combat-hud.md",
-      "to": "src/src/overlay/modules.ts",
-      "type": "symbol",
-      "line": 21
-    },
-    {
-      "from": "docs/design-system/07-combat-hud.md",
-      "to": "src/src/overlay/FullOverlay.tsx",
-      "type": "symbol",
-      "line": 96
+      "line": 142
     },
     {
       "from": "docs/design-system/07-combat-hud.md",
       "to": "src/src/DeckIcons.tsx",
       "type": "symbol",
-      "line": 98
+      "line": 144
     },
     {
       "from": "docs/design-system/09-graphite-clarity.md",
@@ -10073,7 +10050,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-07T21:22:26.492Z",
+    "generatedAt": "2026-11-08T06:45:32.138Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,
