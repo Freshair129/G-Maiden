@@ -1,10 +1,10 @@
 ---
 title: "CR-047 — Pro tier and entitlement contract (G-Arena gating)"
 doc_id: "CR-047-pro-tier-entitlement-contract"
-status: "draft"
-approved_by: ""
-approved_date: ""
-version: "0.2.0"
+status: "accepted"
+approved_by: "Claude orchestrator under explicit Boss delegation (2026-11-08) — agent decision, not human sign-off"
+approved_date: "2026-11-08"
+version: "0.3.0"
 updated: "2026-11-08"
 owner: "Boss"
 complexity: "C-3"
@@ -14,12 +14,14 @@ related_docs: ["mvp-decisions", "ADR-14-gid-account-identity", "ADR-16-credit-ec
 
 # CR-047: Pro tier และ entitlement contract (เพื่อให้ G-Arena เป็น Pro-only)
 
-> **สถานะ:** draft — รอ Boss ตัดสินใจตาม §11. **ยังไม่อนุมัติ** (`approved_by` ว่างโดยตั้งใจ).
+> **สถานะ:** accepted (2026-11-08) — มติ D-1 โดย Boss (§11.1) และ D-2 โดย Claude orchestrator ภายใต้การมอบอำนาจของ Boss (§11.2).
+> D-2 เป็นการตัดสินใจของ agent ไม่ใช่การลงนามของมนุษย์.
+> **Implementation ยังถูก block** จนกว่า ADR ตาม §12 accepted **และ** M6 ปิด (F2).
 > **มติ Owner D-1 (2026-11-08, §11.1):** Command Deck เดียวทุก tier; ทุกคนได้ base Arena; Pro ปลดล็อกฟีเจอร์ภายใน UI เดียวกัน.
 > มตินี้แทน §7.3 และ §8 เดิม และแก้ความหมายของ "Pro-only" ใน §1–§3. อ่าน §11.1 ก่อนส่วนอื่น.
 > **Risk: HIGH / C-3** — เพิ่มแนวคิด entitlement ใหม่, กุญแจเซ็น server-side, และ network path ใหม่ของ account.
 > เอกสารนี้เป็น doc-first เท่านั้น: ไม่มี code, migration, Edge Function, provider หรือราคาใด ๆ ถูกสร้างหรือ deploy.
-> ห้ามเริ่ม implementation จนกว่า CR นี้ accepted **และ** ADR ตาม §12 accepted.
+> ห้ามเริ่ม implementation จนกว่า ADR ตาม §12 accepted **และ** M6 ปิด (D-2 Q1 = F2).
 
 ## 1. เหตุผลและที่มา
 
@@ -232,16 +234,16 @@ Lease เป็น JSON canonical + Ed25519 signature (รูปแบบเด�
 
 | # | คำถาม | ข้อเสนอ |
 | --- | --- | --- |
-| Q1 | Freeze: F1 ข้อยกเว้น หรือ F2 หลัง M6 (§10) | ไม่ผูกมัด |
-| Q2 | ได้ Pro อย่างไร: A grant, B G-Coins pass, C subscription (§4) | A ก่อน |
-| Q3 | วิธีตรวจ: S1 signed lease หรือ S2 server check (§5) | S1 |
-| Q4 | `LEASE_TTL` / ช่วง offline: 3, 7 หรือ 14 วัน (§7.1) | 7 วัน |
+| Q1 | Freeze: F1 ข้อยกเว้น หรือ F2 หลัง M6 (§10) | **ตอบแล้ว (D-2, §11.2):** F2 |
+| Q2 | ได้ Pro อย่างไร: A grant, B G-Coins pass, C subscription (§4) | **ตอบแล้ว (D-2):** A |
+| Q3 | วิธีตรวจ: S1 signed lease หรือ S2 server check (§5) | **ตอบแล้ว (D-2):** S1 |
+| Q4 | `LEASE_TTL` / ช่วง offline: 3, 7 หรือ 14 วัน (§7.1) | **ตอบแล้ว (D-2):** 7 วัน, refresh ทุก 24 ชม. |
 | Q5 | หมดสิทธิ์กลางแมตช์: รอจบแมตช์ หรือ ตัดทันที (§7.3) | **ตอบแล้ว (D-1, §11.1):** ลดเป็น base Arena ทันที |
-| Q6 | จำนวนเครื่องต่อ account | 2 เครื่อง |
+| Q6 | จำนวนเครื่องต่อ account | **ตอบแล้ว (D-2):** ไม่เกิน 2 เครื่อง |
 | Q7 | Pro ในรุ่นแรกมีเฉพาะ `g-arena` ใช่หรือไม่ | **ตอบแล้ว (D-1, §11.1):** ไม่ใช่ — Arena base ให้ทุกคน; Pro เปิด 4 ฟีเจอร์เสริม |
 | Q8 | Pro มี UI แยกหรือใช้ deck เดียวกัน | **ตอบแล้ว (D-1, §11.1):** Command Deck เดียวทุก tier |
 
-Q1, Q2, Q3, Q4 และ Q6 ยังเปิดอยู่.
+ทุกคำถามใน §11 ตอบแล้ว: Q5/Q7/Q8 โดย D-1 (§11.1) และ Q1–Q4/Q6 โดย D-2 (§11.2).
 
 ### 11.1 มติ Owner D-1 (2026-11-08)
 
@@ -277,10 +279,31 @@ Boss ตอบว่า "approve" ต่อข้อเสนอนี้เม�
 - PRO-AC-001: cold start offline/signed-out ต้องเห็น **base Arena** (ไม่ใช่ Live > สด เดิม).
 - PRO-AC-004: หมดอายุกลางแมตช์ต้องลดเป็น base Arena **ทันที**, ไม่มีหน้าว่างหรือค้าง, ไม่มีเสียง/toast; overlay/G-Signal ไม่กระทบ.
 
-**ข้อสังเกตที่ต้องตัดสินคู่กับ Q3:** ถ้าเลือก S1 (signed lease) การ offline โดยที่ lease ยังไม่หมดอายุยังคงเป็น `active` (§7.1),
-จึงไม่ลดเป็น base ทันทีเพียงเพราะ offline. ถ้า Boss ต้องการให้ "offline = ลดเป็น base ทันที" ตามตัวอักษร
-ผลจะเท่ากับเลือก S2 (server check). ผู้เขียนตีความว่า "offline" ในข้อ 6 หมายถึงกรณีที่ตรวจสิทธิ์ไม่ได้แล้ว
-(`lapsed`/`unverifiable`) แต่ยังต้องให้ Boss ยืนยันเมื่อตอบ Q3.
+**ข้อสังเกตเรื่อง Q3 (แก้แล้วโดย D-2 ข้อ 3):** ภายใต้ S1 การ offline โดยที่ lease ยังไม่หมดอายุยังคงเป็น `active` (§7.1).
+"Offline → ลดเป็น base" ในข้อ 6 หมายถึงกรณีที่ตรวจสิทธิ์ไม่ได้แล้ว (`lapsed`/`unverifiable`) ซึ่งต้องลดเป็น base Arena ทันที.
+
+### 11.2 มติ D-2 (2026-11-08) — Claude orchestrator ภายใต้การมอบอำนาจของ Boss อย่างชัดแจ้ง
+
+> **นี่เป็นการตัดสินใจของ agent ภายใต้อำนาจที่ได้รับมอบ ไม่ใช่การลงนามของมนุษย์.**
+> Boss มอบอำนาจเมื่อ 2026-11-08: "งั้น CR ที่กำลังทำโปรเทียก็ให้คุณ approve ตัดสินใจแนวทางไปเลย".
+> ผู้ตัดสินคือ Claude orchestrator session (`local_c899070a-a80a-4d77-99e0-bf294489e9ef`); session ผู้เขียน CR นี้บันทึกตามที่ได้รับแจ้ง.
+> มติ D-1 (§11.1) ซึ่ง Boss approve เองยังคงมีผลเหนือ D-2 ในเรื่องที่ทับกัน.
+
+1. **Q1 = F2: เลื่อน implementation ไปหลัง M6 ปิด.**
+   - เหตุผล: กฎที่ใช้อยู่ให้ freeze owner extension ใหม่จนถึง M6 ([[mvp-delivery-plan]]) และ entitlement path พึ่ง MVP-044
+     (Google session/revocation) ซึ่งยังไม่ผ่าน acceptance.
+   - ทำได้ตอนนี้: เอกสาร, ADR ตาม §12 และสเปกบน #165.
+   - ห้ามสร้าง code, migration, Edge Function หรือ signing key ใด ๆ ก่อน M6 ปิด **และ** ADR ตาม §12 accepted.
+2. **Q2 = A: Owner/admin grant เท่านั้นสำหรับรุ่นแรก** และทุก grant ต้องมีวันหมดอายุ. ทางเลือก B (G-Coins pass) และ C (subscription) ต้องมี CR ใหม่.
+3. **Q3 = S1: signed Ed25519 lease** (§5). ขยายความ D-1 ข้อ 6:
+   - offline ขณะ lease ยังใช้ได้ = `active` และ Pro ยังเปิดอยู่
+   - เมื่อตรวจสิทธิ์ไม่ได้แล้ว (`lapsed`/`unverifiable`) หรือถูก `revoked` → ลดเป็น base Arena ทันที ไม่มีหน้าว่างหรือค้าง
+4. **Q4: `LEASE_TTL` = 7 วัน**, refresh ทุก 24 ชม. เมื่อ online (§5.3, §7.1).
+5. **Q6: ไม่เกิน 2 เครื่องต่อ account** (นับตาม `install` hash ที่ server เห็น). วิธีปลดเครื่องเก่ากำหนดใน ADR ตาม §12.
+
+**C-3 gate ที่ยังคงอยู่:** การ accept CR นี้ไม่ได้ accept ADR ตาม §12 (lease schema, key storage/rotation/compromise runbook,
+entitlement table + RLS + audit ledger, admin procedure). ADR นั้นต้องผ่าน acceptance ของตัวเองก่อน implementation.
+PRO-AC-001..009 (§9.1 ตามที่ D-1 แก้) ยังเป็นเงื่อนไขรับงาน.
 
 ## 12. Follow-up (ไม่ได้ทำใน CR นี้)
 
@@ -296,5 +319,6 @@ Boss ตอบว่า "approve" ต่อข้อเสนอนี้เม�
 
 | Version | Date | Summary |
 | --- | --- | --- |
+| 0.3.0 | 2026-11-08 | Record decision D-2 (§11.2) by the Claude orchestrator under explicit Boss delegation (agent decision, not human sign-off): Q1=F2, Q2=A, Q3=S1 with the offline clarification, Q4=7-day lease with 24 h refresh, Q6=2 devices. Status accepted; implementation stays blocked until the §12 ADR is accepted and M6 closes. |
 | 0.2.0 | 2026-11-08 | Record Owner decision D-1 (§11.1): one Command Deck for all tiers, base Arena for everyone, four Pro features unlocked in place, presentation-only gating, immediate degrade to base Arena mid-match. Answers Q5/Q7/Q8; Q1–Q4 and Q6 stay open; supersedes §7.3/§8; `approved_by` stays empty. |
 | 0.1.0 | 2026-11-08 | Draft Pro tier + entitlement contract for Pro-only G-Arena: server issuer, signed-lease vs server-check options, C-3 threat model, offline/revocation/mid-match rules, non-Pro state, local-core boundary and freeze options; pending Boss decision. |

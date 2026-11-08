@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-08T08:38:53.244Z",
+  "generatedAt": "2026-11-08T08:44:45.220Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -665,7 +665,7 @@
       "type": "doc",
       "path": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
       "title": "CR-047 — Pro tier and entitlement contract (G-Arena gating)",
-      "status": "draft"
+      "status": "accepted"
     },
     {
       "id": "docs/change request/DXGI-task-assignment.md",
@@ -5543,61 +5543,67 @@
       "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 32
+      "line": 34
     },
     {
       "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
       "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "type": "wikilink",
-      "line": 33
+      "line": 35
     },
     {
       "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
       "to": "docs/architecture/adr/ADR-16-credit-economy-and-mint-oracle.md",
       "type": "wikilink",
-      "line": 34
+      "line": 36
     },
     {
       "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
       "to": "docs/change request/CR-003-account-phase1-wallet-billing.md",
       "type": "wikilink",
-      "line": 35
+      "line": 37
     },
     {
       "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
       "to": "docs/product/mvp-delivery-plan.md",
       "type": "wikilink",
-      "line": 36
+      "line": 38
     },
     {
       "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
       "to": "docs/architecture/gann-event-media-contract.md",
       "type": "wikilink",
-      "line": 39
+      "line": 41
     },
     {
       "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
       "to": "docs/architecture/oauth-jwt-client-authorization-flows.md",
       "type": "wikilink",
-      "line": 109
+      "line": 111
     },
     {
       "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
       "to": "docs/product/mvp-delivery-plan.md",
       "type": "wikilink",
-      "line": 224
-    },
-    {
-      "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
-      "to": "docs/product/mvp-decisions.md",
-      "type": "wikilink",
-      "line": 289
+      "line": 226
     },
     {
       "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
       "to": "docs/product/mvp-delivery-plan.md",
       "type": "wikilink",
       "line": 293
+    },
+    {
+      "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 312
+    },
+    {
+      "from": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
+      "to": "docs/product/mvp-delivery-plan.md",
+      "type": "wikilink",
+      "line": 316
     },
     {
       "from": "docs/change request/IMPL-PLAN-DXGI-migration.md",
@@ -9993,6 +9999,13 @@
       "slug": "FEAT-G-*"
     },
     {
+      "file": "docs/DOC-INDEX.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "0.2.14",
+      "changelog": "0.2.13"
+    },
+    {
       "file": "docs/DOCS-IA-REORG-PROPOSAL.md",
       "line": null,
       "reason": "no-metadata"
@@ -10051,7 +10064,7 @@
       "file": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
       "line": null,
       "reason": "version-changelog-mismatch",
-      "frontmatter": "0.2.0",
+      "frontmatter": "0.3.0",
       "changelog": "0.1.0"
     },
     {
@@ -10122,7 +10135,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-08T08:38:59.379Z",
+    "generatedAt": "2026-11-08T08:44:50.508Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,

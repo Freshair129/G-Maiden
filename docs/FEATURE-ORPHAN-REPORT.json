@@ -1,6 +1,6 @@
 {
   "_generated": "GENERATED — do not hand-edit; re-run tools/doc-graph/orphan-report.mjs",
-  "generatedAt": "2026-11-08T08:38:59.747Z",
+  "generatedAt": "2026-11-08T08:44:50.844Z",
   "baselineOrphanCandidates": 0,
   "rowCount": 19,
   "summary": {
@@ -29,7 +29,7 @@
       "id": "CR-047-pro-tier-entitlement-contract",
       "slug": "CR-047-pro-tier-entitlement-contract",
       "path": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
-      "lifecycle": "draft",
+      "lifecycle": "accepted",
       "classification": "weakly-anchored",
       "strongAnchors": [],
       "weakAnchors": [
