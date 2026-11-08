@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-11-08T18:15:08.908Z
+สร้างเมื่อ / Generated at: 2026-11-08T19:33:03.020Z
 
-สแกน 184 ไฟล์เอกสาร, 295 nodes, 1387 edges, 27 รายการปัญหา (1 ตัวบล็อก exit code) / scanned 184 doc files, 295 nodes, 1387 edges, 27 violations (1 blocking exit code).
+สแกน 186 ไฟล์เอกสาร, 297 nodes, 1391 edges, 28 รายการปัญหา (2 ตัวบล็อก exit code) / scanned 186 doc files, 297 nodes, 1391 edges, 28 violations (2 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -11,6 +11,7 @@
 | Reason | คำอธิบาย / Description | Count | Blocking? |
 | --- | --- | --- | --- |
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 1 | no (informational) |
+| missing-changelog | มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table | 1 | yes |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 25 | no (informational) |
 | version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 1 | yes |
 
@@ -22,7 +23,7 @@
 
 ### docs/DOC-INDEX.md
 
-- [L150] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
+- [L151] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
 
 ### docs/DOCS-IA-REORG-PROPOSAL.md
 
@@ -39,6 +40,10 @@
 ### docs/README.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
+
+### docs/architecture/adr/ADR-21-event-taxonomy-sot.md
+
+- [-] **missing-changelog** — มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table
 
 ### docs/architecture/assets/design-references/README.md
 
