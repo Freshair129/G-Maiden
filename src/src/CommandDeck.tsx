@@ -7,6 +7,7 @@ import { LogicalSize } from "@tauri-apps/api/dpi";
 // import cycle with App.tsx (which imports CommandDeck as a value).
 import type { SettingsCat } from "./App";
 import { useCompanionData } from "./companion";
+import { buildArena, ABSENT_PRO_GATE } from "./arena/model";
 import { useProfile } from "./profile";
 import { useAuth } from "./auth";
 import { useParty } from "./party/useParty";
@@ -37,7 +38,7 @@ import { useStartupSettings } from "./app/settingsContext";
 import { initializeGsiSetupSelection, savedDotaInstallPath } from "./app/gsiSetup";
 
 const VoicePacksPage = lazy(() => import("./VoicePacksPage"));
-const LiveMatchPage = lazy(() => import("./CompanionPages").then((pages) => ({ default: pages.LiveMatchPage })));
+const ArenaPage = lazy(() => import("./arena/ArenaPage").then((pages) => ({ default: pages.ArenaPage })));
 const CvHeroesPage = lazy(() => import("./CompanionPages").then((pages) => ({ default: pages.CvHeroesPage })));
 const GPartyPage = lazy(() => import("./party/GPartyPage"));
 const BuildAdvisorPage = lazy(() => import("./CompanionPages").then((pages) => ({ default: pages.BuildAdvisorPage })));
@@ -137,6 +138,8 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
     setTab(t);
   };
   const { data } = useCompanionData();
+  const arena = useMemo(() => buildArena(data.arenaSource ?? null, party.view, party.elapsedMs, data.activity, data.events),
+    [data.arenaSource, data.activity, data.events, party.view, party.elapsedMs]);
   const { displayName, email } = useProfile();
   const gName = displayName || (email ? email.split("@")[0] : "Guest");
   const gSub = email || data.agentSector.title;
@@ -602,7 +605,7 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
               <div className="deck-tabbed-body">
                 <DeferredPage>
                   {liveTab === "live"
-                    ? <LiveMatchPage />
+                    ? <ArenaPage model={arena} gate={ABSENT_PRO_GATE} />
                     : liveTab === "build"
                       ? <BuildAdvisorPage />
                       : liveTab === "party"
