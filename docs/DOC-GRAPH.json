@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-08T15:49:22.421Z",
+  "generatedAt": "2026-11-08T16:29:30.480Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -10201,9 +10201,25 @@
       "reason": "no-metadata"
     },
     {
+      "file": "docs/architecture/engineering-spec.md",
+      "line": 277,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/companion.ts",
+      "anchor": 1201,
+      "symbol": "useCompanionData"
+    },
+    {
       "file": "docs/architecture/spikes/S-1-minimap-cv.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/audits/2026-07-07-independent-full-audit.md",
+      "line": 122,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/companion.ts",
+      "anchor": 1201,
+      "symbol": "useCompanionData"
     },
     {
       "file": "docs/change request/CR-007-frostline-deck-refresh.md",
@@ -10305,7 +10321,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-08T15:49:27.833Z",
+    "generatedAt": "2026-11-08T16:29:38.429Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 76,
