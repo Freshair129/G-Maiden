@@ -2,8 +2,8 @@
 title: "AGENTS.md"
 doc_id: "agents"
 status: active
-version: "0.4.19"
-updated: "2026-11-07"
+version: "0.4.20"
+updated: "2026-11-09"
 owner: "G-Maiden"
 ---
 # AGENTS.md
@@ -347,6 +347,30 @@ It also posts one **advisory** finding that never fails the gate:
 - `required_conversation_resolution` is on: every review thread must be resolved before merge.
 - If `ci` fails, fix the cause. Never disable a check to get green.
 
+### Before changing a feature (mandatory)
+
+Before editing code or docs for a feature, find and read the documents that govern it. Do not
+work from memory or from the code alone; an agent that skips this re-creates lists, specs and
+decisions that already exist.
+
+1. **Find the feature.** Search `docs/feature-ledger.manifest.yaml` for the file you will touch
+   (`refs.code`) or the feature name. Read every document in that row's `refs.docs`: its
+   `docs/features/FEAT-G-*.md` charter, then the ADRs and CRs it links. `docs/DOC-INDEX.md` lists
+   every document when the ledger has no row.
+2. **Check impact.** Run `node tools/doc-graph/impact.mjs --artifact <path>` for each file you plan
+   to change, and read the documents it lists under `must_review` and `linked_context`.
+3. **Follow what you read.** Accepted ADR/CR decisions and `mvp-decisions.md` win over your own
+   design. If the change contradicts one, stop and ask; do not edit the decision to fit the code.
+   Where a charter names a single source of truth (for example `src-tauri/events/g-events.toml`
+   for announcer events), change it there and never add a second copy.
+4. **Update in the same PR.** Before opening the PR, run
+   `node tools/doc-graph/impact.mjs --changed origin/main` (committed and uncommitted changes) and update every governing
+   document the change makes stale (charter, ledger `refs`, changelog rows).
+5. **No row, no charter.** If the code you change belongs to no ledger row, say so in the PR and
+   add the row (with its charter, or a pointer to the governing doc) before or with the change.
+
+State in the PR description which documents you read and which you updated.
+
 ### Documentation changes
 
 Any change under `docs/`, or to `CLAUDE.md`, `AGENTS.md`, or `tools/doc-graph/`, runs the
@@ -557,7 +581,7 @@ These are **functional requirements**, not flavor text. Maiden must:
 
 ## For Codex / Automated Agents
 
-1. **Read CLAUDE.md first** — it's the primary instruction file and may override this one
+1. **Read CLAUDE.md first** — it's the primary instruction file and may override this one. Then read the governing docs of the feature you will change ("Before changing a feature (mandatory)" under Git & GitHub)
 2. **Run tests before proposing changes**: `cargo test` (Rust, from `src-tauri/`) and `npx tsc --noEmit` (TS, from `src/`)
 3. **Don't add new files without reason** — prefer editing existing files
 4. **Don't add dependencies without justification** — every dep affects the RAM/CPU budget
@@ -596,4 +620,5 @@ These are **functional requirements**, not flavor text. Maiden must:
 | 0.4.16 | 2026-11-06 | Align stale state references with the code: source version 0.13.6, NVML-based GPU feeder, and GSI port fallback 3000–3010 (#134). |
 | 0.4.17 | 2026-11-07 | Correct the worktree placement note (`.worktrees/` and `.codex/` are gitignored) and the doc-graph artifact claim (CI regenerates, it does not by itself fail stale commits); point to the lifecycle policy (#134). |
 | 0.4.18 | 2026-11-07 | Document the advisory `agent-attribution-missing` pr-gate finding (warning only, no new blocking rule). |
-| 0.4.19 | 2026-11-09 | Point announcer event changes at the g-events.toml SOT and FEAT-G-ANNOUNCER (ADR-21 / CR-049). |
+| 0.4.19 | 2026-11-09 | Add the mandatory "Before changing a feature" rule: find the feature in the ledger, read its FEAT/ADR/CR docs and impact output, follow accepted decisions and single sources of truth, and update stale docs in the same PR. |
+| 0.4.20 | 2026-11-09 | Point announcer event changes at the g-events.toml SOT and FEAT-G-ANNOUNCER (ADR-21 / CR-049). |
