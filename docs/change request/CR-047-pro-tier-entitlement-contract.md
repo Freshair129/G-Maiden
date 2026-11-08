@@ -4,7 +4,7 @@ doc_id: "CR-047-pro-tier-entitlement-contract"
 status: "draft"
 approved_by: ""
 approved_date: ""
-version: "0.1.0"
+version: "0.2.0"
 updated: "2026-11-08"
 owner: "Boss"
 complexity: "C-3"
@@ -15,6 +15,8 @@ related_docs: ["mvp-decisions", "ADR-14-gid-account-identity", "ADR-16-credit-ec
 # CR-047: Pro tier และ entitlement contract (เพื่อให้ G-Arena เป็น Pro-only)
 
 > **สถานะ:** draft — รอ Boss ตัดสินใจตาม §11. **ยังไม่อนุมัติ** (`approved_by` ว่างโดยตั้งใจ).
+> **มติ Owner D-1 (2026-11-08, §11.1):** Command Deck เดียวทุก tier; ทุกคนได้ base Arena; Pro ปลดล็อกฟีเจอร์ภายใน UI เดียวกัน.
+> มตินี้แทน §7.3 และ §8 เดิม และแก้ความหมายของ "Pro-only" ใน §1–§3. อ่าน §11.1 ก่อนส่วนอื่น.
 > **Risk: HIGH / C-3** — เพิ่มแนวคิด entitlement ใหม่, กุญแจเซ็น server-side, และ network path ใหม่ของ account.
 > เอกสารนี้เป็น doc-first เท่านั้น: ไม่มี code, migration, Edge Function, provider หรือราคาใด ๆ ถูกสร้างหรือ deploy.
 > ห้ามเริ่ม implementation จนกว่า CR นี้ accepted **และ** ADR ตาม §12 accepted.
@@ -165,6 +167,8 @@ Lease เป็น JSON canonical + Ed25519 signature (รูปแบบเด�
 
 ### 7.3 หมดสิทธิ์กลางแมตช์
 
+> **ถูกแทนด้วยมติ D-1 (§11.1 ข้อ 6):** ลดเป็น base Arena ทันที ไม่มีหน้าว่างหรือค้าง. ข้อความด้านล่างเก็บไว้เป็นประวัติของข้อเสนอเดิม.
+
 ข้อเสนอ (แนะนำ): **ไม่ตัด Arena กลางแมตช์.**
 - Gate ประเมินใหม่เฉพาะที่ match boundary: เมื่อ GSI ไม่ได้อยู่ในสถานะ in-game (`is_in_game()` เป็น false), เปลี่ยน session/match, หรือเปิดแอปใหม่.
 - ถ้า lease หมด/ถูก revoke ระหว่างแมตช์ Arena ทำงานต่อจนจบแมตช์ แล้วจึงเปลี่ยนเป็น non-Pro. ไม่มีเสียง, toast หรือ modal ระหว่างแมตช์.
@@ -174,6 +178,9 @@ Lease เป็น JSON canonical + Ed25519 signature (รูปแบบเด�
 ทางเลือกอื่น (Q5): ตัดทันทีเมื่อหมดอายุ — แม่นยำกว่าแต่เปลี่ยนหน้าจอกลางเกม ซึ่งขัดกับหลัก "ไม่รบกวนสมาธิผู้เล่น".
 
 ## 8. ประสบการณ์ non-Pro ของ G-Arena
+
+> **ข้อ 1 ถูกแทนด้วยมติ D-1 (§11.1 ข้อ 2 และ 7):** non-Pro เห็น base Arena เป็น body ของ Live > สด ไม่ใช่หน้าเดิม.
+> ข้อ 2–4 ยังใช้กับ teaser ของฟีเจอร์ Pro แต่ละตัวภายใน Arena.
 
 1. **Live > สด ไม่เปลี่ยน**: non-Pro (รวม `absent`/`lapsed`/`revoked`/`unverifiable`) เห็น body เดิมของ Live > สด ทุก tab และ shortcut ทำงานเหมือนปัจจุบัน.
 2. **Teaser ตรงไปตรงมา**: entry point เดียว (เช่น tab หรือ card "G-Arena · Pro" — ตำแหน่งให้ #165 กำหนด) แสดงเฉพาะ:
@@ -229,9 +236,51 @@ Lease เป็น JSON canonical + Ed25519 signature (รูปแบบเด�
 | Q2 | ได้ Pro อย่างไร: A grant, B G-Coins pass, C subscription (§4) | A ก่อน |
 | Q3 | วิธีตรวจ: S1 signed lease หรือ S2 server check (§5) | S1 |
 | Q4 | `LEASE_TTL` / ช่วง offline: 3, 7 หรือ 14 วัน (§7.1) | 7 วัน |
-| Q5 | หมดสิทธิ์กลางแมตช์: รอจบแมตช์ หรือ ตัดทันที (§7.3) | รอจบแมตช์ |
+| Q5 | หมดสิทธิ์กลางแมตช์: รอจบแมตช์ หรือ ตัดทันที (§7.3) | **ตอบแล้ว (D-1, §11.1):** ลดเป็น base Arena ทันที |
 | Q6 | จำนวนเครื่องต่อ account | 2 เครื่อง |
-| Q7 | Pro ในรุ่นแรกมีเฉพาะ `g-arena` ใช่หรือไม่ | ใช่ |
+| Q7 | Pro ในรุ่นแรกมีเฉพาะ `g-arena` ใช่หรือไม่ | **ตอบแล้ว (D-1, §11.1):** ไม่ใช่ — Arena base ให้ทุกคน; Pro เปิด 4 ฟีเจอร์เสริม |
+| Q8 | Pro มี UI แยกหรือใช้ deck เดียวกัน | **ตอบแล้ว (D-1, §11.1):** Command Deck เดียวทุก tier |
+
+Q1, Q2, Q3, Q4 และ Q6 ยังเปิดอยู่.
+
+### 11.1 มติ Owner D-1 (2026-11-08)
+
+Boss ตอบว่า "approve" ต่อข้อเสนอนี้เมื่อ 2026-11-08 (ส่งต่อผ่าน orchestrator session; อ้างอิง
+[UX review comment บน #165](https://github.com/Freshair129/G-Maiden/pull/165#issuecomment-6719354977)).
+มตินี้ตอบ Q5, Q7 และ Q8 เท่านั้น. **ไม่ใช่การอนุมัติ CR ทั้งฉบับ**: `approved_by` ยังว่าง และ status ยังเป็น draft.
+
+1. **Command Deck เดียวทุก tier.** ไม่มี Pro UI แยก. Pro ปลดล็อกฟีเจอร์ภายใน UI เดียวกัน.
+2. **ทุกคนได้ Arena layout (จาก #165) เป็น body ของ Live > สด** พร้อมข้อมูล base: แผนที่กลาง, สถานะ seen/missing ของศัตรู
+   พร้อมอายุ last-seen และ hero ของตัวเอง.
+3. **Pro เพิ่ม:**
+   - hero inspector เต็มรูปแบบ (รายละเอียด skill และ item)
+   - cooldown timers (G-Cooldown, #154)
+   - รายละเอียดเพื่อนร่วมทีมจาก G-Party
+   - G-Review integration
+
+   ชื่อ feature key ของแต่ละรายการกำหนดใน ADR ตาม §12. Feature ที่เป็น Pro ยังต้องผ่านสเปกของตัวเองเรื่องแหล่งข้อมูลและ consent;
+   การเป็น Pro ไม่ขยายสิทธิ์ข้อมูล (§9.5).
+4. **Gating เป็น presentation เท่านั้น.** Authority อยู่ที่ server หรือ signed entitlement ตาม CR นี้ (§4, §5).
+5. **G-Signal, voice alert, overlay, GSI และ local core ไม่ถูก gate ตาม tier เลย** (ย้ำ §9.1).
+6. **หมดสิทธิ์หรือ offline กลางแมตช์ → ลดเป็น base Arena ทันที** โดยไม่มีหน้าว่างหรือสถานะค้าง. แทน §7.3 เดิม.
+7. **มตินี้แทนกรอบเดิมที่ให้ non-Pro เห็นหน้า Live > สด แบบเก่า** (§1, §8 เดิม).
+
+**ผลต่อส่วนอื่นของ CR (อ่านคู่กับ D-1):**
+
+- §1 / §2 / §3: "G-Arena Pro only" ถูกแทนด้วย "Arena base สำหรับทุกคน + ฟีเจอร์ Pro ภายใน Arena". Feature key รุ่นแรกไม่ได้มีแค่ `g-arena` อีกต่อไป.
+- §7.1: แถวที่เขียนว่า "non-Pro (§8)" หมายถึง base Arena.
+- §7.3: ถูกแทนด้วยข้อ 6. ไม่มีการรอ match boundary อีก. ยังคงห้ามเสียง, toast และ modal ระหว่างแมตช์.
+- §8: ถูกแทนด้วยข้อ 2. Base Arena ต้องแสดงข้อมูลจริงเท่านั้น. Teaser ของฟีเจอร์ Pro อยู่ในตำแหน่งของฟีเจอร์นั้นภายใน Arena
+  (ตำแหน่งให้ #165 กำหนด) และยังต้องทำตาม §8 ข้อ 2–4: ไม่มีข้อมูลปลอม, ไม่ใช้ข้อมูลสดเบลอ, บอกสถานะตามจริง และไม่มีการ nag.
+- §9.2: จุด check เปลี่ยนจาก "เลือก body ของ Live > สด" เป็น "จุด render ของฟีเจอร์ Pro แต่ละตัวใน Control window"
+  โดยอ่านจาก `ProGate` เดียวกัน. ห้ามมี check ใน native path อื่นนอกจากการตรวจ lease.
+- PRO-AC-001: cold start offline/signed-out ต้องเห็น **base Arena** (ไม่ใช่ Live > สด เดิม).
+- PRO-AC-004: หมดอายุกลางแมตช์ต้องลดเป็น base Arena **ทันที**, ไม่มีหน้าว่างหรือค้าง, ไม่มีเสียง/toast; overlay/G-Signal ไม่กระทบ.
+
+**ข้อสังเกตที่ต้องตัดสินคู่กับ Q3:** ถ้าเลือก S1 (signed lease) การ offline โดยที่ lease ยังไม่หมดอายุยังคงเป็น `active` (§7.1),
+จึงไม่ลดเป็น base ทันทีเพียงเพราะ offline. ถ้า Boss ต้องการให้ "offline = ลดเป็น base ทันที" ตามตัวอักษร
+ผลจะเท่ากับเลือก S2 (server check). ผู้เขียนตีความว่า "offline" ในข้อ 6 หมายถึงกรณีที่ตรวจสิทธิ์ไม่ได้แล้ว
+(`lapsed`/`unverifiable`) แต่ยังต้องให้ Boss ยืนยันเมื่อตอบ Q3.
 
 ## 12. Follow-up (ไม่ได้ทำใน CR นี้)
 
@@ -247,4 +296,5 @@ Lease เป็น JSON canonical + Ed25519 signature (รูปแบบเด�
 
 | Version | Date | Summary |
 | --- | --- | --- |
+| 0.2.0 | 2026-11-08 | Record Owner decision D-1 (§11.1): one Command Deck for all tiers, base Arena for everyone, four Pro features unlocked in place, presentation-only gating, immediate degrade to base Arena mid-match. Answers Q5/Q7/Q8; Q1–Q4 and Q6 stay open; supersedes §7.3/§8; `approved_by` stays empty. |
 | 0.1.0 | 2026-11-08 | Draft Pro tier + entitlement contract for Pro-only G-Arena: server issuer, signed-lease vs server-check options, C-3 threat model, offline/revocation/mid-match rules, non-Pro state, local-core boundary and freeze options; pending Boss decision. |
