@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-08T04:40:00.348Z",
+  "generatedAt": "2026-11-08T05:11:28.063Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -7006,13 +7006,13 @@
       "from": "docs/design-system/07-combat-hud.md",
       "to": "src/src/overlay/FullOverlay.tsx",
       "type": "symbol",
-      "line": 142
+      "line": 145
     },
     {
       "from": "docs/design-system/07-combat-hud.md",
       "to": "src/src/DeckIcons.tsx",
       "type": "symbol",
-      "line": 144
+      "line": 147
     },
     {
       "from": "docs/design-system/09-graphite-clarity.md",
@@ -10042,7 +10042,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-08T04:40:05.381Z",
+    "generatedAt": "2026-11-08T05:11:33.556Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,

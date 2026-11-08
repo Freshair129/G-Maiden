@@ -21,7 +21,7 @@ import { Overlay } from './Overlay'
 
 let root: Root
 let container: HTMLDivElement
-const chips = ['clock', 'score', 'kda', 'gold', 'gpm', 'nw', 'companion'] as const
+const chips = ['clock', 'kda', 'gold', 'gpm', 'xpm', 'nw', 'companion'] as const
 const session = { session_epoch: 1, session_lifecycle: 'live', match_id: 'fixture-match' }
 
 beforeEach(async () => {

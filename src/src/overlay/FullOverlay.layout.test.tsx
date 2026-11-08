@@ -4,7 +4,7 @@ import { DEFAULTS, type Settings } from '../app/types'
 import { FullOverlay } from './FullOverlay'
 import { OVERLAY_PREVIEW_TICK } from './preview'
 
-const chips = ['clock', 'score', 'kda', 'gold', 'gpm', 'nw', 'companion'] as const
+const chips = ['clock', 'kda', 'gold', 'gpm', 'xpm', 'nw', 'companion'] as const
 
 function renderOverlay(s: Settings = DEFAULTS) {
   return renderToStaticMarkup(<FullOverlay tick={OVERLAY_PREVIEW_TICK} s={s} gank={null}
