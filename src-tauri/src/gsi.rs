@@ -319,14 +319,45 @@ fn parse_gsi_payload_with_identity(body: &str) -> Result<ParsedGsiPayload, GsiPa
     })
 }
 
+struct SchemaRejectionLog {
+    menu: Option<std::time::Instant>,
+    other: Option<std::time::Instant>,
+}
+
+impl SchemaRejectionLog {
+    const fn new() -> Self {
+        Self {
+            menu: None,
+            other: None,
+        }
+    }
+
+    fn admit(&mut self, reason: &str, now: std::time::Instant) -> bool {
+        // Menu fragments remain invalid snapshots. Keep their repetitive notice
+        // separate so they cannot suppress actionable schema diagnostics.
+        let (last, seconds) = if reason == "missing map object" {
+            (&mut self.menu, 60)
+        } else {
+            (&mut self.other, 5)
+        };
+        if last.is_some_and(|at| {
+            now.saturating_duration_since(at) < std::time::Duration::from_secs(seconds)
+        }) {
+            return false;
+        }
+        *last = Some(now);
+        true
+    }
+}
+
 #[cfg(not(test))]
 fn log_schema_rejection(reason: &'static str) {
-    static LAST: std::sync::Mutex<Option<std::time::Instant>> = std::sync::Mutex::new(None);
-    let Ok(mut last) = LAST.try_lock() else {
+    static GATE: std::sync::Mutex<SchemaRejectionLog> =
+        std::sync::Mutex::new(SchemaRejectionLog::new());
+    let Ok(mut gate) = GATE.try_lock() else {
         return;
     };
-    if last.is_none_or(|at| at.elapsed() >= std::time::Duration::from_secs(5)) {
-        *last = Some(std::time::Instant::now());
+    if gate.admit(reason, std::time::Instant::now()) {
         eprintln!("[GSI] rejected payload schema: {reason}");
     }
 }
@@ -1269,6 +1300,23 @@ fn bind_available_listener() -> std::io::Result<(tokio::net::TcpListener, u16)> 
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn menu_rejections_are_bounded_without_hiding_other_schema_failures() {
+        use std::time::{Duration, Instant};
+        let mut gate = super::SchemaRejectionLog::new();
+        let start = Instant::now();
+        assert!(gate.admit("missing map object", start));
+        for millis in 1..60_000 {
+            assert!(!gate.admit("missing map object", start + Duration::from_millis(millis)));
+        }
+        assert!(gate.admit("missing map object", start + Duration::from_secs(60)));
+        assert!(gate.admit("missing game state", start + Duration::from_secs(60)));
+        assert!(!gate.admit("missing game state", start + Duration::from_secs(64)));
+        assert!(gate.admit("missing game state", start + Duration::from_secs(65)));
+        assert!(super::parse_gsi_payload_with_identity(r#"{"provider":{}}"#).is_err());
+        assert!(super::parse_gsi_payload_with_identity(r#"{"map":{}}"#).is_err());
+    }
+
     #[test]
     fn personal_events_require_local_steam_login_without_provider_steamid() {
         let active = Some("76561198115363193");

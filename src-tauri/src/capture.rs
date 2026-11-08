@@ -84,6 +84,9 @@ mod backend {
 
     use crate::capture::publish_mode;
     use crate::capture_frame::{CaptureRoi, CaptureRoiKind, FrameCaptureMetadata};
+    use crate::capture_recovery::{
+        AcquisitionWatchdog, FreshFrameGate, RetryBudget, SessionExit as CaptureExit, Wake,
+    };
     use crate::cv::detector::{Detection, Detector};
     use crate::cv::draft_detector::DraftRecognizer;
     use crate::cv::draft_region::{DraftRegion, PortraitBox};
@@ -123,7 +126,7 @@ mod backend {
     /// delayed critical evaluation or evidence that all heroes remain visible.
     const STALE_FRAME_MS: u64 = super::schedule::FRESHNESS_WATCHDOG_MS;
 
-    /// A live capture session with no completed frame for this long is torn
+    /// A live capture session with no acquired frame for this long is torn
     /// down so DXGI/device state can be rebuilt. This absorbs short Alt-Tab
     /// and mode changes while bounding a permanently lost capture session.
     const CAPTURE_RECOVERY_MS: u64 = 6_000;
@@ -151,11 +154,6 @@ mod backend {
             Ok(()) | Err(TrySendError::Full(())) => Ok(()),
             Err(TrySendError::Disconnected(())) => Err("capture supervisor stopped"),
         }
-    }
-
-    enum CaptureExit {
-        RetryRequested,
-        SenderClosed,
     }
 
     struct CaptureWorkerGuard {
@@ -234,7 +232,7 @@ mod backend {
 
     impl SensorHealth {
         /// No capture backend is currently producing frames. GSI and voice
-        /// remain available while the supervisor waits for a manual retry.
+        /// remain available during automatic backoff or terminal manual retry.
         fn lite() -> Self {
             SensorHealth {
                 backend: "lite",
@@ -306,8 +304,9 @@ mod backend {
         preview_display_index: u32,
         preview_display_id: u64,
         preview_desktop_origin: [i32; 2],
-        /// Last frame that reached `process_frame`. Drives `frame_age_ms`.
+        /// Last frame admitted after inference. Acquisition liveness is separate.
         last_frame_ok: Instant,
+        frame_health: FreshFrameGate,
         cycle_started: Instant,
         frames: super::schedule::FrameGate,
         next_cycle_due: Instant,
@@ -394,6 +393,7 @@ mod backend {
                 preview_display_id: 0,
                 preview_desktop_origin: [0, 0],
                 last_frame_ok: now,
+                frame_health: FreshFrameGate::default(),
                 cycle_started: now,
                 frames: super::schedule::FrameGate::default(),
                 next_cycle_due: now,
@@ -409,6 +409,7 @@ mod backend {
         /// G-Signal holds an `alerted` latch. Carrying any of that across a
         /// match boundary or a monitor switch turns it from memory into a lie.
         fn reset_pipeline(&mut self) {
+            self.frame_health = FreshFrameGate::default();
             self.frames = super::schedule::FrameGate::default();
             self.sentry = Sentry::new();
             self.motion = Motion::for_next_match();
@@ -565,7 +566,7 @@ mod backend {
         /// the [`HEALTH_HEARTBEAT_MS`] heartbeat. Called from the loop body,
         /// never from `process_frame` — the ≤300ms G-Signal path must not pay
         /// for reporting.
-        fn emit_health(&mut self, backend: &'static str) {
+        fn emit_health(&mut self, backend: &'static str) -> bool {
             let frame_age_ms = self.last_frame_ok.elapsed().as_millis() as u64;
             let classifier = self.detector.is_active();
             let throttled = crate::governor::cpu_throttle();
@@ -575,10 +576,13 @@ mod backend {
                 throttled,
                 frame_age_ms: Some(frame_age_ms),
                 healthy: backend != "lite"
-                    && classifier
-                    && !throttled
-                    && frame_age_ms <= STALE_FRAME_MS,
+                    && self.frame_health.healthy(
+                        classifier,
+                        throttled,
+                        frame_age_ms <= STALE_FRAME_MS,
+                    ),
             };
+            let healthy = health.healthy;
             let key = health.key();
             if self.last_health_key != Some(key)
                 || self.last_health_emit.elapsed().as_millis() >= HEALTH_HEARTBEAT_MS
@@ -587,6 +591,7 @@ mod backend {
                 self.last_health_emit = Instant::now();
                 let _ = self.app.emit("sensor-health", health);
             }
+            healthy
         }
 
         /// Re-target the pipeline at a new capture resolution/region after a
@@ -603,6 +608,7 @@ mod backend {
         /// missing/motion history here is the right trade against silently
         /// capturing the wrong screen.
         fn set_region(&mut self, region: MinimapRegion, screen_w: u32, screen_h: u32) {
+            self.frame_health = FreshFrameGate::default();
             self.region = region;
             self.icon = region.icon_size();
             self.draft_region = DraftRegion::for_resolution(screen_w, screen_h);
@@ -613,8 +619,7 @@ mod backend {
         }
     }
 
-    /// Spawn one capture supervisor. Initialization failures leave the
-    /// supervisor waiting in Lite mode so retry reuses the same thread.
+    /// Spawn one capture supervisor. Automatic and manual retries reuse it.
     pub fn start(app: AppHandle) {
         let (sender, receiver) = mpsc::sync_channel(1);
         {
@@ -685,20 +690,49 @@ mod backend {
     }
 
     fn supervise(app: AppHandle, receiver: Receiver<()>) {
-        loop {
-            match run_dxgi(app.clone(), &receiver) {
-                Ok(CaptureExit::RetryRequested) => {
+        // Retain models and the single draft-asset task across DXGI replacement.
+        let mut state = None;
+        crate::capture_recovery::supervise(
+            |budget| run_dxgi(app.clone(), &receiver, &mut state, budget),
+            |delay| match delay {
+                Some(delay) => match receiver.recv_timeout(delay) {
+                    Ok(()) => Wake::RetryRequested,
+                    Err(mpsc::RecvTimeoutError::Timeout) => Wake::Timeout,
+                    Err(mpsc::RecvTimeoutError::Disconnected) => Wake::Stopped,
+                },
+                None => match receiver.recv() {
+                    Ok(()) => Wake::RetryRequested,
+                    Err(_) => Wake::Stopped,
+                },
+            },
+            |mode, reason| {
+                if mode == "lite" {
+                    publish_lite(&app, reason);
+                } else {
+                    crate::log::error(&format!("[capture] recovering: {reason}"));
                     publish_mode(&app, "retrying");
+                    publish_no_coverage(&app);
                 }
-                Ok(CaptureExit::SenderClosed) => break,
-                Err(error) => {
-                    publish_lite(&app, &error);
-                    match receiver.recv() {
-                        Ok(()) => publish_mode(&app, "retrying"),
-                        Err(_) => break,
-                    }
-                }
-            }
+            },
+        );
+    }
+
+    fn publish_no_coverage(app: &AppHandle) {
+        let _ = app.emit("sensor-health", SensorHealth::lite());
+        let session = crate::runtime::match_session_snapshot();
+        if crate::runtime::is_current_capture_session(session.session_epoch) {
+            let payload = missing_state_payload(
+                &[],
+                Vec::new(),
+                crate::runtime::enemy_roster_labels().len(),
+                false,
+                "capture_unavailable",
+                0,
+            );
+            let _ = app.emit(
+                "missing-state",
+                crate::runtime::MatchSessionEvent::new(payload, &session),
+            );
         }
     }
 
@@ -708,15 +742,19 @@ mod backend {
             "[capture] unavailable: {reason}. Running in Lite mode (GSI-only, minimap CV off)"
         ));
         publish_mode(app, "lite");
-        let _ = app.emit("sensor-health", SensorHealth::lite());
+        publish_no_coverage(app);
     }
 
     /// Initialise DXGI for whichever monitor Dota 2 is actually running on
     /// (CR012-P1-01 — falls back to monitor 0 / primary if Dota isn't found
     /// yet, e.g. the app started first) and run the capture loop forever.
-    /// Returns `Err` when capture must degrade to Lite, or a control event when
-    /// the supervisor should retry or stop.
-    fn run_dxgi(app: AppHandle, retry: &Receiver<()>) -> Result<CaptureExit, String> {
+    /// Returns only after this session's DXGI resources have been released.
+    fn run_dxgi(
+        app: AppHandle,
+        retry: &Receiver<()>,
+        state_cache: &mut Option<CaptureState>,
+        budget: &mut RetryBudget,
+    ) -> Result<CaptureExit, String> {
         let _preview_source = crate::minimap_preview_runtime::SourceScope::new();
         let mut preview_geometry = None;
         let mut current_monitor = crate::dxgi::detect_dota_monitor().unwrap_or(0);
@@ -734,7 +772,14 @@ mod backend {
             region.y
         ));
         let (screen_w, screen_h) = (dxgi.width(), dxgi.height());
-        let mut state = CaptureState::new(app, region, screen_w, screen_h);
+        let state =
+            state_cache.get_or_insert_with(|| CaptureState::new(app, region, screen_w, screen_h));
+        state.reset_pipeline();
+        state.set_region(region, screen_w, screen_h);
+        state.last_health_key = None;
+        state.next_cycle_due = Instant::now();
+        let mut acquisition =
+            AcquisitionWatchdog::new(Instant::now(), Duration::from_millis(CAPTURE_RECOVERY_MS));
         crate::governor::startup_capture_ready();
         let mut last_monitor_check = Instant::now();
         // CR-live-probe-rect: fires at most once — logs the ONE legitimate case
@@ -752,7 +797,7 @@ mod backend {
                 match retry.recv_timeout(recovery) {
                     Ok(()) => return Ok(CaptureExit::RetryRequested),
                     Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
-                        return Ok(CaptureExit::SenderClosed);
+                        return Ok(CaptureExit::Stopped);
                     }
                     Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}
                 }
@@ -761,7 +806,7 @@ mod backend {
             let active_started = Instant::now();
             match retry.try_recv() {
                 Ok(()) => return Ok(CaptureExit::RetryRequested),
-                Err(TryRecvError::Disconnected) => return Ok(CaptureExit::SenderClosed),
+                Err(TryRecvError::Disconnected) => return Ok(CaptureExit::Stopped),
                 Err(TryRecvError::Empty) => {}
             }
 
@@ -776,7 +821,12 @@ mod backend {
             // Honest sensor state for the overlay + deck. Ahead of the gates
             // too, so "capture is alive" is reported at the menu and during the
             // draft, not only mid-match.
-            state.emit_health(dxgi.backend());
+            let foreground = crate::dxgi::dota_is_foreground();
+            let session_epoch = crate::runtime::in_game()
+                .then(|| crate::runtime::match_session_snapshot().session_epoch);
+            state.frame_health.observe_scope(foreground, session_epoch);
+            let healthy = state.emit_health(dxgi.backend());
+            budget.observe_health(healthy, Instant::now());
             if state.warning_frame_ms.is_some()
                 && state.last_frame_ok.elapsed().as_millis() > u128::from(STALE_FRAME_MS)
             {
@@ -851,10 +901,10 @@ mod backend {
                 preview_geometry = Some(geometry);
             }
             crate::minimap_preview_runtime::publish_geometry(geometry);
-            if !crate::dxgi::dota_is_foreground() {
+            if !foreground {
                 state.suspend_observation();
                 state.scene_ok_ms = None;
-                state.last_frame_ok = Instant::now();
+                acquisition.progress(Instant::now());
                 let session = crate::runtime::match_session_snapshot();
                 state.missing_snapshot(
                     &session,
@@ -899,13 +949,13 @@ mod backend {
                             state.scene_ok_ms = None;
                             continue;
                         }
-                        process_draft_frame(&mut state, &strip, sw, sh, bx, by, &session);
+                        process_draft_frame(state, &strip, sw, sh, bx, by, &session);
                     }
                 }
                 // Same reasoning as the not-in-game branch below: the minimap
                 // pipeline is idle by design during the pick screen, so don't
                 // let it age into a false "stalled" reading.
-                state.last_frame_ok = Instant::now();
+                acquisition.progress(Instant::now());
                 if retry
                     .recv_timeout(Duration::from_millis(DRAFT_INTERVAL_MS))
                     .is_ok()
@@ -917,11 +967,8 @@ mod backend {
             }
             // Gate to live matches — no CV work at the menu (idle-CPU saver).
             if !crate::runtime::in_game() {
-                // Hold the frame clock at "just now" while we're deliberately
-                // not capturing, so entering a match doesn't start out looking
-                // like a 40-minute-old stall. `frame_age_ms` is only meaningful
-                // as "the pipeline is running but starved".
-                state.last_frame_ok = Instant::now();
+                // Deliberate idle is not an acquisition failure or fresh evidence.
+                acquisition.progress(Instant::now());
                 if retry
                     .recv_timeout(Duration::from_millis(u64::from(
                         super::schedule::ACQUIRE_WAIT_MS,
@@ -950,6 +997,7 @@ mod backend {
             }
 
             if crate::governor::cpu_throttle() {
+                acquisition.progress(Instant::now());
                 state.suspend_observation();
                 state.missing_snapshot(
                     &session,
@@ -975,6 +1023,7 @@ mod backend {
             // keeps today's full acquire_frame + software crop exactly. Every
             // other tick switches to a GPU subrect acquire of just the minimap
             // square — far cheaper than copying and cropping the full desktop.
+            let mut acquired_this_cycle = false;
             if crate::calibration::is_enabled() {
                 if let Some((full, fw, fh)) = dxgi.acquire_frame() {
                     if !crate::minimap_preview::matches_output(
@@ -994,7 +1043,8 @@ mod backend {
                         }
                     }
                     if let Some((cropped, w, h)) = crop_bgra(&full, fw, fh, &state.region) {
-                        process_frame(&mut state, cropped, w, h, &session, None);
+                        acquired_this_cycle = true;
+                        process_frame(state, cropped, w, h, &session, None);
                     }
                 }
             } else {
@@ -1051,7 +1101,10 @@ mod backend {
                         state.scene_ok_ms = None;
                         continue;
                     }
-                    process_frame(&mut state, cropped, w, h, &session, frame_metadata);
+                    // A valid acquisition proves the backend is alive even when
+                    // CV rejects a duplicate, late or pressured observation.
+                    acquired_this_cycle = true;
+                    process_frame(state, cropped, w, h, &session, frame_metadata);
                 }
             }
 
@@ -1116,7 +1169,7 @@ mod backend {
                                             .map(|(name, _)| name)
                                         })
                                         .collect::<Vec<_>>();
-                                        publish_roster_samples(&mut state, samples, &session);
+                                        publish_roster_samples(state, samples, &session);
                                     }
                                     let event =
                                         crate::runtime::MatchSessionEvent::new(payload, &session);
@@ -1136,10 +1189,15 @@ mod backend {
                 reported_backend = backend;
                 publish_mode(&state.app, backend);
             }
-            if state.last_frame_ok.elapsed() >= Duration::from_millis(CAPTURE_RECOVERY_MS) {
+            // Slow/rejected inference cannot turn a successful acquisition into
+            // a lost device. This clock measures consecutive unsuccessful cycles.
+            if acquired_this_cycle {
+                acquisition.progress(Instant::now());
+            }
+            if let Some(age) = acquisition.stalled_for(Instant::now()) {
                 return Err(format!(
                     "no minimap frame for {} ms during a live capture session",
-                    state.last_frame_ok.elapsed().as_millis()
+                    age.as_millis()
                 ));
             }
         }
@@ -1409,10 +1467,6 @@ mod backend {
         ) {
             return;
         }
-        // A frame reached the pipeline — this is the only thing that resets the
-        // staleness clock `sensor-health` reports.
-        state.last_frame_ok = work_start;
-
         let r = state.region;
         let now_ms = state.start.elapsed().as_millis() as u64;
         let suspicious = !state.sentry.missing(now_ms).is_empty();
@@ -1459,6 +1513,8 @@ mod backend {
                 );
                 return;
             }
+            state.last_frame_ok = work_start;
+            state.frame_health.accept(session.session_epoch);
             let allowed = crate::runtime::enemy_roster_labels();
             detections.retain(|d| allowed.contains(&d.name));
             state.sentry.retain_allowed(&allowed);
