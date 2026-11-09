@@ -1,8 +1,7 @@
 //! Announcer event detection (G-AnnStudio pack contract).
 //!
 //! Fed every `game-tick`, this watches deltas and emits the announcer event
-//! ids that a pack can voice — see the vendored `schemas/gmaiden-events.json`
-//! (byte-identical copy of G-Suite/schemas/gmaiden-events.json):
+//! ids that a pack can voice — see the generated `schemas/gmaiden-events.json`:
 //! kill / first_blood / double_kill … rampage, killing_spree / unstoppable /
 //! godlike, death / respawn / levelUp / manaLow / hpLow, match_start.
 //!
@@ -10,7 +9,7 @@
 //! caller plays a random clip per returned id (no clip → silent).
 //!
 //! `mod tests` enforces the streak-ladder + multi-kill ids against that
-//! vendored schema, so a mirror renamed/reordered in only one place fails
+//! generated schema, so a mirror renamed/reordered in only one place fails
 //! `cargo test` instead of drifting silently.
 
 use crate::gsi::GameTick;
@@ -20,10 +19,7 @@ use std::{
     sync::{Mutex, OnceLock},
 };
 
-const MULTIKILL_WINDOW_S: i64 = 18; // kills within this span chain into double/triple/…
-const MANA_LOW: i64 = 15;
-const HP_LOW: i64 = 20;
-const LEVEL_UP_MILESTONES: [i64; 4] = [6, 12, 18, 25];
+use crate::events::{announcer_params, priority};
 const ENEMY_MISSING_VOICE_COOLDOWN_MS: u64 = 10_000;
 
 /// Capture-owned admission for the low-priority `enemy_missing` announcer
@@ -98,7 +94,8 @@ impl EnemyMissingVoiceGate {
 
 fn crossed_level_up_milestone(prev_level: i64, next_level: i64) -> bool {
     next_level > prev_level
-        && LEVEL_UP_MILESTONES
+        && announcer_params()
+            .level_up_milestones
             .iter()
             .any(|&milestone| prev_level < milestone && milestone <= next_level)
 }
@@ -135,36 +132,6 @@ struct SessionDetector {
 fn session_state() -> &'static Mutex<SessionDetector> {
     static S: OnceLock<Mutex<SessionDetector>> = OnceLock::new();
     S.get_or_init(|| Mutex::new(SessionDetector::default()))
-}
-
-/// Higher = louder moment. Audio is single-slot, so when a tick yields several
-/// events we voice only the most significant one (avoids clips cutting clips).
-fn priority(ev: &str) -> u8 {
-    match ev {
-        // A timed multikill explains the current fight; a simultaneous lifetime
-        // streak must not replace its single audio clip and matching banner.
-        "rampage" => 113,
-        "ultra_kill" => 112,
-        "triple_kill" => 111,
-        "double_kill" => 110,
-        "beyond_godlike" => 99,
-        "godlike" => 95,
-        "monster_kill" => 92,
-        "wicked_sick" => 88,
-        "unstoppable" => 85,
-        "mega_kill" => 82,
-        "dominating" => 75,
-        "killing_spree" => 70,
-        "first_blood" => 60,
-        "kill" => 50,
-        "death" => 45,
-        "hpLow" => 40,
-        "respawn" => 30,
-        "manaLow" => 25,
-        "levelUp" => 20,
-        "match_start" => 15,
-        _ => 0,
-    }
 }
 
 /// The single event to voice this tick, if any.
@@ -224,8 +191,9 @@ fn observe_session_state(
     step(&mut current.detector, tick)
 }
 
-/// Pure detector — all the logic, no globals (so tests own their state).
+/// Detector state is caller-owned; params are immutable after debug startup.
 fn step(s: &mut State, tick: &GameTick) -> Vec<String> {
+    let params = announcer_params();
     let mut out = Vec::new();
     if !tick.local_player_verified {
         reset(s);
@@ -292,10 +260,13 @@ fn step(s: &mut State, tick: &GameTick) -> Vec<String> {
     }
 
     // mana / hp crossings (edge-triggered, only while alive for hp)
-    if tick.mana_percent < MANA_LOW && s.mana >= MANA_LOW {
+    if tick.mana_percent < params.mana_low_percent && s.mana >= params.mana_low_percent {
         out.push("manaLow".to_string());
     }
-    if tick.alive && tick.hp_percent < HP_LOW && (s.hp >= HP_LOW || !s.alive) {
+    if tick.alive
+        && tick.hp_percent < params.hp_low_percent
+        && (s.hp >= params.hp_low_percent || !s.alive)
+    {
         out.push("hpLow".to_string());
     }
 
@@ -315,7 +286,7 @@ fn step(s: &mut State, tick: &GameTick) -> Vec<String> {
         } else {
             // multikill window (chain kills that land close together)
             if tick.clock_time < s.window_start_clock
-                || tick.clock_time - s.window_start_clock > MULTIKILL_WINDOW_S
+                || tick.clock_time - s.window_start_clock > params.multikill_window_s
                 || s.window_kills == 0
             {
                 // The kill happened after the previous observation, not

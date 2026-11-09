@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-11-08T22:03:42.114Z
+สร้างเมื่อ / Generated at: 2026-11-09T00:30:12.062Z
 
-สแกน 186 ไฟล์เอกสาร, 297 nodes, 1390 edges, 29 รายการปัญหา (3 ตัวบล็อก exit code) / scanned 186 doc files, 297 nodes, 1390 edges, 29 violations (3 blocking exit code).
+สแกน 187 ไฟล์เอกสาร, 298 nodes, 1394 edges, 29 รายการปัญหา (3 ตัวบล็อก exit code) / scanned 187 doc files, 298 nodes, 1394 edges, 29 violations (3 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -24,7 +24,7 @@
 
 ### docs/DOC-INDEX.md
 
-- [L151] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
+- [L153] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
 
 ### docs/DOCS-IA-REORG-PROPOSAL.md
 

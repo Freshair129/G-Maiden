@@ -6,6 +6,7 @@ import { STREAK_LABELS } from "../overlay/streaks";
 // node:fs) because this project has no @types/node — resolveJsonModule +
 // Vite's native ESM JSON import handle it without any Node typings.
 import rawSchema from "../../../schemas/gmaiden-events.json";
+import packageSchema from "../../../src-tauri/gann-package/events.json";
 
 interface EventDef {
   id: string;
@@ -34,15 +35,20 @@ function codeFacingEvents(schema: EventSchema): EventDef[] {
 }
 
 const SYNC_HINT =
-  "update schemas/gmaiden-events.json, src-tauri/src/announcer.rs, and " +
-  "src/src/overlay/streaks.ts together (CLAUDE.md \"Kill-banner sync\").";
+  "edit src-tauri/events/g-events.toml, regenerate the JSON per events/README.md, " +
+  "and keep src-tauri/src/announcer.rs and src/src/overlay/streaks.ts aligned.";
 
 describe("announcer event contract (schemas/gmaiden-events.json)", () => {
-  it("loads the vendored schema at v1.2 with 25 code-facing events (26 total minus 'unused')", () => {
+  it(`loads taxonomy ${rawSchema.version} with ${rawSchema["x-events"].length} registered events`, () => {
     const schema = loadSchema();
-    expect(schema.version).toBe("1.2");
-    expect(schema["x-events"].length).toBe(26);
-    expect(codeFacingEvents(schema).length).toBe(25);
+    expect(schema.version).toMatch(/^\d+\.\d+(?:\.\d+)?$/);
+    expect(schema.version).toBe(packageSchema.version);
+    expect(schema["x-events"].map((event) => event.id)).toEqual(
+      packageSchema["x-events"].map((event) => event.id)
+    );
+    expect(new Set(schema["x-events"].map((event) => event.id)).size).toBe(schema["x-events"].length);
+    const authoringOnly = schema["x-events"].filter((event) => event.category === "none").length;
+    expect(codeFacingEvents(schema).length).toBe(packageSchema["x-events"].length - authoringOnly);
   });
 
   it("STREAK_LABELS is keyed by exactly the no-death ladder counts 3..10", () => {
