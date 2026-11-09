@@ -1,7 +1,7 @@
 ---
 title: "Documentation Index"
 doc_id: "DOC-INDEX"
-version: "0.2.17"
+version: "0.2.19"
 created_at: "2026-07-19T00:00:00+07:00,Unknown"
 last_update: "2026-11-08T00:00:00+07:00,Codex"
 status: "active"
@@ -128,6 +128,7 @@ attributes:
   - `docs/architecture/adr/ADR-18-dev-runtime-governance-split.md` — Dev & Runtime Governance Split (renamed from ADR-17)
   - `docs/architecture/adr/ADR-19-local-hud-observation-and-action-lethality.md` — proposed local HUD target observation and action-scoped lethality (Issue #71)
   - `docs/architecture/adr/ADR-20.md` — optional Friends/private social graph and brokered G-Party membership proof/invitations
+  - `docs/architecture/adr/ADR-21-event-taxonomy-sot.md` — [[ADR-21-event-taxonomy-sot]] single g-events.toml SOT, build-time codegen, shared g-ann-package crate and pack taxonomy version contract
 - `docs/architecture/spikes/` — Spikes & Technical Proofs:
   - `docs/architecture/spikes/S-1-minimap-cv.md` — Spike minimap computer vision
   - `docs/architecture/spikes/S-2-oauth-broker-provider-capability.md` — Spike Supabase OAuth Server & Loopback gate capability
@@ -147,6 +148,8 @@ attributes:
   - `docs/features/FEAT-G-PARTY.md` — owner-directed own-GSI party sharing, separate consent, relay/protocol และ pending native/live evidence
 - [[FEAT-G-FRIENDS]]
   - `docs/features/FEAT-G-FRIENDS.md` — optional Friends, presence, verified room links and consent-gated invitations
+- [[FEAT-G-ANNOUNCER]]
+  - `docs/features/FEAT-G-ANNOUNCER.md` — announcer event detection charter; every event change goes through the g-events.toml SOT (ADR-21 / CR-049)
 - [[FEAT-G-*]]
   - `docs/features/FEAT-G-*.md` — เอกสารเชิงโมดูลของ G-series
 
@@ -163,6 +166,7 @@ attributes:
   - `docs/change request/CR-037-party-gsi-own-stat-sharing.md` — owner-authorized cooperative own-stat sharing; detailed implementation decisions and acceptance boundaries
   - `docs/change request/CR-038-party-friends-presence-invitations.md` — supervised Friends implementation through protected PR merge, issue #106
   - `docs/change request/CR-047-pro-tier-entitlement-contract.md` — [[CR-047-pro-tier-entitlement-contract]] accepted Pro tier + entitlement contract (D-1 and D-2 approved by Boss; D-2 drafted by Claude orchestrator under delegation); one Command Deck, base Arena for all; implementation blocked until the §12 ADR is accepted and M6 closes
+  - `docs/change request/CR-049-event-taxonomy-sot.md` — [[CR-049-event-taxonomy-sot]] accepted event taxonomy consolidation (TOML SOT, codegen, version contract); PR0–PR3 sequence
   - `docs/change request/CR-*.md` — เอกสาร CR อื่นๆ ทั้งหมดตั้งแต่ CR-001 ถึง CR-038
 
 ## Operations
@@ -239,3 +243,5 @@ attributes:
 | 0.2.15 | 2026-11-08 | Index the approved Arena UI feature and implementation handoff. |
 | 0.2.16 | 2026-11-08 | Index the measured Arena dimensional drawing and evidence. |
 | 0.2.17 | 2026-11-08 | CR-047 entry: D-1 and D-2 both approved by Boss. |
+| 0.2.18 | 2026-11-09 | Index ADR-21 and CR-049 (event taxonomy SOT). |
+| 0.2.19 | 2026-11-09 | Index FEAT-G-ANNOUNCER (announcer event charter, CR-049). |

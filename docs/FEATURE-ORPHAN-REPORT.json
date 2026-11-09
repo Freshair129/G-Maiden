@@ -1,10 +1,10 @@
 {
   "_generated": "GENERATED — do not hand-edit; re-run tools/doc-graph/orphan-report.mjs",
-  "generatedAt": "2026-11-08T16:41:53.849Z",
+  "generatedAt": "2026-11-09T01:12:08.970Z",
   "baselineOrphanCandidates": 0,
-  "rowCount": 20,
+  "rowCount": 21,
   "summary": {
-    "anchored": 5,
+    "anchored": 6,
     "planned": 9,
     "weakly-anchored": 1,
     "superseded": 0,
@@ -36,12 +36,30 @@
         "docs/DOC-INDEX.md",
         "docs/design-system/arena-layout-dimensional.md",
         "docs/features/FEAT-G-ARENA.md",
+        "docs/operations/mvp-043-auth-remediation-verification.md",
         "docs/product/software-requirements-specification.md",
         "docs/superpowers/specs/2026-11-08-g-arena-hero-inspector-handoff.md"
       ],
       "supersededBy": null,
       "supersededByExists": true,
       "reason": "Only active document references remain; no strong registry/code anchor found."
+    },
+    {
+      "id": "FEAT-G-ANNOUNCER",
+      "slug": "FEAT-G-ANNOUNCER",
+      "path": "docs/features/FEAT-G-ANNOUNCER.md",
+      "lifecycle": "active",
+      "classification": "anchored",
+      "strongAnchors": [
+        "feature-ledger",
+        "code-evidence"
+      ],
+      "weakAnchors": [
+        "docs/DOC-INDEX.md"
+      ],
+      "supersededBy": null,
+      "supersededByExists": true,
+      "reason": "At least one strong anchor exists (registry and/or code evidence)."
     },
     {
       "id": "FEAT-G-ARENA",
@@ -368,6 +386,7 @@
       ],
       "weakAnchors": [
         "docs/architecture/design-system.md",
+        "docs/features/FEAT-G-ANNOUNCER.md",
         "docs/features/FEAT-G-DAMAGE.md",
         "docs/features/FEAT-G-MOTION.md",
         "docs/features/FEAT-G-REVIVE.md",
