@@ -1,4 +1,4 @@
-import type { GsiStatus, SensorHealth } from "./live/events";
+import type { GsiStatus, ResourceStats, SensorHealth } from "./live/events";
 
 export type ReadinessStatus = "ready" | "degraded" | "unknown";
 export type RuntimeReadiness = {
@@ -47,4 +47,18 @@ export function readinessLabel(status: ReadinessStatus): string {
     case "degraded": return "บกพร่อง";
     case "unknown": return "ยังไม่ทราบ";
   }
+}
+
+// A latest governor sample is evidence of observation, not whole-match NFR acceptance.
+export function resourceReadiness(
+  sample: Pick<ResourceStats, "ram_mb" | "cpu_pct" | "over_budget"> | null,
+): "unknown" | "degraded" | "observed" {
+  if (!sample) return "unknown";
+  if (sample.over_budget === true) return "degraded";
+  if (sample.ram_mb < 0 && sample.cpu_pct < 0) return "unknown";
+  return "observed";
+}
+
+export function liteMode(sensor: SensorHealth | null): boolean | null {
+  return sensor === null ? null : sensor.backend === "lite";
 }

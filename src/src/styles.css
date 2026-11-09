@@ -3452,6 +3452,10 @@ body:has(.deck-v3.g-deck) {
   color: var(--g-ice-500);
 }
 
+.gm-rundown-row.degraded .gm-rundown-glyph {
+  color: var(--g-warn);
+}
+
 .gm-rundown-label {
   font: 500 12px/1.3 var(--g-font-ui);
   color: var(--g-text-dim);
