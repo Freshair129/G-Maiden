@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "document_id": "mvp-execution-dag",
-  "version": "0.2.6",
-  "updated": "2026-10-18",
+  "version": "0.2.8",
+  "updated": "2026-11-09",
   "mode": "execution_active",
   "source": {
     "path": "docs/product/mvp-backlog.md",
-    "version": "0.3.6",
-    "sha256": "E34D0B0875AD8FA33703C7185585AFD36302659542FCB9E3B1259C9FD01C3197"
+    "version": "0.4.3",
+    "sha256": "EDB496E42317075C574C175E5E5BC03E956362EA54B8711C04EB54896BD1A2E6"
   },
   "parallelism": {
     "workers": 3,
@@ -556,7 +556,7 @@
       "discipline": "startup",
       "priority": "P0",
       "size": "M",
-      "state": "NOT_STARTED",
+      "state": "DONE",
       "depends_on": [
         "MVP-001.B",
         "MVP-002",
@@ -583,7 +583,7 @@
       "discipline": "GSI/setup",
       "priority": "P0",
       "size": "M",
-      "state": "NOT_STARTED",
+      "state": "INTEGRATED",
       "depends_on": [
         "MVP-001.B",
         "MVP-002",
@@ -610,7 +610,7 @@
       "discipline": "readiness",
       "priority": "P0",
       "size": "M",
-      "state": "NOT_STARTED",
+      "state": "INTEGRATED",
       "depends_on": [
         "MVP-001.B",
         "MVP-002",
@@ -777,7 +777,7 @@
       "discipline": "CV",
       "priority": "P0",
       "size": "M",
-      "state": "NOT_STARTED",
+      "state": "INTEGRATED",
       "depends_on": [
         "MVP-014",
         "MVP-015",
@@ -1429,7 +1429,7 @@
       "discipline": "mic/hotkeys",
       "priority": "P0",
       "size": "M",
-      "state": "NOT_STARTED",
+      "state": "INTEGRATED",
       "depends_on": [
         "MVP-038",
         "MVP-024",
@@ -1698,7 +1698,7 @@
       "discipline": "performance",
       "priority": "P0",
       "size": "L",
-      "state": "NOT_STARTED",
+      "state": "INTEGRATED",
       "depends_on": [
         "MVP-001.B",
         "MVP-002",
@@ -1812,7 +1812,7 @@
       "discipline": "CI",
       "priority": "P0",
       "size": "M",
-      "state": "NOT_STARTED",
+      "state": "INTEGRATED",
       "depends_on": [
         "MVP-001.B",
         "MVP-002",

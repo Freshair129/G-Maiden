@@ -632,21 +632,27 @@ fn parse_gsi_payload(body: &str) -> Result<GameTick, GsiPayloadError> {
     parse_gsi_payload_with_identity(body).map(|parsed| parsed.tick)
 }
 
+type GsiAdmission = Result<ParsedGsiPayload, (StatusCode, &'static str)>;
+
+/// Rejects invalid bodies before every freshness/session/G-Log/emit side effect.
+fn admit_gsi_body(body: &str) -> GsiAdmission {
+    parse_gsi_payload_with_identity(body).map_err(|error| match error {
+        GsiPayloadError::InvalidJson => (StatusCode::BAD_REQUEST, "invalid JSON"),
+        GsiPayloadError::InvalidSchema => (StatusCode::UNPROCESSABLE_ENTITY, "invalid GSI payload"),
+    })
+}
+
 async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'static str) {
     let ParsedGsiPayload {
         tick,
         match_id,
         party_observation,
         ability_candidate,
-    } = match parse_gsi_payload_with_identity(&body) {
+    } = match admit_gsi_body(&body) {
         Ok(parsed) => parsed,
-        Err(GsiPayloadError::InvalidJson) => {
+        Err((status, reason)) => {
             crate::party::invalidate_local(&app);
-            return (StatusCode::BAD_REQUEST, "invalid JSON");
-        }
-        Err(GsiPayloadError::InvalidSchema) => {
-            crate::party::invalidate_local(&app);
-            return (StatusCode::UNPROCESSABLE_ENTITY, "invalid GSI payload");
+            return (status, reason);
         }
     };
     let _ = ability_candidate; // Intentionally not part of GameTick, Party or AI.
@@ -1426,6 +1432,111 @@ mod tests {
                       "buyback_cost": 0, "respawn_seconds": 0 },
             "items": { "slot0": { "name": "empty" } }
         })
+    }
+
+    #[test]
+    fn invalid_bodies_are_rejected_before_any_runtime_side_effect() {
+        let _guard = crate::runtime::match_state_test_guard();
+        let before = (
+            crate::runtime::last_post_ms(),
+            crate::runtime::match_session_snapshot(),
+            crate::runtime::match_epoch(),
+            crate::runtime::in_game(),
+        );
+        let mut health_out_of_range = live_payload();
+        health_out_of_range["hero"]["health_percent"] = serde_json::json!(101);
+        let mut fractional_kills = live_payload();
+        fractional_kills["player"]["kills"] = serde_json::json!(7.5);
+        let mut unknown_game_state = live_payload();
+        unknown_game_state["map"]["game_state"] = serde_json::json!("DOTA_GAMERULES_STATE_FUTURE");
+
+        for (case, body, expected_status) in [
+            (
+                "broken JSON",
+                "{\"map\":".to_string(),
+                StatusCode::BAD_REQUEST,
+            ),
+            ("null", "null".to_string(), StatusCode::UNPROCESSABLE_ENTITY),
+            ("array", "[]".to_string(), StatusCode::UNPROCESSABLE_ENTITY),
+            (
+                "null map",
+                serde_json::json!({ "map": null }).to_string(),
+                StatusCode::UNPROCESSABLE_ENTITY,
+            ),
+            (
+                "partial live delta",
+                serde_json::json!({ "map": {
+                    "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS",
+                    "clock_time": 613
+                } })
+                .to_string(),
+                StatusCode::UNPROCESSABLE_ENTITY,
+            ),
+            (
+                "health outside range",
+                health_out_of_range.to_string(),
+                StatusCode::UNPROCESSABLE_ENTITY,
+            ),
+            (
+                "fractional kills",
+                fractional_kills.to_string(),
+                StatusCode::UNPROCESSABLE_ENTITY,
+            ),
+            (
+                "unknown game state",
+                unknown_game_state.to_string(),
+                StatusCode::UNPROCESSABLE_ENTITY,
+            ),
+            (
+                "zero-filled live tick",
+                serde_json::json!({
+                    "map": {
+                        "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS",
+                        "clock_time": 0
+                    },
+                    "player": {},
+                    "hero": {}
+                })
+                .to_string(),
+                StatusCode::UNPROCESSABLE_ENTITY,
+            ),
+        ] {
+            let Err((status, _)) = admit_gsi_body(&body) else {
+                panic!("{case} must be rejected");
+            };
+            assert_eq!(status, expected_status, "{case}");
+            assert_eq!(
+                (
+                    crate::runtime::last_post_ms(),
+                    crate::runtime::match_session_snapshot(),
+                    crate::runtime::match_epoch(),
+                    crate::runtime::in_game(),
+                ),
+                before,
+                "{case} changed runtime state"
+            );
+        }
+    }
+
+    #[test]
+    fn admit_maps_status_codes_exactly() {
+        let _guard = crate::runtime::match_state_test_guard();
+        for (body, expected) in [
+            ("{\"map\":", (StatusCode::BAD_REQUEST, "invalid JSON")),
+            (
+                "null",
+                (StatusCode::UNPROCESSABLE_ENTITY, "invalid GSI payload"),
+            ),
+        ] {
+            let Err(rejection) = admit_gsi_body(body) else {
+                panic!("invalid body must be rejected");
+            };
+            assert_eq!(rejection, expected);
+        }
+        let Ok(parsed) = admit_gsi_body(&live_payload().to_string()) else {
+            panic!("valid live payload must be accepted");
+        };
+        assert!(parsed.tick.in_game);
     }
 
     #[test]
