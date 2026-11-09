@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compatibilityMode, readinessFromRuntime } from "../runtimeReadiness";
+import { compatibilityMode, liteMode, readinessFromRuntime, resourceReadiness } from "../runtimeReadiness";
 import type { GsiStatus, SensorHealth } from "../live/events";
 
 const liveGsi: GsiStatus = {
@@ -90,4 +90,34 @@ describe("runtime readiness contract", () => {
     expect(readiness.minimap).toBe("unknown");
   });
 
+});
+
+describe("latest resource evidence", () => {
+  it.each([
+    { sample: null, expected: "unknown" },
+    { sample: { ram_mb: 500, cpu_pct: 3, over_budget: true }, expected: "degraded" },
+    { sample: { ram_mb: -1, cpu_pct: -1, over_budget: true }, expected: "degraded" },
+    { sample: { ram_mb: -1, cpu_pct: -1, over_budget: false }, expected: "unknown" },
+    { sample: { ram_mb: 500, cpu_pct: 3, over_budget: false }, expected: "observed" },
+    { sample: { ram_mb: -1, cpu_pct: 3, over_budget: false }, expected: "observed" },
+    { sample: { ram_mb: 500, cpu_pct: -1, over_budget: false }, expected: "observed" },
+    { sample: { ram_mb: 1200, cpu_pct: 20, over_budget: false }, expected: "observed" },
+  ])("classifies $sample as $expected without claiming whole-match acceptance", ({ sample, expected }) => {
+    expect(resourceReadiness(sample)).toBe(expected);
+    expect(resourceReadiness(sample)).not.toBe("ready");
+  });
+});
+
+describe("explicit Lite mode evidence", () => {
+  it("keeps an absent sensor unknown", () => {
+    expect(liteMode(null)).toBeNull();
+  });
+
+  it("identifies Lite mode from the backend", () => {
+    expect(liteMode({ ...healthySensor, backend: "lite", healthy: false, classifier: false, frameAgeMs: null })).toBe(true);
+  });
+
+  it.each(["dxgi", "gdi"] as const)("does not label %s as Lite even without a classifier", (backend) => {
+    expect(liteMode({ ...healthySensor, backend, classifier: false })).toBe(false);
+  });
 });

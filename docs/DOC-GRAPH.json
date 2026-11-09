@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-09T02:13:04.071Z",
+  "generatedAt": "2026-11-09T02:30:26.181Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -329,6 +329,13 @@
       "path": "docs/audits/2026-10-28-related-webviews-memory-spike.md",
       "title": "G-Maiden — Related WebViews Memory Spike",
       "status": "draft"
+    },
+    {
+      "id": "docs/audits/2026-11-09-mvp011-runtime-rundown.md",
+      "type": "doc",
+      "path": "docs/audits/2026-11-09-mvp011-runtime-rundown.md",
+      "title": "G-Maiden MVP-011 Phase A runtime rundown",
+      "status": "active"
     },
     {
       "id": "docs/audits/SEC-001-auth-identity-hardening.md",
@@ -3845,6 +3852,18 @@
       "to": "docs/audits/2026-10-28-mvp011-readiness-semantics-plan.md",
       "type": "wikilink",
       "line": 48
+    },
+    {
+      "from": "docs/audits/2026-11-09-mvp011-runtime-rundown.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 15
+    },
+    {
+      "from": "docs/audits/2026-11-09-mvp011-runtime-rundown.md",
+      "to": "docs/product/mvp-backlog.md",
+      "type": "wikilink",
+      "line": 15
     },
     {
       "from": "docs/audits/SEC-001-auth-identity-hardening.md",
@@ -10316,9 +10335,25 @@
       "reason": "no-metadata"
     },
     {
+      "file": "docs/architecture/engineering-spec.md",
+      "line": 277,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/companion.ts",
+      "anchor": 1201,
+      "symbol": "useCompanionData"
+    },
+    {
       "file": "docs/architecture/spikes/S-1-minimap-cv.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/audits/2026-07-07-independent-full-audit.md",
+      "line": 122,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/companion.ts",
+      "anchor": 1201,
+      "symbol": "useCompanionData"
     },
     {
       "file": "docs/change request/CR-007-frostline-deck-refresh.md",
@@ -10383,6 +10418,22 @@
       "reason": "version-changelog-mismatch",
       "frontmatter": "0.4.1",
       "changelog": "0.1.0"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 257,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4246,
+      "symbol": "gm-hero-slot"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 414,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4249,
+      "symbol": "g-sig"
     },
     {
       "file": "docs/design-system/landing_page_prompt.md",
@@ -10460,7 +10511,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-09T02:13:08.393Z",
+    "generatedAt": "2026-11-09T02:30:31.979Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 77,

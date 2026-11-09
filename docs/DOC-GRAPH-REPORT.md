@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-11-09T02:13:04.071Z
+สร้างเมื่อ / Generated at: 2026-11-09T02:30:26.181Z
 
-สแกน 188 ไฟล์เอกสาร, 299 nodes, 1399 edges, 33 รายการปัญหา (7 ตัวบล็อก exit code) / scanned 188 doc files, 299 nodes, 1399 edges, 33 violations (7 blocking exit code).
+สแกน 189 ไฟล์เอกสาร, 300 nodes, 1401 edges, 37 รายการปัญหา (11 ตัวบล็อก exit code) / scanned 189 doc files, 300 nodes, 1401 edges, 37 violations (11 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -10,7 +10,7 @@
 
 | Reason | คำอธิบาย / Description | Count | Blocking? |
 | --- | --- | --- | --- |
-| anchor-symbol-mismatch | anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) | 5 | yes |
+| anchor-symbol-mismatch | anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) | 9 | yes |
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 1 | no (informational) |
 | missing-changelog | มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table | 1 | yes |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 25 | no (informational) |
@@ -50,9 +50,17 @@
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
+### docs/architecture/engineering-spec.md
+
+- [L277] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/companion.ts", anchor=1201, symbol="useCompanionData")
+
 ### docs/architecture/spikes/S-1-minimap-cv.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
+
+### docs/audits/2026-07-07-independent-full-audit.md
+
+- [L122] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/companion.ts", anchor=1201, symbol="useCompanionData")
 
 ### docs/change request/CR-007-frostline-deck-refresh.md
 
@@ -84,6 +92,11 @@
 ### docs/change request/CR-047-pro-tier-entitlement-contract.md
 
 - [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.4.1", changelog="0.1.0")
+
+### docs/design-system/04-components.md
+
+- [L257] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=4246, symbol="gm-hero-slot")
+- [L414] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=4249, symbol="g-sig")
 
 ### docs/design-system/landing_page_prompt.md
 
