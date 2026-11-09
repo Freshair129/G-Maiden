@@ -286,6 +286,10 @@ mod backend {
         last_draft_progress_epoch: Option<u64>,
         last_draft_progress: Option<crate::runtime::DraftRosterProgress>,
         last_hero_hud_emit: Instant,
+        hero_hud_log: Instant,
+        hero_hud_attempts: u32,
+        hero_hud_no_frame: u32,
+        hero_hud_emitted: u32,
         last_inference_log: Instant,
         inference_frames: u64,
         inference_hits: u64,
@@ -377,6 +381,10 @@ mod backend {
                 last_draft_progress_epoch: None,
                 last_draft_progress: None,
                 last_hero_hud_emit: now,
+                hero_hud_log: now,
+                hero_hud_attempts: 0,
+                hero_hud_no_frame: 0,
+                hero_hud_emitted: 0,
                 last_inference_log: now,
                 inference_frames: 0,
                 inference_hits: 0,
@@ -1061,13 +1069,34 @@ mod backend {
             // noncritical HUD/template work instead of hiding that work before T0.
             state.next_cycle_due = Instant::now();
             state.prepare_draft_templates();
+            if state.hero_hud_log.elapsed() >= Duration::from_secs(5) {
+                eprintln!(
+                    "[G-HeroHud] interval_ms={} attempts={} no_frame={} emitted={}",
+                    state.hero_hud_log.elapsed().as_millis(),
+                    state.hero_hud_attempts,
+                    state.hero_hud_no_frame,
+                    state.hero_hud_emitted
+                );
+                state.hero_hud_log = Instant::now();
+                state.hero_hud_attempts = 0;
+                state.hero_hud_no_frame = 0;
+                state.hero_hud_emitted = 0;
+            }
+            // The cadence clock advances only after a sample is emitted. The minimap
+            // acquire above usually consumes the newest desktop frame, so this second
+            // AcquireNextFrame often returns nothing; retrying on the next cycle keeps
+            // roughly one HUD sample per second instead of silently dropping it.
             if state.last_hero_hud_emit.elapsed() >= Duration::from_millis(1000) {
-                state.last_hero_hud_emit = Instant::now();
+                state.hero_hud_attempts += 1;
                 let hud = HeroHudRegion::for_resolution(dxgi.width(), dxgi.height());
                 let (x, y, width, height) = hud.bounding_rect();
                 if rect_is_on_screen(x, y, width, height, dxgi.width(), dxgi.height()) {
                     let request = CaptureRoi::new(CaptureRoiKind::TopHeroBar, x, y, width, height);
-                    if let Some(bundle) = dxgi.acquire_regions(session.session_epoch, &[request]) {
+                    let bundle = dxgi.acquire_regions(session.session_epoch, &[request]);
+                    if bundle.is_none() {
+                        state.hero_hud_no_frame += 1;
+                    }
+                    if let Some(bundle) = bundle {
                         if !crate::minimap_preview::matches_output(
                             geometry,
                             dxgi.display_id(),
@@ -1123,6 +1152,8 @@ mod backend {
                                     let event =
                                         crate::runtime::MatchSessionEvent::new(payload, &session);
                                     let _ = state.app.emit("hero-hud", event);
+                                    state.last_hero_hud_emit = Instant::now();
+                                    state.hero_hud_emitted += 1;
                                 }
                             }
                         }
