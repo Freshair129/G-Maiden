@@ -46,6 +46,17 @@ fn install_with_variants(
     second: bool,
     single_pair_events: &[&str],
 ) -> Result<(String, PathBuf, PathBuf), String> {
+    install_custom(root, serial, event, second, single_pair_events, |_| {})
+}
+
+pub(crate) fn install_custom(
+    root: &Path,
+    serial: u64,
+    event: &str,
+    second: bool,
+    single_pair_events: &[&str],
+    edit: impl FnOnce(&mut serde_json::Value),
+) -> Result<(String, PathBuf, PathBuf), String> {
     let id = format!("ann_00000000-0000-0000-0000-{serial:012x}");
     let original = format!("snd_00000000-0000-0000-0000-{:012x}", serial * 3);
     let mixed = format!("snd_00000000-0000-0000-0000-{:012x}", serial * 3 + 1);
@@ -134,6 +145,7 @@ fn install_with_variants(
           "visual_source":{"root":".","silent":true,"video":format!("video/{banner}.webm"),"sha256":g_ann_package::sha256(video)},
           "components":[],"cues":[],"config":{"duration_seconds":0.01}}));
     }
+    edit(&mut registry);
     let manifest = format!("{id}.json");
     fs::write(
         source.join(&manifest),
@@ -141,7 +153,7 @@ fn install_with_variants(
     )
     .unwrap();
     let archive = root.join(format!("{id}.gann"));
-    g_ann_package::create(&source, &manifest, &archive).unwrap();
+    g_ann_package::create(&source, &manifest, &archive)?;
     static INSTALL: std::sync::Mutex<()> = std::sync::Mutex::new(());
     let _order = INSTALL.lock().unwrap();
     super::import_file(&archive)?;

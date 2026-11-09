@@ -1,10 +1,25 @@
 //! Admission contract shared by Studio and Maiden before event playback.
 use crate::Package;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap, HashSet};
+
+// Independent of the current taxonomy; each mapping still needs a unique banner.
+const MAX_EVENTS: usize = 128;
+
+fn event_schema() -> serde_json::Value {
+    serde_json::from_str(include_str!("../events.json")).expect("bundled event schema")
+}
+
+/// The runtime version is generated from g-events.toml, never a second constant.
+pub fn taxonomy_version() -> String {
+    event_schema()["version"]
+        .as_str()
+        .expect("bundled taxonomy version")
+        .to_owned()
+}
+
 fn known_events() -> Vec<String> {
-    let schema: serde_json::Value =
-        serde_json::from_str(include_str!("../events.json")).expect("bundled event schema");
+    let schema = event_schema();
     schema["x-events"]
         .as_array()
         .expect("events")
@@ -14,9 +29,59 @@ fn known_events() -> Vec<String> {
         .map(str::to_owned)
         .collect()
 }
+
+/// Successful admission does not make every mapping playable on this runtime.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
+pub struct AdmissionReport {
+    pub pack_taxonomy_version: String,
+    pub runtime_taxonomy_version: String,
+    /// Event id -> local diagnostic reason. These mappings must never be selected.
+    pub inert_events: BTreeMap<String, String>,
+}
+
+fn legacy_taxonomy_version() -> String {
+    "1.1".into()
+}
+
+// Canonical MAJOR.MINOR: two ASCII unsigned u32s, no leading zeroes except zero.
+fn parse_version(value: &str) -> Result<(u32, u32), String> {
+    let component = |s: &str| {
+        (!s.is_empty()
+            && (s == "0" || !s.starts_with('0'))
+            && s.bytes().all(|b| b.is_ascii_digit()))
+        .then(|| s.parse::<u32>().ok())
+        .flatten()
+    };
+    value
+        .split_once('.')
+        .and_then(|(major, minor)| Some((component(major)?, component(minor)?)))
+        .ok_or_else(|| {
+            "Invalid taxonomy_version: expected MAJOR.MINOR (canonical unsigned u32 components)"
+                .into()
+        })
+}
+
+/// Shared registry validation, without reading media. Call Package's playback
+/// admission for archive hashes and media formats before export/install/playback.
+pub fn validate_playback_registry(value: &serde_json::Value) -> Result<AdmissionReport, String> {
+    parse_registry(value)?.validate()
+}
+
+fn parse_registry(value: &serde_json::Value) -> Result<Registry, String> {
+    if value
+        .get("taxonomy_version")
+        .is_some_and(|version| !version.is_string())
+    {
+        return Err("Invalid taxonomy_version: expected a MAJOR.MINOR string".into());
+    }
+    serde_json::from_value(value.clone()).map_err(|e| format!("GANN playback registry: {e}"))
+}
+
 #[derive(Deserialize)]
 pub(crate) struct Registry {
     schema_version: u32,
+    #[serde(default = "legacy_taxonomy_version")]
+    taxonomy_version: String,
     pub announcer_id: String,
     name: String,
     revision: u32,
@@ -115,7 +180,23 @@ fn local_path(s: &str, folder: &str, id: &str, ext: &str) -> bool {
     s == format!("{folder}/{id}.{ext}")
 }
 impl Registry {
-    fn validate(&self) -> Result<(), String> {
+    fn validate(&self) -> Result<AdmissionReport, String> {
+        let runtime_taxonomy_version = taxonomy_version();
+        let runtime = parse_version(&runtime_taxonomy_version)?;
+        let pack = parse_version(&self.taxonomy_version)?;
+        require(
+            pack.0 == runtime.0,
+            &format!(
+                "taxonomy major mismatch: pack {} vs runtime {runtime_taxonomy_version}",
+                self.taxonomy_version
+            ),
+        )?;
+        let mut admission = AdmissionReport {
+            pack_taxonomy_version: self.taxonomy_version.clone(),
+            runtime_taxonomy_version,
+            inert_events: BTreeMap::new(),
+        };
+        let known = known_events();
         require(
             self.schema_version == 1 && self.revision > 0 && valid_id(&self.announcer_id, "ann_"),
             "schema or announcer ID",
@@ -215,16 +296,38 @@ impl Registry {
         let mut used_banners = HashSet::new();
         let mut mapped = HashSet::new();
         require(
-            !self.events.is_empty() && self.events.len() <= known_events().len(),
+            !self.events.is_empty() && self.events.len() <= MAX_EVENTS,
             "event count",
         )?;
         for (event, mappings) in &self.events {
             require(
-                known_events().iter().any(|known| known == event)
-                    && !mappings.is_empty()
-                    && mappings.len() <= 128,
-                "unknown/empty event",
+                !event.is_empty()
+                    && event.len() <= 64
+                    && event
+                        .bytes()
+                        .all(|b| b.is_ascii_alphanumeric() || b == b'_'),
+                "event label",
             )?;
+            require(
+                !mappings.is_empty() && mappings.len() <= 128,
+                "empty/oversized event",
+            )?;
+            if !known.contains(event) {
+                require(
+                    pack > runtime,
+                    &format!(
+                        "unknown event {event:?} for taxonomy {}",
+                        admission.runtime_taxonomy_version
+                    ),
+                )?;
+                admission.inert_events.insert(
+                    event.clone(),
+                    format!(
+                        "inert: unknown to taxonomy {}",
+                        admission.runtime_taxonomy_version
+                    ),
+                );
+            }
             let mut originals = HashSet::new();
             for m in mappings {
                 let b = banners
@@ -263,7 +366,8 @@ impl Registry {
                     mapped.contains(s.sound_id.as_str()) || unmapped.contains(s.sound_id.as_str())
                 }),
             "unclassified original",
-        )
+        )?;
+        Ok(admission)
     }
 }
 
@@ -329,9 +433,13 @@ fn wav_samples(bytes: &[u8], mixed: bool) -> Result<(u64, u32), String> {
 }
 impl Package {
     pub fn validate_playback(&self) -> Result<(), String> {
-        let registry: Registry = serde_json::from_value(self.registry.clone())
-            .map_err(|e| format!("GANN playback registry: {e}"))?;
-        registry.validate()?;
+        self.validate_playback_with_report().map(|_| ())
+    }
+
+    /// Verify every mapping and media file, including inert future event ids.
+    pub fn validate_playback_with_report(&self) -> Result<AdmissionReport, String> {
+        let registry = parse_registry(&self.registry)?;
+        let admission = registry.validate()?;
         let mut audio = HashMap::new();
         for sound in &registry.sounds {
             let bytes = self.read(&sound.path)?;
@@ -351,7 +459,7 @@ impl Package {
                 "mixed/original duration mismatch",
             )?;
         }
-        Ok(())
+        Ok(admission)
     }
 }
 

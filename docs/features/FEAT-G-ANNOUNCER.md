@@ -2,7 +2,7 @@
 title: "FEAT-G-ANNOUNCER — Announcer event detection and taxonomy"
 doc_id: "FEAT-G-ANNOUNCER"
 status: "active"
-version: "0.1.0"
+version: "0.1.1"
 updated: "2026-11-09"
 owner: "Boss"
 source_of_truth: true
@@ -69,8 +69,37 @@ pinned G-Suite snapshot.
 
 See CR-049 §5 (EVT-AC-001..008). Source and unit evidence are not live-match or acoustic acceptance.
 
+## Pack compatibility
+
+`ann_<UUID>.json` may declare `taxonomy_version`. Its grammar is canonical `MAJOR.MINOR`:
+two ASCII unsigned 32-bit integers, no leading zeroes except `0`, whitespace, patch component,
+sign or suffix. An absent field means `1.1`; null, non-string and malformed values are refused.
+The runtime version comes from the generated `gann-package/events.json` `version` field.
+
+| Pack vs runtime | Admission |
+| --- | --- |
+| Same major, pack ≤ runtime | Admit only known event ids. Missing mappings stay silent/unmapped. |
+| Same major, pack > runtime | Admit; unknown ids retain all hash, pair, WAV and silent-WebM checks but are inert. |
+| Different major | Refuse before changing active selection. |
+| Field absent | Apply the `1.1` rule. |
+
+The shared check lives in `src-tauri/gann-package/src/playback.rs`. Existing
+`Package::validate_playback() -> Result<(), String>` remains available;
+`validate_playback_with_report()` returns `AdmissionReport` with effective pack/runtime versions
+and `inert_events` (id → reason). `validate_playback_registry()` shares registry checks with
+Maiden's cache reader; it does not replace container hashes or media admission. The event-count
+bound is 128, independent of the runtime taxonomy size.
+
+Maiden logs inert ids locally at import/activation and excludes them from projected mappings
+and verified pair snapshots, including preview. Known pending ids such as `enemy_missing` are
+admitted by taxonomy but remain unselectable until implemented; detection is unchanged.
+Production installation uses `PackageInstaller` via the registered current-user pipe.
+`POST /announcer/install` currently returns HTTP 410; its old admission helper
+is test-only. CR-049 PR2 does not restore that endpoint. Studio consumer integration is PR3.
+
 ## Changelog
 
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.1.0 | 2026-11-09 | Module charter for announcer event detection; points every event change at the g-events.toml SOT (ADR-21 / CR-049). |
+| 0.1.1 | 2026-11-09 | CR-049 PR2: document taxonomy admission matrix, legacy default, report API, verified inert mappings and current install transport; native acceptance remains separate. |

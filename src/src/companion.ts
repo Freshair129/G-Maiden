@@ -37,6 +37,7 @@ export type HeroState = "visible" | "missing" | "dead" | "empty";
 export type CompanionData = {
   arenaSource?: ArenaSource;
   updatedAt: number;
+  resourceSample: { ramMb: number; cpuPct: number; overBudget: boolean } | null;
   match: {
     clock: string;
     seconds: number;
@@ -259,6 +260,7 @@ const FALLBACK_HEROES: CompanionData["heroes"] = [
 // Retained sparse pregame fallback (exported for reference / future use). Phase 1
 // renders the rich MOCK below instead so the deck shows a full demo with no backend.
 export const FALLBACK: CompanionData = {
+  resourceSample: null,
   updatedAt: Date.now(),
   match: {
     clock: "--:--",
@@ -345,6 +347,7 @@ function mockUtteranceAt(minutesAgo: number): { atMs: number; timeLabel: string 
 // still consume slices of this object as an integration fixture; do not import it
 // into any new UI code.
 export const MOCK: CompanionData = {
+  resourceSample: null,
   updatedAt: Date.now(),
   match: {
     clock: "24:18",
@@ -785,6 +788,7 @@ function buildCompanionData(live: LiveState): CompanionData {
       roster: live.roster, enemySlots: [...live.enemySlots], visible: [...live.visibleHeroes],
       missing: [...live.missing], phase: live.phase, warningReady: live.warningReady, health: live.health, cv: live.cv,
     },
+    resourceSample: live.stats ? { ramMb: live.stats.ram_mb, cpuPct: live.stats.cpu_pct, overBudget: live.stats.over_budget } : null,
     heroCv: {
       roster: live.roster,
       hud: live.heroHud,
