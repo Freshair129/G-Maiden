@@ -9,12 +9,14 @@
 - เตรียม candidate 0.13.6 หลัง workflow ของ 0.13.5 ล้มเหลวในขั้นสร้าง Dev PR โดยรักษาไฟล์และหลักฐาน candidate เดิม
 
 ### Added
+- **CR-049 PR2 — pack taxonomy compatibility** — Optional `taxonomy_version` defaults to `1.1`; shared admission verifies newer same-major mappings while reporting unknown ids as inert, rejects incompatible/malformed versions before selection changes, and keeps inert media out of Maiden playback/preview caches. Runtime versions come from generated event JSON; detection and app version are unchanged.
 - **CR-049 PR1 — event taxonomy source** — Added owner-editable `g-events.toml`, validated build-time Rust tables/announcer defaults, generated JSON freshness and version-history checks, and a debug-only params override. Taxonomy 1.2 registers `enemy_missing` as pending; detection, G-Signal settings and pack-version admission are unchanged.
 - **G-Friends ใน G-Party (CR-038)** — เพิ่มเพื่อนด้วย GID/verified room link, ตอบรับ/ปฏิเสธ/ยกเลิก, remove/block/unblock, online แบบ opt-in และคำเชิญที่ต้องยินยอมแชร์ GSI ใหม่ทุกครั้ง; guest room code ยังไม่ต้องมีบัญชี Backend ใช้ private social schema และ registered relay proof/ticket; ต้องตั้งค่า/ตรวจ hosted service ก่อนใช้งานจริง และ live Google/Dota/สองจอ/NFR ยังรอ acceptance
 - **G-Party — แชร์สถานะของเพื่อนจาก GSI ของแต่ละเครื่อง** — สร้าง/เข้าห้องด้วยรหัสเชิญและความยินยอมแยก แสดงฮีโร่ เลเวล HP/HP สูงสุด MP% และสถานะชีวิต/รอเกิดเฉพาะแมตช์และทีมเดียวกัน; ค่าเก่าเป็น unknown พร้อมออก/เตะ/เปลี่ยนรหัสเชิญ ตัว relay เก็บในหน่วยความจำและ native transport แยกจาก G-Signal ต้องรัน relay ที่เข้าถึงได้ก่อนใช้งานข้ามเครื่อง; Windows/live Dota/สองจอและงบทรัพยากรยังรอ acceptance
 - **เอกสาร G-Party และการทดสอบ** — เพิ่ม FEAT/CR-037/implementation plan, สัญญา peer-sharing แยกจาก AI consent และ CI สำหรับ relay/portable Rust โดยคง 62 MVP tasks เดิม
 
 ### Fixed
+- **MVP-010 สถานะตั้งค่า GSI** — หน้าตั้งค่าและหน้าเริ่มใช้งานครั้งแรกแสดงสถานะ GSI ห้าขั้นร่วมกัน และเตือนว่าลงชื่อเข้าใช้ Google ไม่ได้ขณะ GSI ใช้พอร์ตสำรอง; native/live acceptance ยังรอการตรวจยืนยัน
 - **MVP-011 Phase A readiness rundown** — เชื่อมสถานะ GSI/capture ผ่าน runtime helper, ระบุ Lite mode และแสดง resource sample จริงจาก governor โดยไม่อ้างผลทั้งแมตช์; Overlay/เสียงออกยังไม่ทราบเมื่อไม่มี health producer และรายการที่เกินพื้นที่แสดงจำนวน `+N` โดยไม่เลื่อนหน้า Phase B และ native/visual/acoustic acceptance ยังเปิดอยู่
 - **Overlay layout ตั้งต้นใหม่** — ชิปสถิติเรียงแถวเดียวกับรูปฮีโร่ (ไม่มีเวลา, มี XPM), Maiden มุมขวาบน, แบนเนอร์ announcer เล็กลงอยู่กลางบน, แถบ RISK กลางบนใต้ช่องคะแนน/เวลา, การ์ดซื้อเกิด (G-Revive) แบบเต็มกลางล่างเหนือไอคอนบัฟ ไม่บังช่องไอเทมและ feed; layout ที่ยังเป็นค่าตั้งต้นรุ่นเก่าจะย้ายให้อัตโนมัติ ส่วนตำแหน่งที่ผู้เล่นลากไว้เองคงเดิม
 - **One Canvas UI** — Voice pack inventory paginates within its available space, Account content uses a bounded scroll region, Insights links to Account when Steam is not linked.
