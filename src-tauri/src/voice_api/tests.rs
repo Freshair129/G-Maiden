@@ -4,7 +4,6 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use serde::Deserialize;
 
 use super::banner::{activate_if_exists, install_report};
 use super::commands::active_event_clips;
@@ -131,7 +130,7 @@ fn gann_only_rejects_changed_container_even_when_marker_and_manifest_remain() {
 }
 
 #[test]
-fn gann_only_resolves_every_schema_event_to_its_own_exact_media_pair() {
+fn gann_only_resolves_implemented_schema_events_and_rejects_pending() {
     let root = temp_root("gann-schema-events");
     set_test_voice_root(Some(root.clone()));
     let _guard = RootGuard(root.clone());
@@ -143,7 +142,23 @@ fn gann_only_resolves_every_schema_event_to_its_own_exact_media_pair() {
             continue;
         }
         let serial = index as u64 + 20;
-        let (id, original, mixed) = super::test_package::install(&root, serial, event);
+        let imported = super::test_package::try_install(&root, serial, event);
+        if crate::events::NON_FIRING_EVENTS.contains(&event) {
+            // The shared taxonomy permits authoring this ID, but Maiden's
+            // test import path already checks the implemented EventDef allowlist.
+            assert_eq!(
+                imported.unwrap_err(),
+                "Invalid announcer manifest: unknown/empty event",
+                "pending event {event} must be rejected at import"
+            );
+            let id = format!("ann_00000000-0000-0000-0000-{serial:012x}");
+            assert!(activate_if_exists(&id).is_err());
+            assert!(super::select_announcer_clip(event).is_none());
+            continue;
+        }
+        let (id, original, mixed) = imported
+            .unwrap_or_else(|error| panic!("failed to import implemented event {event}: {error}"));
+        assert!(EVENTS.iter().any(|definition| definition.id == event));
         activate_if_exists(&id).unwrap();
         let selected = super::select_announcer_clip(event).unwrap();
         assert_eq!(selected.path, original);
@@ -484,96 +499,8 @@ fn event_clip_preview_uses_only_exact_mixed_path_from_the_current_gann() {
     assert!(super::select_announcer_playback_path("kill", &mixed).is_none());
 }
 
-#[derive(Deserialize)]
-struct SchemaEvent {
-    id: String,
-    category: String,
-}
-
-#[derive(Deserialize)]
-struct EventSchema {
-    #[serde(rename = "x-events")]
-    x_events: Vec<SchemaEvent>,
-}
-
-/// Loads the vendored copy of the canonical event contract
-/// (`schemas/gmaiden-events.json`, byte-identical to the sibling
-/// `G-Suite/schemas/gmaiden-events.json`).
-fn load_vendored_schema() -> EventSchema {
-    let path = format!(
-        "{}/../schemas/gmaiden-events.json",
-        env!("CARGO_MANIFEST_DIR")
-    );
-    let raw = fs::read_to_string(&path).unwrap_or_else(|e| panic!("failed to read {path}: {e}"));
-    serde_json::from_str(&raw).unwrap_or_else(|e| panic!("failed to parse {path}: {e}"))
-}
-
-/// Two-way sync check against the vendored schema. The `"none"` category
-/// (currently just `"unused"`) is a G-AnnStudio authoring-only concept and
-/// is deliberately exempt — everything else must appear on both sides.
-#[test]
-fn events_match_schema_contract() {
-    let schema = load_vendored_schema();
-    let schema_ids: Vec<&str> = schema.x_events.iter().map(|e| e.id.as_str()).collect();
-    let rust_ids: Vec<&str> = EVENTS.iter().map(|e| e.id).collect();
-
-    let missing_from_schema: Vec<&str> = rust_ids
-        .iter()
-        .filter(|id| !schema_ids.contains(id))
-        .copied()
-        .collect();
-    let missing_from_rust: Vec<&str> = schema
-        .x_events
-        .iter()
-        .filter(|e| e.category != "none" && !rust_ids.contains(&e.id.as_str()))
-        .map(|e| e.id.as_str())
-        .collect();
-
-    assert!(
-        missing_from_schema.is_empty() && missing_from_rust.is_empty(),
-        "event contract drift — in voice_api::EVENTS but missing from schema x-events: {missing_from_schema:?}; \
-         in schema x-events (category != \"none\") but missing from voice_api::EVENTS: {missing_from_rust:?}. \
-         update schemas/gmaiden-events.json + G-Suite/schemas/gmaiden-events.json + voice_api.rs EVENTS together"
-    );
-}
-
-/// Drift guard against the sibling repo's canonical copy. Skips (passes)
-/// when the sibling checkout isn't present — CI only has this repo.
-#[test]
-fn vendored_schema_matches_g_suite_sibling() {
-    let selected_root = std::env::var("G_SUITE_DIR").ok();
-    let g_suite_dir = selected_root
-        .clone()
-        .unwrap_or_else(|| format!("{}/../../G-Suite", env!("CARGO_MANIFEST_DIR")));
-    let sibling_path = format!("{g_suite_dir}/schemas/gmaiden-events.json");
-    let sibling_raw = match fs::read_to_string(&sibling_path) {
-        Ok(raw) => raw,
-        Err(error) if selected_root.is_some() => {
-            panic!("selected G_SUITE_DIR schema {sibling_path} is unavailable: {error}")
-        }
-        Err(_) => {
-            eprintln!("skip: sibling G-Suite checkout not found at {sibling_path}");
-            return;
-        }
-    };
-
-    let vendored_path = format!(
-        "{}/../schemas/gmaiden-events.json",
-        env!("CARGO_MANIFEST_DIR")
-    );
-    let vendored_raw = fs::read_to_string(&vendored_path)
-        .unwrap_or_else(|e| panic!("failed to read {vendored_path}: {e}"));
-
-    let sibling_value: serde_json::Value = serde_json::from_str(&sibling_raw)
-        .unwrap_or_else(|e| panic!("failed to parse {sibling_path}: {e}"));
-    let vendored_value: serde_json::Value = serde_json::from_str(&vendored_raw)
-        .unwrap_or_else(|e| panic!("failed to parse {vendored_path}: {e}"));
-
-    assert_eq!(
-        vendored_value, sibling_value,
-        "vendored schemas/gmaiden-events.json is stale vs selected G-Suite — review the full diff"
-    );
-}
+#[path = "../../events/tests.rs"]
+mod taxonomy;
 
 // A fresh test root cannot inherit another equipped GANN generation.
 #[test]
