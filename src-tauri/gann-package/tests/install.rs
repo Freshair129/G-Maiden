@@ -514,3 +514,13 @@ fn taxonomy_event_bound_is_independent_of_the_known_event_count() {
         .contains("event count"));
     fs::remove_dir_all(root).unwrap();
 }
+
+#[test]
+fn events_json_is_the_bundled_taxonomy() {
+    let v: serde_json::Value = serde_json::from_str(g_ann_package::events_json()).unwrap();
+    assert_eq!(
+        v["version"].as_str().unwrap(),
+        g_ann_package::taxonomy_version()
+    );
+    assert!(v["x-events"].as_array().is_some_and(|e| !e.is_empty()));
+}
