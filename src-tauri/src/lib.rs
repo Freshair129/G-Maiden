@@ -13,6 +13,7 @@ pub mod action_damage;
 pub mod announcer;
 pub mod audio;
 mod audio_waveform;
+mod events;
 mod calibration;
 pub mod capture;
 pub mod capture_frame;
@@ -1580,6 +1581,8 @@ pub fn run() {
     // %LOCALAPPDATA%\G-Maiden\logs\error.log so a freeze/crash leaves a trace.
     log::init_panic_hook();
     log::error("[startup] G-Maiden process started");
+    #[cfg(debug_assertions)]
+    events::initialize();
     if let Err(error) = governor::initialize_process_group() {
         log::error(&format!(
             "[startup] refusing to start without the whole-app CPU Job Object hard cap: {error}"
