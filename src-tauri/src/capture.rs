@@ -232,6 +232,60 @@ mod backend {
         healthy: bool,
     }
 
+    /// Freshness alone is insufficient: background/Alt-Tab resets the frame
+    /// clock without acquiring evidence. Keep this gate pure for regression tests.
+    fn sensor_is_healthy(
+        backend: &str,
+        classifier: bool,
+        throttled: bool,
+        dota_foreground: bool,
+        awaiting_fresh_frame: bool,
+        frame_age_ms: u64,
+    ) -> bool {
+        backend != "lite"
+            && classifier
+            && !throttled
+            && dota_foreground
+            && !awaiting_fresh_frame
+            && frame_age_ms <= STALE_FRAME_MS
+    }
+
+    /// A background frame-clock reset keeps the capture loop from reporting a
+    /// stall while it is intentionally suspended. A new live session and every
+    /// in-match focus loss both require a frame from that session before health
+    /// can return to true.
+    #[derive(Default)]
+    struct ForegroundFrameGate {
+        session_epoch: Option<u64>,
+        awaiting_fresh_frame: bool,
+    }
+
+    impl ForegroundFrameGate {
+        fn observe_cycle(&mut self, dota_foreground: bool, session_epoch: Option<u64>) {
+            let Some(session_epoch) = session_epoch else {
+                self.session_epoch = None;
+                self.awaiting_fresh_frame = false;
+                return;
+            };
+
+            if self.session_epoch != Some(session_epoch) {
+                self.session_epoch = Some(session_epoch);
+                self.awaiting_fresh_frame = true;
+            }
+            if !dota_foreground {
+                self.awaiting_fresh_frame = true;
+            }
+        }
+
+        fn frame_accepted_by_pipeline(&mut self, session_epoch: u64) -> bool {
+            if self.session_epoch != Some(session_epoch) {
+                return false;
+            }
+            self.awaiting_fresh_frame = false;
+            true
+        }
+    }
+
     impl SensorHealth {
         /// No capture backend is currently producing frames. GSI and voice
         /// remain available while the supervisor waits for a manual retry.
@@ -312,6 +366,9 @@ mod backend {
         preview_desktop_origin: [i32; 2],
         /// Last frame that reached `process_frame`. Drives `frame_age_ms`.
         last_frame_ok: Instant,
+        /// After an in-match focus loss, health stays false until capture receives
+        /// a new valid frame; a background clock reset alone is not evidence.
+        foreground_frame_gate: ForegroundFrameGate,
         cycle_started: Instant,
         frames: super::schedule::FrameGate,
         next_cycle_due: Instant,
@@ -402,6 +459,7 @@ mod backend {
                 preview_display_id: 0,
                 preview_desktop_origin: [0, 0],
                 last_frame_ok: now,
+                foreground_frame_gate: ForegroundFrameGate::default(),
                 cycle_started: now,
                 frames: super::schedule::FrameGate::default(),
                 next_cycle_due: now,
@@ -573,7 +631,7 @@ mod backend {
         /// the [`HEALTH_HEARTBEAT_MS`] heartbeat. Called from the loop body,
         /// never from `process_frame` — the ≤300ms G-Signal path must not pay
         /// for reporting.
-        fn emit_health(&mut self, backend: &'static str) {
+        fn emit_health(&mut self, backend: &'static str, dota_foreground: bool) {
             let frame_age_ms = self.last_frame_ok.elapsed().as_millis() as u64;
             let classifier = self.detector.is_active();
             let throttled = crate::governor::cpu_throttle();
@@ -582,10 +640,14 @@ mod backend {
                 classifier,
                 throttled,
                 frame_age_ms: Some(frame_age_ms),
-                healthy: backend != "lite"
-                    && classifier
-                    && !throttled
-                    && frame_age_ms <= STALE_FRAME_MS,
+                healthy: sensor_is_healthy(
+                    backend,
+                    classifier,
+                    throttled,
+                    dota_foreground,
+                    self.foreground_frame_gate.awaiting_fresh_frame,
+                    frame_age_ms,
+                ),
             };
             let key = health.key();
             if self.last_health_key != Some(key)
@@ -784,7 +846,16 @@ mod backend {
             // Honest sensor state for the overlay + deck. Ahead of the gates
             // too, so "capture is alive" is reported at the menu and during the
             // draft, not only mid-match.
-            state.emit_health(dxgi.backend());
+            // A fresh frame age is not evidence of a visible game: the background
+            // branch deliberately refreshes last_frame_ok to avoid a stale-loop.
+            let dota_foreground = crate::dxgi::dota_is_foreground();
+            let in_game = crate::runtime::in_game();
+            let session_epoch = in_game
+                .then(|| crate::runtime::match_session_snapshot().session_epoch);
+            state
+                .foreground_frame_gate
+                .observe_cycle(dota_foreground, session_epoch);
+            state.emit_health(dxgi.backend(), dota_foreground);
             if state.warning_frame_ms.is_some()
                 && state.last_frame_ok.elapsed().as_millis() > u128::from(STALE_FRAME_MS)
             {
@@ -859,7 +930,7 @@ mod backend {
                 preview_geometry = Some(geometry);
             }
             crate::minimap_preview_runtime::publish_geometry(geometry);
-            if !crate::dxgi::dota_is_foreground() {
+            if !dota_foreground {
                 state.suspend_observation();
                 state.scene_ok_ms = None;
                 state.last_frame_ok = Instant::now();
@@ -924,7 +995,7 @@ mod backend {
                 continue;
             }
             // Gate to live matches — no CV work at the menu (idle-CPU saver).
-            if !crate::runtime::in_game() {
+            if !in_game {
                 // Hold the frame clock at "just now" while we're deliberately
                 // not capturing, so entering a match doesn't start out looking
                 // like a 40-minute-old stall. `frame_age_ms` is only meaningful
@@ -1490,6 +1561,17 @@ mod backend {
                 );
                 return;
             }
+            // A session can change while detector work is in flight. Re-sync
+            // and revalidate after admission so an old-session frame cannot open
+            // the new session's health gate.
+            state.sync_match_epoch();
+            if !crate::runtime::is_current_capture_session(session.session_epoch) {
+                return;
+            }
+            // Only a frame from the currently accepted session clears its gate.
+            state
+                .foreground_frame_gate
+                .frame_accepted_by_pipeline(session.session_epoch);
             let allowed = crate::runtime::enemy_roster_labels();
             detections.retain(|d| allowed.contains(&d.name));
             state.sentry.retain_allowed(&allowed);
@@ -1840,6 +1922,77 @@ mod backend {
         //! asserts p99 stays well inside budget. Capture I/O is budgeted
         //! separately, so it's not in this measurement.
         use super::*;
+
+        #[test]
+        fn foreground_eligibility_withdraws_health_during_alt_tab() {
+            assert!(sensor_is_healthy("dxgi", true, false, true, false, 20));
+            assert!(!sensor_is_healthy("dxgi", true, false, false, false, 0));
+            assert!(!sensor_is_healthy("gdi", true, false, false, false, 0));
+            assert!(!sensor_is_healthy("lite", true, false, true, false, 0));
+            assert!(!sensor_is_healthy("dxgi", false, false, true, false, 0));
+            assert!(!sensor_is_healthy("dxgi", true, true, true, false, 0));
+            assert!(!sensor_is_healthy("dxgi", true, false, true, false, STALE_FRAME_MS + 1));
+        }
+
+        #[test]
+        fn foreground_recovery_waits_for_a_new_frame() {
+            let mut gate = ForegroundFrameGate::default();
+
+            gate.observe_cycle(false, Some(7));
+            assert!(gate.awaiting_fresh_frame);
+            assert!(!sensor_is_healthy("dxgi", true, false, true, gate.awaiting_fresh_frame, 0));
+
+            // Foreground has returned, but no frame has yet reached the CV pipeline.
+            gate.observe_cycle(true, Some(7));
+            assert!(gate.awaiting_fresh_frame);
+            assert!(!sensor_is_healthy("dxgi", true, false, true, gate.awaiting_fresh_frame, 0));
+
+            assert!(gate.frame_accepted_by_pipeline(7));
+            assert!(!gate.awaiting_fresh_frame);
+            assert!(sensor_is_healthy("dxgi", true, false, true, gate.awaiting_fresh_frame, 0));
+
+            // Leaving the match clears the recovery gate; menu health remains independent.
+            gate.observe_cycle(true, None);
+            assert!(!gate.awaiting_fresh_frame);
+            assert!(sensor_is_healthy("dxgi", true, false, true, gate.awaiting_fresh_frame, 0));
+        }
+
+        #[test]
+        fn new_match_waits_for_a_frame_from_its_session() {
+            let mut gate = ForegroundFrameGate::default();
+
+            // Dota can be foreground at the menu; health there is not match evidence.
+            gate.observe_cycle(true, None);
+            assert!(sensor_is_healthy("dxgi", true, false, true, gate.awaiting_fresh_frame, 0));
+
+            // The first live health report for a new session remains false.
+            gate.observe_cycle(true, Some(8));
+            assert!(gate.awaiting_fresh_frame);
+            assert!(!sensor_is_healthy("dxgi", true, false, true, gate.awaiting_fresh_frame, 0));
+            assert!(gate.frame_accepted_by_pipeline(8));
+            assert!(sensor_is_healthy("dxgi", true, false, true, gate.awaiting_fresh_frame, 0));
+        }
+
+        #[test]
+        fn stale_session_frame_cannot_open_current_session_gate() {
+            let mut gate = ForegroundFrameGate::default();
+            gate.observe_cycle(true, Some(20));
+            assert!(gate.frame_accepted_by_pipeline(20));
+            assert!(!gate.awaiting_fresh_frame);
+
+            // A new match re-arms the gate even if Dota stayed in the foreground.
+            gate.observe_cycle(true, Some(21));
+            assert!(gate.awaiting_fresh_frame);
+
+            // A frame finishing after the session boundary cannot clear it.
+            assert!(!gate.frame_accepted_by_pipeline(20));
+            assert!(gate.awaiting_fresh_frame);
+            assert!(!sensor_is_healthy("dxgi", true, false, true, gate.awaiting_fresh_frame, 0));
+
+            assert!(gate.frame_accepted_by_pipeline(21));
+            assert!(!gate.awaiting_fresh_frame);
+        }
+
         #[test]
         fn missing_state_schema_has_confirmed_presence_and_clears_unready() {
             let missing = vec![("axe".to_string(), 6000, (0.2, 0.4))];
