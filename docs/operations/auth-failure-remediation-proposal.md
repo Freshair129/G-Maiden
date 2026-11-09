@@ -1,9 +1,9 @@
 ---
 title: "Account Sign-out Failure Contract"
 doc_id: "auth-failure-remediation-proposal"
-version: "0.3.0"
+version: "0.3.1"
 status: "active"
-updated: "2026-10-18"
+updated: "2026-11-09"
 owner: "Boss"
 attributes:
   doc_type: "account-security-contract"
@@ -41,6 +41,7 @@ revocation.
 
 ## Acceptance evidence
 
+- [MVP-043 verification matrix](mvp-043-auth-remediation-verification.md) pins source/test coverage, the open OAuth start finding and the remaining native/live gates.
 - A successful remote response and local cleanup yield a signed-out state without a warning.
 - Remote failure still runs local cleanup and surfaces an unconfirmed-revocation warning.
 - Local storage deletion failure blocks sign-in and permits a cleanup retry.
@@ -62,3 +63,4 @@ pnpm -C src exec tsc --noEmit
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.3.0 | 2026-10-18 | Replaced obsolete access-gate material with the current account sign-out contract. |
+| 0.3.1 | 2026-11-09 | Link the pinned MVP-043 source/unit verification matrix and its open acceptance gates. |

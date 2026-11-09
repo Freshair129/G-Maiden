@@ -1660,6 +1660,9 @@ pub fn take_oauth_pending(callback_state: Option<&str>, now_ms: u64) -> bool {
 }
 
 #[cfg(test)]
+pub(crate) use tests::match_state_guard as match_state_test_guard;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -1825,7 +1828,7 @@ mod tests {
     /// unrelated "poisoned lock" errors that hide it.
     static MATCH_STATE_LOCK: Mutex<()> = Mutex::new(());
 
-    fn match_state_guard() -> std::sync::MutexGuard<'static, ()> {
+    pub(crate) fn match_state_guard() -> std::sync::MutexGuard<'static, ()> {
         MATCH_STATE_LOCK.lock().unwrap_or_else(|e| e.into_inner())
     }
 

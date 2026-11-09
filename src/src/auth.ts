@@ -101,11 +101,12 @@ export function useAuth() {
     let cancelled = false;
     let providerChanged = false;
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (!cancelled) {
-        if (!providerChanged) setSession(localAuthBlocked() ? null : data.session);
-        setLoading(false);
-      }
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (!cancelled && !providerChanged) setSession(error || localAuthBlocked() ? null : data.session);
+    }).catch(() => {
+      if (!cancelled && !providerChanged) setSession(null);
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       providerChanged = true;
