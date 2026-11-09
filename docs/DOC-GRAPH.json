@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-09T00:30:12.062Z",
+  "generatedAt": "2026-11-09T01:29:55.545Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -1019,6 +1019,15 @@
       "path": "docs/operations/g-party-social-operations.md",
       "title": "G-Party social operations and evidence",
       "status": "active"
+    },
+    {
+      "id": "docs/operations/mvp-043-auth-remediation-verification.md",
+      "type": "doc",
+      "path": "docs/operations/mvp-043-auth-remediation-verification.md",
+      "title": "MVP-043 Auth Remediation Verification",
+      "status": "active",
+      "doc_type": "account-security-verification",
+      "domain": "account-identity-security"
     },
     {
       "id": "docs/operations/ui-wireframe-remediation-proposal.md",
@@ -9333,69 +9342,81 @@
     },
     {
       "from": "docs/product/mvp-backlog.md",
+      "to": "docs/product/mvp-delivery-plan.md",
+      "type": "wikilink",
+      "line": 82
+    },
+    {
+      "from": "docs/product/mvp-backlog.md",
       "to": "docs/design-system/10-wireframes.md",
       "type": "wikilink",
-      "line": 120
+      "line": 122
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/design-system/11-wireflows.md",
       "type": "wikilink",
-      "line": 120
+      "line": 122
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/design-system/12-user-flows.md",
       "type": "wikilink",
-      "line": 120
+      "line": 122
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 161
+      "line": 163
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "type": "wikilink",
-      "line": 161
+      "line": 163
+    },
+    {
+      "from": "docs/product/mvp-backlog.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 183
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-MEMORY.md",
       "type": "wikilink",
-      "line": 240
+      "line": 244
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-COACH.md",
       "type": "wikilink",
-      "line": 240
+      "line": 244
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-VOICE.md",
       "type": "wikilink",
-      "line": 255
+      "line": 259
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 255
+      "line": 259
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/releases/README.md",
       "type": "wikilink",
-      "line": 285
+      "line": 289
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/releases/release-channel-architecture.md",
       "type": "wikilink",
-      "line": 285
+      "line": 289
     },
     {
       "from": "docs/product/mvp-decisions.md",
@@ -9513,7 +9534,7 @@
     },
     {
       "from": "docs/product/mvp-execution-dag.md",
-      "to": "docs/product/mvp-decisions.md",
+      "to": "docs/product/mvp-backlog.md",
       "type": "wikilink",
       "line": 17
     },
@@ -9521,7 +9542,7 @@
       "from": "docs/product/mvp-execution-dag.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 26
+      "line": 30
     },
     {
       "from": "docs/product/one-pager.md",
@@ -9671,43 +9692,55 @@
       "from": "docs/product/roadmap.md",
       "to": "docs/product/mvp-backlog.md",
       "type": "wikilink",
-      "line": 111
+      "line": 82
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "docs/product/mvp-delivery-plan.md",
+      "type": "wikilink",
+      "line": 84
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "docs/product/mvp-backlog.md",
+      "type": "wikilink",
+      "line": 115
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/mvp-execution-dag.md",
       "type": "wikilink",
-      "line": 112
+      "line": 116
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "type": "wikilink",
-      "line": 113
+      "line": 117
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/features/FEAT-G-VOICE.md",
       "type": "wikilink",
-      "line": 114
+      "line": 118
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/features/FEAT-G-MEMORY.md",
       "type": "wikilink",
-      "line": 114
+      "line": 118
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/features/FEAT-G-COACH.md",
       "type": "wikilink",
-      "line": 114
+      "line": 118
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/releases/README.md",
       "type": "wikilink",
-      "line": 115
+      "line": 119
     },
     {
       "from": "docs/product/software-requirements-specification.md",
@@ -10289,13 +10322,37 @@
     },
     {
       "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 94,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/gsi.rs",
+      "anchor": 783,
+      "symbol": "announcer_install"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
       "line": null,
       "reason": "no-metadata"
     },
     {
       "file": "docs/change request/CR-008-login-hardening.md",
+      "line": 80,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/gsi.rs",
+      "anchor": 973,
+      "symbol": "oauth_callback"
+    },
+    {
+      "file": "docs/change request/CR-008-login-hardening.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 47,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/gsi.rs",
+      "anchor": 783,
+      "symbol": "announcer_install"
     },
     {
       "file": "docs/change request/CR-010-overlay-exact-kill-victim.md",
@@ -10360,6 +10417,14 @@
       "reason": "no-metadata"
     },
     {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 28,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/gsi.rs",
+      "anchor": 783,
+      "symbol": "announcer_install"
+    },
+    {
       "file": "docs/reference/dota-ui/README.md",
       "line": null,
       "reason": "no-metadata"
@@ -10387,7 +10452,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-09T00:30:19.923Z",
+    "generatedAt": "2026-11-09T01:30:02.703Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 77,
