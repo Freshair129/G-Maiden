@@ -170,8 +170,8 @@ entries:
     refs:
       docs: [docs/features/FEAT-G-MASTER.md]
       srs: []
-      code: [src-tauri/src/master.rs, src-tauri/src/counter_advice.rs]
-      tests: [cargo:master::tests::, cargo:counter_advice::tests::]
+      code: [src-tauri/src/master.rs, src-tauri/src/counter_advice.rs, src-tauri/src/lib.rs, src-tauri/src/runtime.rs]
+      tests: [cargo:master::tests::, cargo:counter_advice::tests::, cargo:runtime::tests::own_state_requests_require_fresh_gsi]
       review: [docs/audits/2026-07-07-independent-full-audit.md]
 
   - id: 1.1-g-sensory
@@ -326,8 +326,8 @@ entries:
     refs:
       docs: [docs/features/FEAT-G-REVIVE.md]
       srs: []
-      code: [src-tauri/src/revive.rs, src-tauri/src/respawn.rs]
-      tests: [cargo:revive::tests::, cargo:respawn::tests::]
+      code: [src-tauri/src/revive.rs, src-tauri/src/respawn.rs, src-tauri/src/lib.rs, src-tauri/src/runtime.rs]
+      tests: [cargo:revive::tests::, cargo:respawn::tests::, cargo:runtime::tests::own_state_requests_require_fresh_gsi]
       review: []
 
   # --- 1.4 Server, identity & infra ---
@@ -339,10 +339,10 @@ entries:
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
-      docs: []
+      docs: [docs/product/mvp-backlog.md, docs/product/mvp-decisions.md]
       srs: []
-      code: [src-tauri/src/gsi.rs]
-      tests: [cargo:gsi::tests::]
+      code: [src-tauri/src/gsi.rs, src-tauri/src/runtime.rs]
+      tests: [cargo:gsi::tests::, cargo:runtime::tests::]
       review: [docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md]
 
   - id: 1.4-item-networth

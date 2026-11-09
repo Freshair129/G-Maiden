@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-09T01:12:00.024Z",
+  "generatedAt": "2026-11-09T02:14:55.768Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -9386,37 +9386,37 @@
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-MEMORY.md",
       "type": "wikilink",
-      "line": 244
+      "line": 246
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-COACH.md",
       "type": "wikilink",
-      "line": 244
+      "line": 246
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-VOICE.md",
       "type": "wikilink",
-      "line": 259
+      "line": 261
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 259
+      "line": 261
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/releases/README.md",
       "type": "wikilink",
-      "line": 289
+      "line": 291
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/releases/release-channel-architecture.md",
       "type": "wikilink",
-      "line": 289
+      "line": 291
     },
     {
       "from": "docs/product/mvp-decisions.md",
@@ -10335,6 +10335,46 @@
     },
     {
       "file": "docs/change request/CR-008-login-hardening.md",
+      "line": 70,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/runtime.rs",
+      "anchor": 1314,
+      "symbol": "set_master_mode"
+    },
+    {
+      "file": "docs/change request/CR-008-login-hardening.md",
+      "line": 70,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/runtime.rs",
+      "anchor": 1322,
+      "symbol": "set_master_api_key"
+    },
+    {
+      "file": "docs/change request/CR-008-login-hardening.md",
+      "line": 70,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/runtime.rs",
+      "anchor": 1332,
+      "symbol": "master_api_key_present"
+    },
+    {
+      "file": "docs/change request/CR-008-login-hardening.md",
+      "line": 76,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/runtime.rs",
+      "anchor": 1616,
+      "symbol": "set_oauth_pending"
+    },
+    {
+      "file": "docs/change request/CR-008-login-hardening.md",
+      "line": 77,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/runtime.rs",
+      "anchor": 1648,
+      "symbol": "take_oauth_pending"
+    },
+    {
+      "file": "docs/change request/CR-008-login-hardening.md",
       "line": 80,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/gsi.rs",
@@ -10380,6 +10420,14 @@
       "file": "docs/design-system/landing_page_prompt.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/features/FEAT-G-MASTER.md",
+      "line": 64,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/runtime.rs",
+      "anchor": 1456,
+      "symbol": "known_enemies"
     },
     {
       "file": "docs/features/FEAT-G-REVIVE.md",
@@ -10452,7 +10500,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-09T01:12:08.585Z",
+    "generatedAt": "2026-11-09T02:14:36.508Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 77,
