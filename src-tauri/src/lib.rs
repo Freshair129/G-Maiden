@@ -1082,7 +1082,10 @@ async fn request_advice(
     tick: gsi::GameTick,
     session_epoch: u64,
 ) -> Result<master::Advice, String> {
-    if !runtime::is_current_live_session(session_epoch) || !tick.in_game {
+    if !runtime::gsi_is_fresh() {
+        return Err("Advice request uses stale GSI own-state and was discarded.".into());
+    }
+    if !runtime::own_state_request_current(session_epoch, tick.in_game) {
         return Err("Advice request does not belong to the active live match.".into());
     }
     let session = runtime::match_session_snapshot();
@@ -1095,10 +1098,16 @@ async fn request_advice(
     // whose companion store is never populated.
     let enemies = runtime::known_enemies();
     let result = tauri::async_runtime::spawn_blocking(move || {
+        if !runtime::gsi_is_fresh() {
+            return Err("Advice request uses stale GSI own-state and was discarded.".into());
+        }
         master::advise_with_epoch(&tick, &enemies, Some(session_epoch))
     })
     .await
     .map_err(|e| format!("internal: {e}"))??;
+    if !runtime::gsi_is_fresh() {
+        return Err("Advice response uses stale GSI own-state and was discarded.".into());
+    }
     if !runtime::is_current_live_session(session_epoch) {
         return Err(
             "Advice response belongs to an earlier match session and was discarded.".into(),
@@ -1111,6 +1120,9 @@ async fn request_advice(
         );
     }
     master::with_advice_publication(&result, || {
+        if !runtime::gsi_is_fresh() {
+            return Err("Advice response uses stale GSI own-state and was discarded.".into());
+        }
         // Broadcast a flattened identity envelope so both the companion and overlay
         // can reject a response queued before a match boundary.
         let event = runtime::MatchSessionEvent::new(result.clone(), &session);
@@ -1148,11 +1160,17 @@ async fn request_buyback_advice(
     tick: gsi::GameTick,
     session_epoch: u64,
 ) -> Result<revive::ReviveAdvice, String> {
-    if !runtime::is_current_live_session(session_epoch) || !tick.in_game || tick.alive {
+    if !runtime::gsi_is_fresh() {
+        return Err("Buyback request uses stale GSI own-state and was discarded.".into());
+    }
+    if !runtime::own_state_request_current(session_epoch, tick.in_game) || tick.alive {
         return Err("Buyback request does not belong to an active death episode.".into());
     }
     let identity = runtime::begin_buyback_request(session_epoch, tick.deaths)?;
-    if !runtime::is_current_live_session(session_epoch) || !tick.in_game {
+    if !runtime::gsi_is_fresh() {
+        return Err("Buyback request uses stale GSI own-state and was discarded.".into());
+    }
+    if !runtime::own_state_request_current(session_epoch, tick.in_game) {
         return Err("Buyback request does not belong to the active live match.".into());
     }
     let session = runtime::match_session_snapshot();
@@ -1162,6 +1180,9 @@ async fn request_buyback_advice(
     let ctx = revive::DeathContext::from_tick(&tick);
     let advice = revive::advise_buyback(&ctx);
     runtime::with_buyback_publication(session_epoch, identity, || {
+        if !runtime::gsi_is_fresh() {
+            return Err("Buyback response uses stale GSI own-state and was discarded.".into());
+        }
         let event = runtime::MatchSessionEvent::new(
             runtime::BuybackEvent {
                 payload: advice.clone(),
@@ -1178,10 +1199,18 @@ async fn request_buyback_advice(
     let prompt = revive::narrate_prompt(&advice, &tick);
     let app2 = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
+        if !runtime::own_state_request_current(session_epoch, tick.in_game) {
+            return;
+        }
         // Use the user-picked model from Settings; empty → legacy chain in slm.rs.
         let model = runtime::master_ollama_model();
         if let Ok(text) = slm::advise_offline(&prompt, &model) {
             let _ = runtime::with_buyback_publication(session_epoch, identity, || {
+                if !runtime::gsi_is_fresh() {
+                    return Err(
+                        "Buyback narrative uses stale GSI own-state and was discarded.".into(),
+                    );
+                }
                 let event = runtime::BuybackEvent {
                     payload: runtime::SessionTextEvent::new(text, &session),
                     identity,
