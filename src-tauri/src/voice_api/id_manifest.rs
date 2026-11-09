@@ -17,6 +17,8 @@ const MAX_PACKAGE: u64 = 512 * 1024 * 1024;
 
 #[derive(Deserialize)]
 pub(super) struct Registry {
+    #[serde(skip)]
+    admission: g_ann_package::AdmissionReport,
     schema_version: u32,
     pub announcer_id: String,
     name: String,
@@ -153,13 +155,12 @@ pub(super) fn read(root: &Path) -> Result<Registry, String> {
         .ok_or("Manifest filename")?;
     let path = safe_pack_path(root, name).ok_or("Unsafe manifest path")?;
     let raw = bounded_bytes(&path, MAX_MANIFEST)?;
-    let registry: Registry =
-        serde_json::from_slice(&raw).map_err(|e| format!("Announcer JSON: {e}"))?;
+    let value = serde_json::from_slice(&raw).map_err(|e| format!("Announcer JSON: {e}"))?;
+    let registry = Registry::parse(value)?;
     require(
         name == format!("{}.json", registry.announcer_id),
         "manifest filename/ID mismatch",
     )?;
-    registry.validate()?;
     Ok(registry)
 }
 pub(super) fn bounded_bytes(path: &Path, max: u64) -> Result<Vec<u8>, String> {
@@ -192,6 +193,29 @@ fn local_path(s: &str, folder: &str, id: &str, ext: &str) -> bool {
     s == format!("{folder}/{id}.{ext}")
 }
 impl Registry {
+    fn parse(value: serde_json::Value) -> Result<Self, String> {
+        let admission = g_ann_package::validate_playback_registry(&value)?;
+        let mut registry: Self =
+            serde_json::from_value(value).map_err(|e| format!("Announcer JSON: {e}"))?;
+        registry.admission = admission;
+        registry.validate()?;
+        Ok(registry)
+    }
+
+    pub(super) fn log_inert_events(&self, phase: &str) {
+        for (event, reason) in &self.admission.inert_events {
+            eprintln!(
+                "[G-AnnouncerMedia] phase={phase} pack={} event={event} reason={reason}",
+                self.announcer_id
+            );
+        }
+    }
+
+    fn playable_event(&self, event: &str) -> bool {
+        !self.admission.inert_events.contains_key(event)
+            && super::events::event_ids().any(|known| known == event)
+    }
+
     fn validate(&self) -> Result<(), String> {
         require(
             self.schema_version == 1 && self.revision > 0 && valid_id(&self.announcer_id, "ann_"),
@@ -291,16 +315,11 @@ impl Registry {
         }
         let mut used_banners = HashSet::new();
         let mut mapped = HashSet::new();
-        require(
-            !self.events.is_empty() && self.events.len() <= super::events::EVENTS.len(),
-            "event count",
-        )?;
+        // Taxonomy admission and event-count bounds belong to g-ann-package.
         for (event, mappings) in &self.events {
             require(
-                super::events::event_ids().any(|known| known == event)
-                    && !mappings.is_empty()
-                    && mappings.len() <= 128,
-                "unknown/empty event",
+                !mappings.is_empty() && mappings.len() <= 128,
+                "empty/oversized event",
             )?;
             let mut originals = HashSet::new();
             for m in mappings {
@@ -354,6 +373,7 @@ impl Registry {
             mappings: self
                 .events
                 .iter()
+                .filter(|(event, _)| self.playable_event(event))
                 .map(|(event, mappings)| {
                     (
                         event.clone(),
@@ -442,6 +462,11 @@ impl Registry {
                 (original_samples as f64 * 48000.0 / rate as f64 - samples as f64).abs() <= 1.0001,
                 "mixed/original duration mismatch",
             )?;
+            // All bytes and pair invariants above are checked even for inert ids.
+            // Exclude them before publishing the immutable playback snapshot.
+            if !self.playable_event(&b.event_key) {
+                continue;
+            }
             let original_path =
                 safe_pack_path(root, &original.path).ok_or("Original disappeared")?;
             pairs.insert(
@@ -471,9 +496,7 @@ mod tests {
         serde_json::from_str(include_str!("fixtures/id-manifest.json")).unwrap()
     }
     fn parse(value: serde_json::Value) -> Result<Registry, String> {
-        let r: Registry = serde_json::from_value(value).map_err(|e| e.to_string())?;
-        r.validate()?;
-        Ok(r)
+        Registry::parse(value)
     }
     #[test]
     fn rejects_duplicate_dangling_role_pairing_and_path_substitutions() {

@@ -602,7 +602,9 @@ fn rebuild_fixture_cache() {
         }
         let dir = packs_dir().join(&id);
         let manifest = read_manifest(&dir).ok()?;
-        let pairs = super::id_manifest::read(&dir).ok()?.admit(&dir).ok()?;
+        let registry = super::id_manifest::read(&dir).ok()?;
+        let pairs = registry.admit(&dir).ok()?;
+        registry.log_inert_events("activation");
         let mut clips_by_event = HashMap::with_capacity(manifest.mappings.len());
         for (event, mapping) in &manifest.mappings {
             clips_by_event.insert(event.clone(), resolve_existing_clips(&dir, &mapping.clips));
@@ -682,7 +684,9 @@ fn build_installed_cache(
     let admitted = Arc::new(installer.admit_package(&id).map_err(|e| e.to_string())?);
     let dir = admitted.cache_root();
     let manifest = read_manifest(dir)?;
-    let pairs = super::id_manifest::read(dir)?.admit(dir)?;
+    let registry = super::id_manifest::read(dir)?;
+    let pairs = registry.admit(dir)?;
+    registry.log_inert_events("activation");
     let clips_by_event = manifest
         .mappings
         .iter()

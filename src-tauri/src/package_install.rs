@@ -54,6 +54,18 @@ fn package_error(_: String) -> PackageError {
     PackageError::new("invalid_package", "Package validation failed")
 }
 
+fn playback_error(reason: String) -> PackageError {
+    // Taxonomy errors contain only fixed grammar text or parsed numeric versions.
+    // Other package errors can contain local paths and keep the existing redaction.
+    if reason.starts_with("Invalid taxonomy_version:")
+        || reason.starts_with("Invalid announcer manifest: taxonomy major mismatch:")
+    {
+        PackageError::new("invalid_package", &reason)
+    } else {
+        package_error(reason)
+    }
+}
+
 pub enum InstallSource {
     Local {
         path: PathBuf,
@@ -668,7 +680,7 @@ impl PackageInstaller {
                 "Retained package does not match its installed identity",
             ));
         }
-        package.validate_playback().map_err(package_error)?;
+        package.validate_playback().map_err(playback_error)?;
         Ok(package)
     }
     fn verify_cache(&self, package: &Package, directory: &Path) -> Result<(), PackageError> {
@@ -837,7 +849,17 @@ impl PackageInstaller {
                 "Copied package does not match the requested artifact",
             ));
         }
-        package.validate_playback().map_err(package_error)?;
+        let admission = package
+            .validate_playback_with_report()
+            .map_err(playback_error)?;
+        let log_admission = || {
+            for (event, reason) in &admission.inert_events {
+                eprintln!(
+                    "[G-AnnouncerMedia] phase=import pack={} event={event} reason={reason}",
+                    package.index.announcer_id
+                );
+            }
+        };
         let artifact = ArtifactRef {
             digest: package.digest.clone(),
             announcer_id: package.index.announcer_id.clone(),
@@ -882,6 +904,7 @@ impl PackageInstaller {
             self.verify_cache(&package, &self.cache_for(existing))?;
             let report = self.report(existing, Some(token), &self.selection_unlocked(&registry)?);
             self.recover_unlocked()?;
+            log_admission();
             return Ok(report);
         }
         if registry.installations.len() >= MAX_INSTALLATIONS {
@@ -948,6 +971,7 @@ impl PackageInstaller {
         #[cfg(test)]
         tests::checkpoint("after_registry")?;
         self.recover_unlocked()?;
+        log_admission();
         Ok(self.report(&entry, Some(token), &selection))
     }
     fn report(
