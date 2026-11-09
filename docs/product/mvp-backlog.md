@@ -2,7 +2,7 @@
 title: "G-Maiden MVP Backlog"
 doc_id: "mvp-backlog"
 status: "draft"
-version: "0.4.3"
+version: "0.4.4"
 updated: "2026-11-09"
 owner: "Boss"
 related_docs: ["roadmap", "mvp-execution-dag", "software-requirements-specification", "G-SERIES-DATA-LINEAGE", "FEAT-G-VOICE", "FEAT-G-MEMORY", "FEAT-G-COACH", "EXEC-PLAN-CR-034-iam-remediation", "FEAT-G-PARTY", "CR-037-party-gsi-own-stat-sharing", "2026-11-01-g-party-gsi-sharing", "FEAT-G-FRIENDS", "ADR-20", "CR-038-party-friends-presence-invitations", "2026-11-01-g-party-friends"]
@@ -197,7 +197,7 @@ Owner อนุมัติสถานะด้านล่างเมื่�
 
 | ID | P / Size | สถานะ | Depends on | งานและเกณฑ์รับ |
 | --- | --- | --- | --- | --- |
-| MVP-013 | P0 / M | READY | MVP-001, MVP-002 | **Validate GSI envelope และ fields.** JSON เสีย, null, partial และค่าผิดช่วงไม่ถูกแปลงเป็น tick ศูนย์ที่เปลี่ยนแมตช์; reject/unknown ตาม schema, ไม่ refresh last-valid timestamp และไม่ reset game/log ด้วย invalid payload |
+| MVP-013 | P0 / M | IN_PROGRESS | MVP-001, MVP-002 | **Validate GSI envelope และ fields.** JSON เสีย, null, partial และค่าผิดช่วงไม่ถูกแปลงเป็น tick ศูนย์ที่เปลี่ยนแมตช์; reject/unknown ตาม schema, ไม่ refresh last-valid timestamp และไม่ reset game/log ด้วย invalid payload |
 | MVP-014 | P0 / M | TODO | MVP-013, MVP-006 | **ทำ freshness เป็นสถานะร่วม.** เมื่อ Dota ยังเปิดแต่ GSI หยุด ทุก consumer เห็น stale/degraded เหมือนกัน; หยุดข้อสรุปที่ใช้ own-state เก่า ส่วน CV-only ที่ยังเชื่อถือได้ทำตาม contract; feed กลับมาแล้ว recover โดยไม่สร้างจบแมตช์ปลอม |
 | MVP-015 | P0 / L | TODO | MVP-013, MVP-014 | **สร้าง match/session identity และ lifecycle กลาง.** ใช้ game match ID เมื่อเชื่อถือได้และ local session ID เมื่อไม่มี; แยก draft/live/disconnect/end/abandon, มี session epoch ให้ events/cache/requests; reconnect ต่อ session ที่ถูกต้องและแมตช์ใหม่ไม่รับ state เก่า |
 | MVP-016 | P0 / M | IN_PROGRESS | MVP-014, MVP-015 | **เพิ่ม capture retry/recovery.** Init failure แสดง Lite พร้อม retry ที่ไม่สร้าง thread ซ้อน; ACCESS_LOST/device reset/monitor move กู้คืนหรือ degraded ตามจริง และ reset started latch อย่างปลอดภัย; main voice/GSI ยังใช้ได้ระหว่างรอ |
@@ -206,6 +206,8 @@ Owner อนุมัติสถานะด้านล่างเมื่�
 | MVP-019 | P0 / M | TODO | MVP-013, MVP-015 | **แก้ buyback unknown และ mode assumptions.** Allies/base threat/game mode ที่ไม่ทราบต้องเป็น unknown ไม่ใช้ 4 คน/บ้านปลอดภัยโดยปริยาย; ไม่มีข้อมูลพอให้รายงานเฉพาะ timer/cost/affordability ที่ทราบ; ไม่พูดว่าเก็บเงินได้อย่างมั่นใจ และ narrative หมดอายุเมื่อเกิดใหม่ |
 | MVP-020 | P1 / M | READY | MVP-003, MVP-005 | **ตรวจ static gameplay data และข้ออ้าง damage.** ระบุ patch/source/date/coverage ที่พิสูจน์ได้ใน provenance, ตรวจ hero/ability/item ที่อยู่ MVP; own burst แสดง assumptions เกราะ/MR/skill build, unsupported เป็น unknown; target lethality ไม่เปิดใช้จนมี live target contract ครบ |
 | MVP-021 | P0 / L | TODO | MVP-006, MVP-018, MVP-020 | **สร้างและวัด quality baseline.** ใช้ local labeled replay แยกชุด tuning กับ held-out validation วัด precision/recall/false alerts/coverage ราย scenario ตาม thresholds ที่ตกลง; เปรียบเทียบ default/tuned โดยไม่แต่ง probability; ส่วน live acceptance ส่งต่อ MVP-049 |
+
+**หลักฐาน MVP-013 (2026-11-09; IN_PROGRESS; source baseline `472de123`):** [PR #55](https://github.com/Freshair129/G-Maiden/pull/55) merge แล้ว (implementation `f03dc6db`, merge `82ae5a4b`) โดยเพิ่ม schema validation, required live fields, range checks และ partial-delta rejection; การ reconciliation วันที่ 2026-11-07 ยังไม่ได้ map #55 จึงเคยระบุ READY/ขาด envelope validation. งานนี้เพิ่ม `admit_gsi_body` ใน [gsi.rs](../../src-tauri/src/gsi.rs) เป็น admission seam ก่อน freshness/session/G-Log/emit พร้อม tests `invalid_bodies_are_rejected_before_any_runtime_side_effect` และ `admit_maps_status_codes_exactly`; ใช้ test-only `match_state_test_guard` จาก [runtime.rs](../../src-tauri/src/runtime.rs) เพื่อตรวจว่า invalid bodies ไม่เปลี่ยน last-valid timestamp, match/session snapshot, match epoch หรือ in_game และคง HTTP 400/422 กับ response text เดิม. สอดคล้องกับ [mvp-decisions.md L110](mvp-decisions.md#L110): "invalid payload ไม่ refresh freshness". G-Log/emit อยู่หลัง accepted branch ตาม source; unit seam ไม่ใช่ HTTP/native/live acceptance ผล Rust ที่ orchestrator รันเองบน `8fefe040`: `cargo test --lib` ผ่าน 720 (ignored 11) และ `cargo clippy --all-targets -D warnings` ผ่าน. **ยังเปิด:** owner acceptance บน integrated SHA และ live/native GSI evidence ว่า payload จริงจาก Dota รวม disconnect/reconnect และ post-game ไม่ถูก reject ผิด พร้อม rejection log rates จากแมตช์จริง; ห้ามเปลี่ยนเป็น DONE จาก source/tests เพียงอย่างเดียว.
 
 ## E3 เสียง เหตุการณ์ และ Overlay
 
@@ -381,3 +383,4 @@ Status:
 | 0.4.1 | 2026-11-07 | Owner approved the v0.4.0 status reconciliation and IN_PROGRESS legend; link the accepted mvp-delivery-plan. |
 | 0.4.2 | 2026-11-07 | Owner confirmed MVP-043/044 are in MVP scope: 043 CONDITIONAL → READY, 044 CONDITIONAL → TODO (depends on 043). |
 | 0.4.3 | 2026-11-09 | Sync the Execution-flow crosswalk and contradiction notes with DAG v0.2.8 and roadmap v1.4.3; record the MVP-007 documentation slice and unchanged remaining work; no task status changed. |
+| 0.4.4 | 2026-11-09 | เปลี่ยน MVP-013 เป็น IN_PROGRESS; map merged PR #55 ที่ตกหล่นจาก reconciliation 2026-11-07 และบันทึก admission seam/side-effect tests พร้อม Rust verification, integrated-SHA owner acceptance และ live/native GSI gates ที่ยังเปิด |
