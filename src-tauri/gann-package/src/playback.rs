@@ -6,8 +6,15 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 // Independent of the current taxonomy; each mapping still needs a unique banner.
 const MAX_EVENTS: usize = 128;
 
+/// The bundled event taxonomy JSON, generated from G-Maiden's g-events.toml.
+/// Consumers (e.g. G-Suite Studio) compare their vendored copy against these
+/// exact bytes instead of keeping a second hand-maintained list.
+pub fn events_json() -> &'static str {
+    include_str!("../events.json")
+}
+
 fn event_schema() -> serde_json::Value {
-    serde_json::from_str(include_str!("../events.json")).expect("bundled event schema")
+    serde_json::from_str(events_json()).expect("bundled event schema")
 }
 
 /// The runtime version is generated from g-events.toml, never a second constant.
