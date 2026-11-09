@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-11-09T00:36:09.887Z
+สร้างเมื่อ / Generated at: 2026-11-09T01:28:43.292Z
 
-สแกน 187 ไฟล์เอกสาร, 298 nodes, 1395 edges, 29 รายการปัญหา (3 ตัวบล็อก exit code) / scanned 187 doc files, 298 nodes, 1395 edges, 29 violations (3 blocking exit code).
+สแกน 188 ไฟล์เอกสาร, 299 nodes, 1399 edges, 33 รายการปัญหา (7 ตัวบล็อก exit code) / scanned 188 doc files, 299 nodes, 1399 edges, 33 violations (7 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -10,7 +10,7 @@
 
 | Reason | คำอธิบาย / Description | Count | Blocking? |
 | --- | --- | --- | --- |
-| anchor-symbol-mismatch | anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) | 1 | yes |
+| anchor-symbol-mismatch | anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) | 5 | yes |
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 1 | no (informational) |
 | missing-changelog | มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table | 1 | yes |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 25 | no (informational) |
@@ -57,11 +57,17 @@
 ### docs/change request/CR-007-frostline-deck-refresh.md
 
 - [L82] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/announcer.rs", anchor=97, symbol="most_important")
+- [L94] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/gsi.rs", anchor=783, symbol="announcer_install")
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
 ### docs/change request/CR-008-login-hardening.md
 
+- [L80] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/gsi.rs", anchor=973, symbol="oauth_callback")
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
+
+### docs/change request/CR-009-gannstudio-authoring-install-contract.md
+
+- [L47] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/gsi.rs", anchor=783, symbol="announcer_install")
 
 ### docs/change request/CR-010-overlay-exact-kill-victim.md
 
@@ -110,6 +116,10 @@
 ### docs/product/one-pager.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
+
+### docs/rca/2026-07-10-voice-pack-path-traversal.md
+
+- [L37] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/gsi.rs", anchor=783, symbol="announcer_install")
 
 ### docs/reference/dota-ui/README.md
 
