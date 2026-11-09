@@ -177,7 +177,11 @@ it('expires HUD status cues and rejects an old-session HUD without losing roster
   expect(currentData.heroCv.hud).toEqual(hud)
   await send('hero-hud', { ...hud, session_epoch: 7, radiant: [] })
   expect(currentData.heroCv.hud).toEqual(hud)
+  const { HERO_HUD_EXPIRY_MS } = await import('../companion')
+  // One late sample (normal ~1 s cadence) must not blank the cue.
   await act(async () => { vi.advanceTimersByTime(1501) })
+  expect(currentData.heroCv.hud).toEqual(hud)
+  await act(async () => { vi.advanceTimersByTime(HERO_HUD_EXPIRY_MS - 1501) })
   expect(currentData.heroCv.hud).toBeNull()
   expect(currentData.heroes[1].hero).toBe('Lion')
 })

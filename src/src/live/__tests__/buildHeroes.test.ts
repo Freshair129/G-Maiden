@@ -258,6 +258,13 @@ describe("buildHeroes — Draft-CV roster fill", () => {
     expect(result.slice(1, 5).map((hero) => hero.hero)).toEqual(["—", "—", "—", "—"]);
   });
 
+  it("places allies when the unrecognized local portrait is the only unknown own-team slot", () => {
+    const partial = { ...roster, complete: false, radiant: ["juggernaut", "pudge", null, "lion", "axe"] };
+    const result = buildHeroes(makeTick(), new Map(), null, FALLBACK.heroes, new Map(), partial, "radiant");
+    expect(result[0].hero).toBe("Crystal Maiden");
+    expect(result.slice(1, 5).map((hero) => hero.hero)).toEqual(["Juggernaut", "Pudge", "Lion", "Axe"]);
+  });
+
   it("keeps ally identity-only (no fabricated KDA — GSI still can't see teammates)", () => {
     const tick = makeTick({ team_name: "radiant" });
     const result = buildHeroes(tick, new Map(), null, FALLBACK.heroes, new Map(), roster, "radiant");
