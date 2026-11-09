@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { latestBackendReceiptAt, toneClass, type CompanionData } from "../companion";
 import { MinimapCanvas } from "../MinimapCanvas";
 import { useMinimapPreview } from "../live/useMinimapPreview";
 import type { MatchPhase } from "../live/phase";
-import type { GsiFreshness } from "../live/events";
+import type { GsiFreshness, SensorHealth } from "../live/events";
+import { liteMode, readinessFromRuntime, readinessLabel, resourceReadiness } from "../runtimeReadiness";
 import type { ContextMenuController, ContextMenuEntry } from "../ContextMenu";
 
 /** Honest replacement for the old permanent "—" ping readout: GSI has no ping
@@ -240,10 +241,13 @@ export function DeckTabs({
 /** CR-011 §E standby/prep seat content — replaces the hero columns + minimap
  *  with a readiness rundown built ONLY from data the deck genuinely has today
  *  (no fake "Dota detected" checks). Fresh evidence gets an ice check;
- *  configuration gets a circle, and unknown/disabled rows get a dash. */
+ *  configuration/observations get a circle, degraded evidence gets an exclamation,
+ *  and unknown/disabled rows get a dash. */
 export function ReadinessRundown({
-  gsiOnline,
-  gsiFreshness,
+  gsiOnline = null,
+  gsiFreshness = null,
+  sensorHealth = null,
+  resourceSample = null,
   voicePackName,
   signalEnabled,
   annEnabled,
@@ -251,8 +255,10 @@ export function ReadinessRundown({
   draftNote,
   onPreviewLive
 }: {
-  gsiOnline: boolean;
-  gsiFreshness: GsiFreshness;
+  gsiOnline?: boolean | null;
+  gsiFreshness?: GsiFreshness | null;
+  sensorHealth?: SensorHealth | null;
+  resourceSample?: CompanionData["resourceSample"];
   voicePackName: string | null;
   signalEnabled: boolean;
   annEnabled: boolean;
@@ -260,30 +266,92 @@ export function ReadinessRundown({
   draftNote: boolean;
   onPreviewLive: () => void;
 }) {
-  const freshGsi = gsiOnline && gsiFreshness === "fresh";
+  const runtime = readinessFromRuntime({
+    gsiConfigured: null,
+    // The deck exposes activity/freshness only; do not infer process or port health.
+    gsiStatus: gsiOnline === null || gsiFreshness === null ? null : {
+      gsi_active: gsiOnline, gsi_freshness: gsiFreshness, gsi_age_ms: null,
+      dota_running: false, in_game: false, display_exclusive: false, server_state: "starting",
+    },
+    sensorHealth,
+    overlayReady: null,
+  });
+  const resources = resourceReadiness(resourceSample ? {
+    ram_mb: resourceSample.ramMb, cpu_pct: resourceSample.cpuPct, over_budget: resourceSample.overBudget,
+  } : null);
+  const isLite = liteMode(sensorHealth);
+  const resourceValue = (value: number) => value >= 0 && Number.isFinite(value) ? String(Math.round(value * 10) / 10) : "—";
   const packName = voicePackName?.trim() || null;
   const validVolume = Number.isFinite(masterVolume) && masterVolume >= 0 && masterVolume <= 100;
   // Settings prove configuration, not capture coverage or successful audio output.
-  const rows: Array<{ label: string; status: "ready" | "configured" | "disabled" | "unknown"; value: string }> = [
-    { label: "เชื่อมต่อ GSI", status: freshGsi ? "ready" : "unknown", value: freshGsi ? "ออนไลน์ · ข้อมูลสด" : gsiFreshness === "stale" ? "ข้อมูลล้าสมัย" : "ยังไม่ทราบ" },
+  const rows: Array<{ label: string; status: "ready" | "configured" | "observed" | "degraded" | "disabled" | "unknown"; value: string }> = [
+    { label: "เชื่อมต่อ GSI", status: runtime.gsi, value: runtime.gsi === "ready" ? "ออนไลน์ · ข้อมูลสด" : gsiFreshness === "stale" ? "ข้อมูลล้าสมัย" : "ยังไม่ทราบ" },
+    {
+      label: "จับภาพ/minimap",
+      // A working capture is only an observation for this combined row: coverage is unverified.
+      status: isLite || runtime.minimap === "degraded" ? "degraded" : runtime.capture === "ready" ? "observed" : runtime.capture,
+      value: isLite ? "Lite mode · ไม่มี minimap CV" : runtime.capture === "ready" ? "จับภาพทำงาน · ยังไม่ยืนยัน coverage" : readinessLabel(runtime.capture),
+    },
+    {
+      label: "ทรัพยากร", status: resources,
+      value: resources === "degraded" ? "เกินงบ" : resources === "observed" && resourceSample
+        ? `ล่าสุด ${resourceValue(resourceSample.ramMb)} MB · CPU ${resourceValue(resourceSample.cpuPct)}% · ยังไม่ยืนยันทั้งแมตช์`
+        : "ยังไม่ทราบ",
+    },
+    { label: "Overlay", status: runtime.overlay, value: readinessLabel(runtime.overlay) },
+    { label: "เสียงออก", status: runtime.audio, value: `${readinessLabel(runtime.audio)} · รอ audio health` },
     { label: "แพ็กเสียง", status: packName ? "configured" : "unknown", value: packName ?? "ยังไม่ทราบ" },
     { label: "G-Signal", status: signalEnabled ? "configured" : "disabled", value: signalEnabled ? "เปิด · ยังไม่ยืนยัน" : "ปิด" },
     { label: "เสียงประกาศ ANN", status: annEnabled ? "configured" : "disabled", value: annEnabled ? "เปิด · ยังไม่ยืนยัน" : "ปิด" },
     { label: "ระดับเสียง", status: !validVolume ? "unknown" : masterVolume > 0 ? "configured" : "disabled", value: !validVolume ? "ยังไม่ทราบ" : masterVolume > 0 ? `${masterVolume}%` : "ปิดเสียง" }
   ];
 
+  const listRef = useRef<HTMLDivElement>(null);
+  const [capacity, setCapacity] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    const firstRow = list?.firstElementChild as HTMLElement | null;
+    if (!list || !firstRow) return;
+    const measure = () => {
+      const row = list.firstElementChild as HTMLElement | null;
+      if (!row) return;
+      // Computed border-box height preserves fractional pixels before the deck's scale transform.
+      const rowHeight = parseFloat(window.getComputedStyle(row).height) || row.offsetHeight;
+      if (rowHeight <= 0) return;
+      const gap = parseFloat(window.getComputedStyle(list).rowGap) || 0;
+      setCapacity(Math.max(1, Math.floor((list.clientHeight + gap) / (rowHeight + gap))));
+    };
+    measure();
+    // jsdom hosts without ResizeObserver keep the single initial measurement.
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(list);
+    observer.observe(firstRow);
+    return () => observer.disconnect();
+  }, []);
+  // Reserve a full row for the explicit overflow count; the list never scrolls.
+  const visibleCount = capacity === null || capacity >= rows.length ? rows.length : Math.max(0, capacity - 1);
+  const hiddenRows = rows.slice(visibleCount);
+
   return (
     <div className="gm-battle-alt gm-rundown">
       {draftNote ? <div className="gm-rundown-note">กำลังดราฟต์ — รอเข้าเกม</div> : null}
-      <div className="gm-rundown-list">
-        {rows.map((row) => (
-          <div key={row.label} className={`gm-rundown-row${row.status === "ready" ? " ready" : ""}`}
+      <div className="gm-rundown-list" ref={listRef}>
+        {rows.slice(0, visibleCount).map((row) => (
+          <div key={row.label} className={`gm-rundown-row ${row.status}`} style={{ flexShrink: 0 }}
             title={row.status === "configured" ? "ตั้งค่าแล้ว ยังไม่ยืนยันการจับภาพและเสียงออก" : undefined}>
-            <span className="gm-rundown-glyph">{row.status === "ready" ? "✓" : row.status === "configured" ? "○" : "—"}</span>
+            <span className="gm-rundown-glyph">{row.status === "ready" ? "✓" : row.status === "degraded" ? "!" : row.status === "configured" || row.status === "observed" ? "○" : "—"}</span>
             <span className="gm-rundown-label">{row.label}</span>
             <span className="gm-rundown-value">{row.value}</span>
           </div>
         ))}
+        {hiddenRows.length > 0 ? (
+          <div className="gm-rundown-row" style={{ flexShrink: 0 }} title={hiddenRows.map(row => `${row.label}: ${row.value}`).join("\n")}>
+            <span className="gm-rundown-glyph">…</span>
+            <span className="gm-rundown-label">+{hiddenRows.length} รายการ</span>
+            <span className="gm-rundown-value">พื้นที่แสดงผลจำกัด</span>
+          </div>
+        ) : null}
       </div>
       {/* Same escape debrief has ("กลับไปดูสด"): preview the live seat layout
           (hero grid + minimap mirror) without waiting for a match — resets on

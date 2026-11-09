@@ -15,6 +15,125 @@ use super::path_safety::safe_pack_path;
 use super::paths::set_test_voice_root;
 
 #[test]
+fn taxonomy_legacy_and_absent_keep_known_media_playable_and_enemy_missing_unmapped() {
+    let root = temp_root("taxonomy-legacy");
+    set_test_voice_root(Some(root.clone()));
+    let _guard = RootGuard(root.clone());
+    for (serial, version) in [(1240, None), (1241, Some("1.1"))] {
+        let (id, original, mixed) =
+            super::test_package::install_custom(&root, serial, "kill", false, &[], |registry| {
+                if let Some(version) = version {
+                    registry["taxonomy_version"] = version.into();
+                }
+            })
+            .unwrap();
+        activate_if_exists(&id).unwrap();
+        assert_eq!(super::select_announcer_clip("kill").unwrap().path, original);
+        assert_eq!(active_event_clips("kill"), vec![mixed]);
+        assert!(super::select_announcer_clip("enemy_missing").is_none());
+        assert!(active_event_clips("enemy_missing").is_empty());
+    }
+}
+
+#[test]
+fn taxonomy_future_ids_never_enter_resolver_preview_or_pair_cache() {
+    let root = temp_root("taxonomy-future");
+    set_test_voice_root(Some(root.clone()));
+    let _guard = RootGuard(root.clone());
+    let (id, original, mixed) = super::test_package::install_custom(
+        &root,
+        1242,
+        "kill",
+        false,
+        &["future_event"],
+        |registry| {
+            registry["taxonomy_version"] = "1.3".into();
+        },
+    )
+    .unwrap();
+    activate_if_exists(&id).unwrap();
+    assert_eq!(super::select_announcer_clip("kill").unwrap().path, original);
+    assert_eq!(active_event_clips("kill"), vec![mixed]);
+    assert!(super::select_announcer_clip("future_event").is_none());
+    assert!(super::pack_io::select_announcer_clip_for_revision(
+        "future_event",
+        super::current_announcer_revision(),
+        None,
+    )
+    .is_none());
+    assert!(cached_event_clips("future_event").is_none());
+    assert!(active_event_clips("future_event").is_empty());
+    assert!(crate::audio::pick_clip("future_event").is_none());
+    let package = g_ann_package::Package::open(&root.join(format!("{id}.gann"))).unwrap();
+    let report = package.validate_playback_with_report().unwrap();
+    assert_eq!(report.inert_events.len(), 1);
+    let sound = package.registry["events"]["future_event"][0]["sound_id"]
+        .as_str()
+        .unwrap();
+    assert!(super::preview_variant(&id, "future_event", sound).is_none());
+    let pairs = super::id_manifest::read(&root.join("packs").join(&id))
+        .unwrap()
+        .admit(&root.join("packs").join(&id))
+        .unwrap();
+    assert!(pairs.keys().all(|(event, _)| event != "future_event"));
+    // Rechecking an installed future mapping still verifies its inert bytes.
+    let sound = package.registry["sounds"][2]["path"].as_str().unwrap();
+    fs::write(
+        root.join("packs").join(&id).join(sound),
+        b"tampered inert media",
+    )
+    .unwrap();
+    assert!(super::id_manifest::read(&root.join("packs").join(&id))
+        .unwrap()
+        .admit(&root.join("packs").join(&id))
+        .is_err());
+}
+
+#[test]
+fn taxonomy_refusals_preserve_active_selection_and_playable_pair() {
+    let root = temp_root("taxonomy-refusals");
+    set_test_voice_root(Some(root.clone()));
+    let _guard = RootGuard(root.clone());
+    let (active, original, _) = super::test_package::install(&root, 1243, "kill");
+    activate_if_exists(&active).unwrap();
+    let revision = super::current_announcer_revision();
+    for (index, (version, extra, reason)) in [
+        ("2.0", None, "taxonomy major mismatch"),
+        ("1", None, "Invalid taxonomy_version"),
+        ("x.y", None, "Invalid taxonomy_version"),
+        ("1.2.3", None, "Invalid taxonomy_version"),
+        ("1.2", Some("future_event"), "unknown event"),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let extras: Vec<_> = extra.into_iter().collect();
+        let serial = 1250 + index as u64;
+        let error = super::test_package::install_custom(
+            &root,
+            serial,
+            "kill",
+            false,
+            &extras,
+            |registry| {
+                registry["taxonomy_version"] = version.into();
+            },
+        )
+        .unwrap_err();
+        assert!(error.contains(reason), "{version}: {error}");
+        assert_eq!(
+            super::pack_io::read_active_pack_id().as_deref(),
+            Some(active.as_str())
+        );
+        assert_eq!(super::current_announcer_revision(), revision);
+        assert_eq!(super::select_announcer_clip("kill").unwrap().path, original);
+        let rejected = format!("ann_00000000-0000-0000-0000-{serial:012x}");
+        assert!(activate_if_exists(&rejected).is_err());
+        assert_eq!(super::current_announcer_revision(), revision);
+    }
+}
+
+#[test]
 fn verified_multi_variant_selection_keeps_audio_and_video_paired() {
     let root = temp_root("gann-two-variants");
     set_test_voice_root(Some(root.clone()));
@@ -153,7 +272,7 @@ fn gann_only_rejects_changed_container_even_when_marker_and_manifest_remain() {
 }
 
 #[test]
-fn gann_only_resolves_implemented_schema_events_and_rejects_pending() {
+fn gann_only_admits_taxonomy_events_and_keeps_pending_unselectable() {
     let root = temp_root("gann-schema-events");
     set_test_voice_root(Some(root.clone()));
     let _guard = RootGuard(root.clone());
@@ -167,15 +286,8 @@ fn gann_only_resolves_implemented_schema_events_and_rejects_pending() {
         let serial = index as u64 + 20;
         let imported = super::test_package::try_install(&root, serial, event);
         if crate::events::NON_FIRING_EVENTS.contains(&event) {
-            // The shared taxonomy permits authoring this ID, but Maiden's
-            // test import path already checks the implemented EventDef allowlist.
-            assert_eq!(
-                imported.unwrap_err(),
-                "Invalid announcer manifest: unknown/empty event",
-                "pending event {event} must be rejected at import"
-            );
-            let id = format!("ann_00000000-0000-0000-0000-{serial:012x}");
-            assert!(activate_if_exists(&id).is_err());
+            let (id, _, _) = imported.unwrap();
+            activate_if_exists(&id).unwrap();
             assert!(super::select_announcer_clip(event).is_none());
             continue;
         }
