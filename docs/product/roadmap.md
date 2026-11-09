@@ -2,8 +2,8 @@
 title: "G-Maiden MVP Roadmap"
 doc_id: "roadmap"
 status: "active"
-version: "1.4.2"
-updated: "2026-10-28"
+version: "1.4.3"
+updated: "2026-11-09"
 owner: "Boss"
 related_docs: ["software-requirements-specification", "product-requirements", "mvp-backlog", "mvp-execution-dag", "G-SERIES-DATA-LINEAGE", "releases/README"]
 ---
@@ -79,11 +79,15 @@ Milestone เป็นผลลัพธ์สำหรับตรวจรั�
 
 ## ลำดับหยิบงานชุดแรก
 
-1. `MVP-001` รวม baseline และ `MVP-002` ฟื้นสภาพ build environment
-2. `MVP-003–006` ปิด scope, access, privacy และ acceptance contracts พร้อม `MVP-007` ทำเอกสารให้ตรงกัน
-3. `MVP-009` ย้าย settings initialization และ `MVP-010–011` ทำ setup/readiness จริง
-4. `MVP-013–015` ปิด invalid/stale tick และ match lifecycle; ต่อด้วย `MVP-019` แก้ buyback unknown
-5. `MVP-022–024` จัด event ownership, transition และ audio recovery
+สถานะปัจจุบันใช้ [[mvp-backlog]] เป็น SSOT: `MVP-001–006` และ `MVP-009` เป็น DONE แล้ว ส่วน `MVP-010/011/016/039/048/051` เป็น IN_PROGRESS (DAG INTEGRATED สำหรับ 010/011.A/016/039/048.A/051.A; ขั้น B ของ 011/048/051 ยัง NOT_STARTED) และยังต้องผ่าน acceptance ก่อน DONE.
+
+งานชุดถัดไปตรงกับ [[mvp-delivery-plan]] §4 สัปดาห์ 1–2:
+
+1. `MVP-007` reconcile product contract/diagram กับ code บน integrated SHA เดียว
+2. `MVP-008` ตรวจ access ตาม policy และ prerequisites
+3. ปิด `MVP-010/011` setup/readiness พร้อม native negative cases และ acceptance ตาม dependency; 011.B ยังรอ producers 016/017/024
+4. `MVP-013/014` ทำ envelope validation และ invalid/stale tick handling
+5. เริ่ม `MVP-043` ตรวจ auth remediation หลัง integration
 
 `MVP-008` ที่แตะ access gate เริ่มหลัง policy และ security prerequisites ของมันครบ ไม่มีการถอดเฉพาะ frontend gate แล้วปล่อย native/backend ใช้นโยบายเก่า
 
@@ -129,3 +133,4 @@ Headless benchmark, unit tests, source code หรือ historical receipts อ
 | 1.4.0 | 2026-10-18 | Removed retired distribution funnel references and clarified artifact-based release evidence. |
 | 1.4.1 | 2026-10-28 | Align active RAM target with owner-approved800MB aggregate full Working Set (MVP decision v0.4.0); retain accounting and historical evidence. |
 | 1.4.2 | 2026-10-28 | Align active MVP RAM ceiling to owner-approved900MB aggregate Working Set; preserve accounting and historical evidence. |
+| 1.4.3 | 2026-11-09 | Align first picks with the Owner-approved backlog and delivery-plan weeks 1–2; distinguish DONE from IN_PROGRESS/DAG INTEGRATED while preserving the access gate, milestones and Go/No-Go criteria. |
