@@ -20,6 +20,8 @@ webview2-com = "=0.39.1"
 webview2-core = { package = "windows-core", version = "=0.62.2" }
 serde      = { version = "1", features = ["derive"] }
 serde_json = "1"
+# Only debug startup/tests reference the parser; release uses generated Rust.
+toml = "=0.8.2"
 tokio      = { version = "1", features = ["rt-multi-thread", "net", "macros"] }
 axum       = "0.7"
 tauri-plugin-global-shortcut = "2"
@@ -84,6 +86,9 @@ wgc = ["dep:windows-capture"]
 
 [build-dependencies]
 tauri-build = { version = "2.7", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "=0.8.2"
 
 # Local in-game candidates retain debug assertions/authoring but should not pay
 # the measured resident-code and CPU cost of an unoptimized application crate.

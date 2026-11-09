@@ -2,7 +2,7 @@
 title: "CLAUDE.md"
 doc_id: "claude"
 status: active
-version: "0.4.15"
+version: "0.4.16"
 updated: "2026-11-07"
 owner: "G-Maiden"
 ---
@@ -196,6 +196,12 @@ follow `g-party-social-operations` for configuration, retention and ticket-aware
 
 The interface authority is [[gann-event-media-contract]].
 
+**Event taxonomy SOT (ADR-21 / CR-049):** every announcer event id, label, `voice_rank`, `detector`
+and tunable lives in `src-tauri/events/g-events.toml`. `schemas/gmaiden-events.json` and
+`src-tauri/gann-package/events.json` are generated from it (regenerate command in
+`src-tauri/events/README.md`); never hand-edit them, never re-type an event list in Rust/TS/G-Suite.
+Detection logic stays in `announcer.rs`. Module charter: `docs/features/FEAT-G-ANNOUNCER.md`.
+
 The 2026-10-31 user instruction replaces the previous legacy/default/VRZO-specific
 announcer media contract. Event media is admitted only from a verified local `.gann`
 container. Studio authors original/mixed WAV and silent WebM pairs, verifies the
@@ -374,3 +380,4 @@ G-AnnStudio opens the same container through its package panel or a file argumen
 | 0.4.13 | 2026-11-04 | Reference the shared lifecycle policy without changing release or native acceptance authority. |
 | 0.4.14 | 2026-11-06 | Align stale state references with the code: source version 0.13.6, GSI port fallback 3000–3010, optional Piper TTS, NVML-based GPU feeder, and hotkey registration in `lib.rs` (#134). |
 | 0.4.15 | 2026-11-07 | Surface the five standing Git rules (protected main, no `add -A`, no rewrite of open PRs, outside-repo worktrees, agent attribution trailer) directly in this file so every agent session sees them without following the pointer chain. |
+| 0.4.16 | 2026-11-09 | Point announcer event changes at the g-events.toml SOT and FEAT-G-ANNOUNCER (ADR-21 / CR-049). |
