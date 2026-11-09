@@ -4,8 +4,8 @@ doc_id: "FEAT-G-ARENA"
 status: "accepted"
 approved_by: "Boss — \"approve all action and start imp\" in orchestrator session"
 approved_date: "2026-11-08"
-version: "0.2.0"
-updated: "2026-11-08"
+version: "0.2.1"
+updated: "2026-11-09"
 owner: "Boss"
 source_of_truth: false
 complexity: "C-2"
@@ -110,7 +110,7 @@ Pro ไม่ขยาย source admission, consent, selected-unit attribution �
 | --- | --- |
 | HeroKey | sessionEpoch, team, playerSlot; heroId/revision เป็น identity guard; ห้ามใช้ชื่อฮีโร่เป็น unique key |
 | FieldState<T> | value nullable, availability: known/unknown/stale/unavailable, source: own-gsi/party/cv/catalog/manual, observedAt/ageMs ตาม producer, sourceGeneration, revision |
-| HeroView | HeroKey, admitted identity, level/alive/respawn, HP current/max หรือ HP%, MP current/max เฉพาะเมื่อมีหรือ MP%; unknown ไม่ใช่ zero |
+| HeroView | HeroKey, admitted identity, level/alive/respawn, HP current/max หรือ HP%, MP current/max เฉพาะเมื่อมีหรือ MP%; unknown ไม่ใช่ zero. `deathHint` มาจากสีภาพฮีโร่บน top bar (CV `hero-hud`, join ด้วยลำดับ draft slot แบบเดียวกับ Dashboard) แสดงเป็น "อาจตาย · HUD" เท่านั้น ไม่ตั้ง `alive` และแพ้ค่า alive ที่รู้จริง (G-Party); ตัวเลข respawn ของฮีโร่อื่นยังไม่มี producer |
 | SkillView[] | stable slot/key, canonical name/icon/catalog revision, learned level nullable, passive, canCast nullable, castCooldown nullable, charges/maxCharges/recharge nullable; ability_active ไม่แปลว่า ready |
 | ItemSlotView[] | inventory group+slot, known empty แยก unknown, itemId nullable, stack/count แยก charges, cooldown/recharge, enabled/disabled เมื่อ source มี |
 | MapView | current frame/region.side, health, geometry/session generations, admitted detections x/y pixel, identity association; normalizeก่อนlayout |
@@ -208,3 +208,4 @@ The full runnable local prototype is supplied privately to the incumbent agent; 
 | 0.1.1 | 2026-11-08 | Add the measured dimensional layout sheet and distinguish prototype dimensions from native stage constants. |
 | 0.1.2 | 2026-11-08 | Align base/Pro presentation with CR-047 D-1/D-2, honest-data density, explicit selection, local timeline and preserved navigation; add AC-021–024 and implementation prerequisites. |
 | 0.2.0 | 2026-11-08 | Boss approved the spec and started implementation (CR-047 D-3): base Arena AR-01..03 assigned, entitlement fixed to `absent` until the entitlement ADR. |
+| 0.2.1 | 2026-11-09 | Join the existing top-bar HUD cue as a `deathHint` on ally/enemy cards (hint only, never `alive`); respawn timers of other heroes remain without a producer. |

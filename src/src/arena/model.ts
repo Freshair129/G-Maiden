@@ -1,5 +1,5 @@
 import type { CompanionData } from '../companion';
-import type { DraftRoster, GameTick, GsiFreshness, MinimapCv, SensorHealth } from '../live/events';
+import type { DraftRoster, GameTick, GsiFreshness, HeroHudRead, MinimapCv, SensorHealth } from '../live/events';
 import { previewMatchesCv, type PreviewSnapshot } from '../live/minimapPreview';
 import { memberPresentation, type PartyView } from '../party/partyModel';
 
@@ -40,6 +40,8 @@ export interface ArenaSource {
   warningReady: boolean;
   health: SensorHealth | null;
   cv: MinimapCv | null;
+  /** Top-bar portrait colour per draft slot. A low-colour cue is a hint, never proof of death. */
+  hud?: HeroHudRead | null;
 }
 export interface SkillView {
   key: string;
@@ -78,6 +80,8 @@ export interface HeroView {
   lastSeenAgeMs: FieldState<number>;
   level: FieldState<number>;
   alive: FieldState<boolean>;
+  /** CV top-bar cue: true = grey portrait (possible death), false = coloured, null = no reading. */
+  deathHint: FieldState<boolean>;
   respawn: FieldState<number>;
   hp: FieldState<number>;
   maxHp: FieldState<number>;
@@ -125,7 +129,7 @@ export function buildArena(source: ArenaSource | null, party?: PartyView, elapse
       key: `${epoch ?? 'unknown'}:${kind === 'enemy' ? (team === 'radiant' ? 'dire' : team === 'dire' ? 'radiant' : 'enemy') : team || kind}:${slot}`,
       revision: `${generation}:${id ?? 'unknown'}`, playerSlot: slot, team: kind, identity: field(id, origin),
       side: field(team === 'radiant' ? (kind === 'enemy' ? 'dire' : 'radiant') : team === 'dire' ? (kind === 'enemy' ? 'radiant' : 'dire') : null, 'own-gsi'),
-      visibility: field<never>(null, 'cv'), lastSeenAgeMs: field<never>(null, 'cv'), level: field<never>(null, origin), alive: field<never>(null, origin), respawn: field<never>(null, origin),
+      visibility: field<never>(null, 'cv'), lastSeenAgeMs: field<never>(null, 'cv'), level: field<never>(null, origin), alive: field<never>(null, origin), deathHint: field<never>(null, 'cv'), respawn: field<never>(null, origin),
       hp: field<never>(null, origin), maxHp: field<never>(null, origin), hpPercent: field<never>(null, origin), manaPercent: field<never>(null, origin), skills: [], items: [],
     };
   };
@@ -149,6 +153,18 @@ export function buildArena(source: ArenaSource | null, party?: PartyView, elapse
       enemy.visibility = field(missing ? 'missing' : seen ? 'seen' : null, 'cv');
       enemy.lastSeenAgeMs = field(missing ? finite(missing[1]) : null, 'cv');
     }
+  }
+  // The top-bar HUD is joined by draft slot order (the same join the Dashboard uses). It only
+  // reports portrait colour, so it fills deathHint and never sets alive.
+  const hud = source?.phase === 'live' && source.health?.healthy && current(epoch, source.hud ?? null) ? source.hud : null;
+  const otherTeam = team === 'radiant' ? 'dire' : team === 'dire' ? 'radiant' : null;
+  if (hud && otherTeam && (team === 'radiant' || team === 'dire')) {
+    const hint = (slots: HeroHudRead['radiant'], slot: number | 'self') => {
+      const cue = typeof slot === 'number' ? slots[slot]?.cue : undefined;
+      return cue === 'death_hint' ? true : cue === 'colored' ? false : null;
+    };
+    for (const ally of allies) if (ally.identity.value) ally.deathHint = field(hint(hud[team], ally.playerSlot), 'cv');
+    for (const enemy of enemies) if (enemy.identity.value && theirs) enemy.deathHint = field(hint(hud[otherTeam], enemy.playerSlot), 'cv');
   }
   if (party && own && source?.freshness === 'fresh') {
     for (const ally of allies) {

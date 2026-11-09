@@ -176,6 +176,16 @@ it('AC-017/024 bounds local activity/events inside the reserved region for both 
   style.remove();
 });
 
+it('shows a HUD death hint on a card only while alive is unknown', async () => {
+  const model = fixture();
+  model.enemies[1].identity = known('pudge', 'cv'); model.enemies[1].deathHint = known(true, 'cv');
+  model.allies[0].identity = known('axe', 'cv'); model.allies[0].deathHint = known(true, 'cv'); model.allies[0].alive = known(true, 'party');
+  await render(model);
+  const card = (team: string, name: string) => [...container.querySelectorAll(`[data-team="${team}"]`)].find(el => el.textContent?.includes(name));
+  expect(card('enemy', 'Pudge')?.textContent).toContain('อาจตาย · HUD');
+  expect(card('ally', 'Axe')?.textContent).not.toContain('อาจตาย');
+});
+
 it('AC-004 selects each of ten stable cards and a known marker, withholding unknown markers', async () => {
   const model = fixture();
   model.enemies[0].identity = known('lion', 'cv'); model.enemies[0].visibility = known('seen', 'cv');

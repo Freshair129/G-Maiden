@@ -786,7 +786,7 @@ function buildCompanionData(live: LiveState): CompanionData {
         hp_percent: live.tick.hp_percent, mana_percent: live.tick.mana_percent,
       } : null,
       roster: live.roster, enemySlots: [...live.enemySlots], visible: [...live.visibleHeroes],
-      missing: [...live.missing], phase: live.phase, warningReady: live.warningReady, health: live.health, cv: live.cv,
+      missing: [...live.missing], phase: live.phase, warningReady: live.warningReady, health: live.health, cv: live.cv, hud: live.heroHud,
     },
     resourceSample: live.stats ? { ramMb: live.stats.ram_mb, cpuPct: live.stats.cpu_pct, overBudget: live.stats.over_budget } : null,
     heroCv: {

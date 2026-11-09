@@ -26,6 +26,22 @@ export function party(): PartyView {
 }
 
 describe('Arena admitted read model', () => {
+  it('joins the top-bar HUD death cue by draft slot as a hint only, never as alive', () => {
+    const slot = (cue: 'death_hint' | 'colored' | 'unknown') => ({ cue, mean_chroma: cue === 'death_hint' ? 5 : 60 });
+    const input = { ...source(), hud: { session_epoch: 7,
+      radiant: [slot('death_hint'), slot('colored'), slot('colored'), slot('unknown'), slot('colored')],
+      dire: [slot('colored'), slot('death_hint'), slot('colored'), slot('unknown'), slot('death_hint')] } };
+    const model = buildArena(input);
+    expect(model.enemies.map(h => h.deathHint.value)).toEqual([false, true, null, null, true]);
+    expect(model.allies.map(h => [h.identity.value, h.deathHint.value])).toEqual([['axe', true], [null, null], ['puck', null], [null, null]]);
+    expect([...model.enemies, ...model.allies].every(h => h.alive.value === null)).toBe(true);
+    expect(model.enemies[1].deathHint.source).toBe('cv');
+    // Another session's HUD, an unhealthy sensor or a missing roster join yields no hint.
+    for (const variant of [{ ...input, hud: { ...input.hud, session_epoch: 6 } },
+      { ...input, health: { ...input.health!, healthy: false } }, { ...input, roster: null }]) {
+      expect(buildArena(variant).enemies.every(h => h.deathHint.value === null)).toBe(true);
+    }
+  });
   it('AC-002 preserves five enemy and four original ally slots excluding self, including nulls', () => {
     const model = buildArena(source());
     expect(model.enemies.map(h => h.identity.value)).toEqual(['lion', 'pudge', null, 'bane', 'slark']);

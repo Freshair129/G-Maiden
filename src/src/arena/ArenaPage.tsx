@@ -37,7 +37,9 @@ function Presence({ hero }: { hero: HeroView }) {
   const seen = value(hero.visibility);
   // An empty slot (no admitted identity and no observation) stays quiet instead of repeating dashes.
   if (value(hero.identity) === null && seen === null) return null;
-  return <span className="arena-presence">{seen === 'seen' ? 'พบในแมป' : seen === 'missing' ? 'หายจากแมป' : 'การมองเห็น —'}<small>พบล่าสุด {age(value(hero.lastSeenAgeMs))}</small></span>;
+  // A grey top-bar portrait is a hint only; a known alive/dead value from G-Party wins.
+  const possiblyDead = value(hero.alive) === null && value(hero.deathHint) === true;
+  return <span className="arena-presence">{seen === 'seen' ? 'พบในแมป' : seen === 'missing' ? 'หายจากแมป' : 'การมองเห็น —'}<small>พบล่าสุด {age(value(hero.lastSeenAgeMs))}</small>{possiblyDead && <small className="arena-death-hint">อาจตาย · HUD</small>}</span>;
 }
 function Portrait({ hero }: { hero: HeroView }) {
   // No bundled hero catalog exists here. Initials preserve the portrait slot without a new asset request.
