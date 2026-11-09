@@ -156,8 +156,8 @@ entries:
     refs:
       docs: [docs/features/FEAT-G-ANNOUNCER.md, docs/architecture/adr/ADR-21-event-taxonomy-sot.md]
       srs: []
-      code: [src-tauri/src/announcer.rs, src-tauri/src/events.rs, src-tauri/events/g-events.toml]
-      tests: [cargo:announcer::tests::, cargo:voice_api::tests::taxonomy::]
+      code: [src-tauri/src/announcer.rs, src-tauri/src/events.rs, src-tauri/events/g-events.toml, src-tauri/gann-package/src/playback.rs, src-tauri/gann-package/src/lib.rs, src-tauri/src/package_install.rs, src-tauri/src/voice_api/id_manifest.rs, src-tauri/src/voice_api/id_container.rs, src-tauri/src/voice_api/pack_io.rs]
+      tests: [cargo:announcer::tests::, cargo:voice_api::tests::taxonomy::, src-tauri/gann-package/tests/install.rs, src-tauri/src/voice_api/test_package.rs, src-tauri/src/voice_api/tests.rs, src-tauri/src/voice_api/package_lifecycle_tests.rs]
       review: [docs/change request/CR-049-event-taxonomy-sot.md]
 
   - id: 1.1-g-master

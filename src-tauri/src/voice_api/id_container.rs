@@ -121,6 +121,7 @@ pub fn import_file(source: &Path) -> Result<ImportResult, String> {
         let installed = g_ann_package::install(source, &paths::voice_root())?;
         let registry = id_manifest::read(&installed.pack_dir)?;
         registry.admit(&installed.pack_dir)?;
+        registry.log_inert_events("import");
         Ok(ImportResult {
             imported: vec![installed.pack_id],
         })
