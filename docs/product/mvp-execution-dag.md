@@ -2,8 +2,8 @@
 title: "G-Maiden MVP Execution DAG"
 doc_id: "mvp-execution-dag"
 status: "draft"
-version: "0.2.7"
-updated: 2026-10-19
+version: "0.2.8"
+updated: 2026-11-09
 owner: "Boss"
 related_docs: ["roadmap", "mvp-backlog", "releases/README"]
 ---
@@ -14,7 +14,11 @@ related_docs: ["roadmap", "mvp-backlog", "releases/README"]
 
 มี **57 execution nodes ใน 14 logical waves**: 52 parent tasks แยก 4 งานเป็น A/B รวมเป็น 56 task nodes และเพิ่ม GATE-RC 1 จุดสำหรับตรึง build ก่อนเก็บ evidence Owner สั่งเริ่ม execution ด้วย GPT-6 Luna ระดับ max จำนวน 3 workers แล้ว; สถานะราย node อยู่ใน JSON และ receipt ของ run โดยงานที่ยังไม่ผ่าน acceptance ไม่ถูกปิดเป็น DONE
 
-สถานะ execution ปัจจุบันให้อ่านจาก JSON: 001.A = INTEGRATED, 001.B = VERIFIED, 002 = VERIFIED และ 003–006 = DONE ตามมติใน [[mvp-decisions]]; 007/008 ยัง NOT_STARTED. DONE ของ MVP-003–006 ปิดเฉพาะ contract decisions ไม่ได้ปิด implementation, runtime acceptance หรือ consumer tasks. Receipt `DECISION_PENDING` เป็นสถานะก่อนลงมติและล้าสมัยแล้ว.
+สถานะ execution ปัจจุบันใน JSON v0.2.8 sync กับ [[mvp-backlog]] v0.4.3: **DONE:** 001.A, 001.B, 002, 003–006 และ 009; **INTEGRATED:** 010, 011.A, 016, 039, 048.A และ 051.A (backlog IN_PROGRESS); 045 คง NOT_APPLICABLE และ nodes อื่นทั้งหมดคง NOT_STARTED รวม 011.B, 048.B, 051.B และ GATE-RC. READY/TODO ใน backlog map เป็น NOT_STARTED เพราะ DAG ไม่มี READY state; 053–062 ยังคงอยู่เฉพาะ deferred_tasks. DONE ของ MVP-003–006 ปิดเฉพาะ contract decisions ไม่ได้ปิด implementation, runtime acceptance หรือ consumer tasks. Receipt `DECISION_PENDING` เป็นสถานะก่อนลงมติและล้าสมัยแล้ว.
+
+ตาม `execution_run.completion_policy`, INTEGRATED เช่นเดียวกับ PREPARED, VERIFIED, RUNNING และ DECISION_PENDING **ไม่ผ่าน DONE dependencies**; nodes ที่ INTEGRATED ยังต้องมี native/live และ Owner acceptance. ขั้น 011.B รอ producers 016/017/024; 048.B และ 051.B รอ GATE-RC จึงยัง NOT_STARTED.
+
+MVP-016 และ MVP-039 ถึง INTEGRATED ก่อน DAG predecessors เป็น DONE: นี่คือข้อขัดแย้ง #2 ใน backlog ซึ่งยังเปิดรอ Owner decision จึงคง dependencies และ waves เดิม ไม่อนุมานว่า predecessor ผ่านแล้ว.
 
 - Backlog เป็น source of truth ของ scope และ acceptance ราย task
 - [Execution DAG JSON](mvp-execution-dag.json) เก็บ nodes, edges, conditional gates, locks, parent completion และ wave allocation เป็นข้อมูลสำหรับนำไปต่อ scheduler
@@ -305,3 +309,4 @@ Completion or NOT_APPLICABLE decision:
 | 0.2.5 | 2026-10-18 | Clarify account-optional local startup and keep protected server authorization separate. |
 | 0.2.6 | 2026-10-18 | Removed obsolete handoff activation metadata; MVP-045 stays not applicable under the local-core decision. |
 | 0.2.7 | 2026-10-19 | Reconciled the stale DECISION_PENDING execution summary with the current JSON and decision record; contract completion remains separate from implementation acceptance. |
+| 0.2.8 | 2026-11-09 | Sync execution states and source fingerprint with backlog v0.4.3; preserve stage-B gates, DONE dependency rules, waves and historical run records; retain the open Owner decision for early integration of 016/039. |

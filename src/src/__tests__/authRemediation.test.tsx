@@ -11,6 +11,13 @@ vi.mock("../live/identity", () => ({ loadIdentity: vi.fn(async () => null) }));
 vi.mock("../profile", () => ({ useProfile: () => ({ gidCode: "G-FIXTURE", generationName: "fixture" }) }));
 
 const KEY = "sb-wsseitulmcgnolgsrxgh-auth-token";
+function syntheticSession(userId = "synthetic-user") {
+  return {
+    access_token: `synthetic-access-${userId}`, refresh_token: `synthetic-refresh-${userId}`,
+    token_type: "bearer", expires_at: Math.floor(Date.now() / 1000) + 3600,
+    user: { id: userId, email: `${userId}@example.invalid` },
+  };
+}
 let cleanup = async () => {};
 afterEach(async () => { await cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
@@ -20,11 +27,17 @@ async function mount(status = 503, native = false) {
   if (native) Object.defineProperty(window, "__TAURI_INTERNALS__", { configurable: true, value: {} });
   else delete (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__;
   localStorage.clear();
-  const seed = JSON.stringify({
-    access_token: "synthetic-access", refresh_token: "synthetic-refresh",
-    token_type: "bearer", expires_at: Math.floor(Date.now() / 1000) + 3600,
-    user: { id: "synthetic-user", email: "fixture@example.invalid" },
+  const authMessages = new Set<(event: MessageEvent) => Promise<void>>();
+  // Deliver cross-window provider events at the browser boundary. The real
+  // auth-js listener and useAuth subscriptions remain unmocked.
+  vi.stubGlobal("BroadcastChannel", class {
+    addEventListener(type: string, listener: (event: MessageEvent) => Promise<void>) {
+      if (type === "message") authMessages.add(listener);
+    }
+    postMessage() {}
+    close() { authMessages.clear(); }
   });
+  const seed = JSON.stringify(syntheticSession());
   const secrets = new Map([[KEY, seed], [`${KEY}-code-verifier`, JSON.stringify("verifier")], ["anthropic_api_key", "unrelated-fixture"]]);
   localStorage.setItem(KEY, seed);
   localStorage.setItem(`${KEY}-code-verifier`, JSON.stringify("verifier"));
@@ -53,6 +66,14 @@ async function mount(status = 503, native = false) {
   await act(async () => { root.render(<><Observer /><AuthPanel /></>); });
   expect(auth.user?.id).toBe("synthetic-user");
   return { get auth() { return auth; }, element, root, Observer, supabase, secrets, fetchMock,
+    async deliverSession(userId: string) {
+      expect(authMessages.size).toBe(1);
+      await act(async () => {
+        await Promise.all([...authMessages].map((listener) => listener(new MessageEvent("message", {
+          data: { event: "SIGNED_IN", session: syntheticSession(userId) },
+        }))));
+      });
+    },
     failDelete(value: boolean) { deleteFails = value; } };
 }
 
@@ -153,3 +174,75 @@ it("aborts an in-flight SDK refresh before local cleanup and does not restore it
   expect(fetch).toHaveBeenCalledTimes(2); // Refresh + remote revocation only.
   errors.mockRestore();
 });
+
+it("clears local credentials and reports unconfirmed revocation after a transport TypeError", async () => {
+  const view = await mount();
+  view.fetchMock.mockRejectedValue(new TypeError("synthetic-network-failure"));
+  await act(async () => { await view.auth.signOut(); });
+
+  expect(view.fetchMock).toHaveBeenCalledOnce();
+  expect(view.fetchMock).toHaveBeenCalledWith(expect.stringContaining("/functions/v1/iam-session-action"),
+    expect.objectContaining({ body: JSON.stringify({ scope: "current" }) }));
+  expect(localStorage.getItem(KEY)).toBeNull();
+  expect(localStorage.getItem(`${KEY}-code-verifier`)).toBeNull();
+  expect((await view.supabase.auth.getSession()).data.session).toBeNull();
+  expect(view.auth.session).toBeNull();
+  expect(view.auth.user).toBeNull();
+  expect(view.auth.signOutPhase).toBe("done");
+  expect(view.auth.error).toBeNull();
+  expect(view.auth.signOutWarning).toContain("ยังยืนยันการยกเลิก session บนเซิร์ฟเวอร์ไม่ได้");
+});
+
+it("uses only secret commands during native-mode sign-out and preserves unrelated local data", async () => {
+  const view = await mount(503, true);
+  const settings = JSON.stringify({ voice: "synthetic-voice", volume: 0.4 });
+  localStorage.setItem("synthetic-settings", settings);
+  invokeMock.mockClear();
+
+  await act(async () => { await view.auth.signOut(); });
+
+  expect(view.auth.signOutPhase).toBe("done");
+  expect(view.auth.user).toBeNull();
+  expect(localStorage.getItem(KEY)).toBeNull();
+  expect(localStorage.getItem(`${KEY}-code-verifier`)).toBeNull();
+  expect(view.secrets.has(KEY)).toBe(false);
+  expect(view.secrets.has(`${KEY}-code-verifier`)).toBe(false);
+  expect((await view.supabase.auth.getSession()).data.session).toBeNull();
+  expect(invokeMock).toHaveBeenCalled();
+  for (const [command] of invokeMock.mock.calls) {
+    expect(["secret_get", "secret_set", "secret_delete"]).toContain(command);
+  }
+  expect(localStorage.getItem("synthetic-settings")).toBe(settings);
+  expect(view.secrets.get("anthropic_api_key")).toBe("unrelated-fixture");
+});
+
+it.each(["synthetic-user", "synthetic-user-b"])("rejects a late SDK sign-in event for %s after sign-out", async (userId) => {
+  const view = await mount();
+  const { localAuthBlocked } = await import("../securitySession");
+  await act(async () => { await view.auth.signOut(); });
+  expect(view.auth.signOutPhase).toBe("done");
+  const warning = view.auth.signOutWarning;
+  const events: string[] = [];
+  const { data: { subscription } } = view.supabase.auth.onAuthStateChange((event) => { events.push(event); });
+  try {
+    const fetches = view.fetchMock.mock.calls.length;
+    await view.deliverSession(userId);
+    expect(events).toContain("SIGNED_IN");
+    expect(localAuthBlocked()).toBe(true);
+    expect(view.auth.user).toBeNull();
+    expect(view.auth.session).toBeNull();
+    expect(view.auth.lastAuthEvent).toBe("SIGNED_OUT");
+    expect(view.auth.signOutPhase).toBe("done");
+    expect(view.auth.signOutWarning).toBe(warning);
+    expect((await view.supabase.auth.getSession()).data.session).toBeNull();
+    expect(localStorage.getItem(KEY)).toBeNull();
+    expect(view.fetchMock).toHaveBeenCalledTimes(fetches);
+  } finally {
+    subscription.unsubscribe();
+  }
+});
+
+// auth-js 2.110.0 builds an /authorize URL without state, which auth.ts rejects
+// before oauth_begin/open_url. Do not fabricate a successful OAuth start or
+// modify the separately owned auth.ts path for MVP-043.
+it.todo("switches from user A to B after Google OAuth starts and clears the old warning (A4: OAuth state prerequisite)");
