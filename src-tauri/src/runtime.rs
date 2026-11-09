@@ -469,6 +469,26 @@ pub fn observe_match_tick(
     snapshot
 }
 
+/// Returns whether this observation newly abandoned the session.
+fn apply_gsi_status(state: &mut MatchSessionState, dota_running: bool, gsi_fresh: bool) -> bool {
+    if let Some(current) = state.current.as_mut() {
+        if !dota_running && !lifecycle_is_terminal(current.lifecycle) {
+            current.lifecycle = MatchLifecycle::Abandon;
+            current.resume_lifecycle = None;
+            return true;
+        } else if !gsi_fresh
+            && matches!(
+                current.lifecycle,
+                MatchLifecycle::Live | MatchLifecycle::Draft
+            )
+        {
+            current.resume_lifecycle = Some(current.lifecycle);
+            current.lifecycle = MatchLifecycle::Disconnected;
+        }
+    }
+    false
+}
+
 /// GSI can stop while Dota remains open. Keep the session identity stable and
 /// mark its lifecycle disconnected so a fresh observation can resume it.
 pub fn observe_gsi_status(dota_running: bool, gsi_fresh: bool) -> MatchSessionSnapshot {
@@ -480,23 +500,11 @@ pub fn observe_gsi_status(dota_running: bool, gsi_fresh: bool) -> MatchSessionSn
             session_lifecycle: None,
         };
     };
-    if let Some(current) = state.current.as_mut() {
-        if !dota_running && !lifecycle_is_terminal(current.lifecycle) {
-            current.lifecycle = MatchLifecycle::Abandon;
-            current.resume_lifecycle = None;
-            let was_in_game = IN_GAME.load(Ordering::Relaxed);
-            set_in_game(false);
-            if !was_in_game {
-                MATCH_EPOCH.fetch_add(1, Ordering::Relaxed);
-            }
-        } else if !gsi_fresh
-            && matches!(
-                current.lifecycle,
-                MatchLifecycle::Live | MatchLifecycle::Draft
-            )
-        {
-            current.resume_lifecycle = Some(current.lifecycle);
-            current.lifecycle = MatchLifecycle::Disconnected;
+    if apply_gsi_status(&mut state, dota_running, gsi_fresh) {
+        let was_in_game = IN_GAME.load(Ordering::Relaxed);
+        set_in_game(false);
+        if !was_in_game {
+            MATCH_EPOCH.fetch_add(1, Ordering::Relaxed);
         }
     }
     let snapshot = snapshot_of(&state);
@@ -598,6 +606,24 @@ pub fn is_current_live_session(epoch: u64) -> bool {
             })
         })
         .unwrap_or(false)
+}
+
+pub fn own_state_request_admissible(
+    session_live_for_epoch: bool,
+    snapshot_epoch_matches: bool,
+    tick_in_game: bool,
+    gsi_fresh: bool,
+) -> bool {
+    session_live_for_epoch && snapshot_epoch_matches && tick_in_game && gsi_fresh
+}
+
+pub fn own_state_request_current(epoch: u64, tick_in_game: bool) -> bool {
+    own_state_request_admissible(
+        is_current_live_session(epoch),
+        match_session_snapshot().session_epoch == epoch,
+        tick_in_game,
+        gsi_is_fresh(),
+    )
 }
 
 // Buyback request identity is independent of the match epoch: a match can have
@@ -1709,6 +1735,165 @@ mod tests {
         clock_time: i64,
     ) -> (MatchSessionSnapshot, bool) {
         observe_session_state(state, lifecycle, match_id.map(str::to_string), clock_time)
+    }
+
+    #[test]
+    fn own_state_requests_require_fresh_gsi() {
+        for inputs in 0..16 {
+            let session_live_for_epoch = inputs & 1 != 0;
+            let snapshot_epoch_matches = inputs & 2 != 0;
+            let tick_in_game = inputs & 4 != 0;
+            let gsi_fresh = inputs & 8 != 0;
+            assert_eq!(
+                own_state_request_admissible(
+                    session_live_for_epoch,
+                    snapshot_epoch_matches,
+                    tick_in_game,
+                    gsi_fresh,
+                ),
+                inputs == 15,
+                "admission inputs: {inputs:04b}"
+            );
+        }
+    }
+
+    #[test]
+    fn stale_gsi_while_dota_open_disconnects_without_ending_the_match() {
+        let mut state = MatchSessionState::default();
+        let (live, _) = observe(&mut state, MatchLifecycle::Live, Some("123"), 900);
+        assert!(!apply_gsi_status(&mut state, true, false));
+        let disconnected = snapshot_of(&state);
+        assert_eq!(
+            disconnected.session_lifecycle,
+            Some(MatchLifecycle::Disconnected)
+        );
+        assert_eq!(disconnected.session_epoch, live.session_epoch);
+        assert_eq!(disconnected.session_id, live.session_id);
+        assert_eq!(
+            state.current.as_ref().unwrap().resume_lifecycle,
+            Some(MatchLifecycle::Live)
+        );
+        assert!(!lifecycle_is_terminal(
+            disconnected.session_lifecycle.unwrap()
+        ));
+        assert!(!apply_gsi_status(&mut state, true, false));
+        assert_eq!(snapshot_of(&state), disconnected);
+        assert_eq!(
+            state.current.as_ref().unwrap().resume_lifecycle,
+            Some(MatchLifecycle::Live)
+        );
+    }
+
+    #[test]
+    fn fresh_gsi_after_stale_resumes_the_same_live_session() {
+        for match_id in [Some("123"), None] {
+            let mut state = MatchSessionState::default();
+            let (live, _) = observe(&mut state, MatchLifecycle::Live, match_id, 900);
+            assert!(!apply_gsi_status(&mut state, true, false));
+            assert_eq!(
+                snapshot_of(&state).session_lifecycle,
+                Some(MatchLifecycle::Disconnected)
+            );
+            assert!(!apply_gsi_status(&mut state, true, true));
+            let (resumed, boundary) = observe(&mut state, MatchLifecycle::Live, match_id, 905);
+            assert_eq!(resumed, live);
+            assert!(!boundary);
+            let current = state.current.as_ref().unwrap();
+            assert_eq!(current.resume_lifecycle, None);
+            assert_eq!(current.last_clock_time, 905);
+        }
+    }
+
+    #[test]
+    fn stale_draft_resumes_draft_not_live() {
+        for match_id in [Some("123"), None] {
+            let mut state = MatchSessionState::default();
+            let (draft, _) = observe(&mut state, MatchLifecycle::Draft, match_id, -30);
+            assert!(!apply_gsi_status(&mut state, true, false));
+            assert_eq!(
+                snapshot_of(&state).session_lifecycle,
+                Some(MatchLifecycle::Disconnected)
+            );
+            assert_eq!(
+                state.current.as_ref().unwrap().resume_lifecycle,
+                Some(MatchLifecycle::Draft)
+            );
+            let (resumed, boundary) = observe(&mut state, MatchLifecycle::Draft, match_id, -25);
+            assert_eq!(resumed, draft);
+            assert!(!boundary);
+            assert_eq!(state.current.as_ref().unwrap().resume_lifecycle, None);
+        }
+    }
+
+    #[test]
+    fn dota_exit_is_abandon_not_disconnect() {
+        for lifecycle in [MatchLifecycle::Live, MatchLifecycle::Draft] {
+            for gsi_fresh in [false, true] {
+                let mut state = MatchSessionState::default();
+                let (initial, _) = observe(&mut state, lifecycle, Some("123"), 900);
+                assert!(apply_gsi_status(&mut state, false, gsi_fresh));
+                let exited = snapshot_of(&state);
+                assert_eq!(exited.session_lifecycle, Some(MatchLifecycle::Abandon));
+                assert_eq!(exited.session_epoch, initial.session_epoch);
+                assert_eq!(exited.session_id, initial.session_id);
+                assert_eq!(state.current.as_ref().unwrap().resume_lifecycle, None);
+                assert!(!apply_gsi_status(&mut state, false, gsi_fresh));
+                assert_eq!(snapshot_of(&state), exited);
+            }
+        }
+    }
+
+    #[test]
+    fn stale_gsi_wrapper_preserves_in_game_and_match_epoch_until_exit() {
+        let _guard = match_state_guard();
+        let saved_state = std::mem::take(&mut *MATCH_SESSION.lock().unwrap());
+        let saved_in_game = in_game();
+        let saved_epoch = match_epoch();
+        let saved_post = last_post_ms();
+
+        let live = observe_match_tick(MatchLifecycle::Live, Some("123".into()), 900, true);
+        let epoch = match_epoch();
+        mark_post(0);
+        assert!(is_current_live_session(live.session_epoch));
+        assert!(!own_state_request_current(live.session_epoch, true));
+        let disconnected = observe_gsi_status(true, false);
+        assert_eq!(
+            disconnected.session_lifecycle,
+            Some(MatchLifecycle::Disconnected)
+        );
+        assert_eq!(disconnected.session_epoch, live.session_epoch);
+        assert!(in_game());
+        assert_eq!(match_epoch(), epoch);
+
+        mark_post(epoch_ms());
+        let resumed = observe_match_tick(MatchLifecycle::Live, Some("123".into()), 905, true);
+        assert_eq!(resumed, live);
+        assert_eq!(match_epoch(), epoch);
+
+        let exited = observe_gsi_status(false, false);
+        assert_eq!(exited.session_lifecycle, Some(MatchLifecycle::Abandon));
+        assert!(!in_game());
+        assert_eq!(match_epoch(), epoch + 1);
+        observe_gsi_status(false, false);
+        assert_eq!(match_epoch(), epoch + 1);
+
+        // A draft exit must still advance the capture epoch when IN_GAME is false.
+        observe_match_tick(MatchLifecycle::Draft, Some("456".into()), -30, false);
+        let draft_epoch = match_epoch();
+        observe_gsi_status(false, false);
+        assert_eq!(match_epoch(), draft_epoch + 1);
+        assert!(!in_game());
+
+        *MATCH_SESSION.lock().unwrap() = saved_state;
+        IN_GAME.store(saved_in_game, Ordering::Relaxed);
+        MATCH_EPOCH.store(saved_epoch, Ordering::Relaxed);
+        mark_post(saved_post);
+        let restored = match_session_snapshot();
+        crate::package_ipc::note_lifecycle(restored.session_lifecycle);
+        crate::master::observe_advice_session(
+            restored.session_epoch,
+            restored.session_lifecycle == Some(MatchLifecycle::Live),
+        );
     }
 
     #[test]
