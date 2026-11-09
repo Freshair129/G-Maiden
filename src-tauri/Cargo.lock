@@ -1497,6 +1497,7 @@ dependencies = [
  "tauri-plugin-store",
  "tauri-plugin-updater",
  "tokio",
+ "toml 0.8.2",
  "tract-onnx 0.21.10",
  "webview2-com",
  "windows 0.61.3",

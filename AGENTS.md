@@ -2,7 +2,7 @@
 title: "AGENTS.md"
 doc_id: "agents"
 status: active
-version: "0.4.19"
+version: "0.4.20"
 updated: "2026-11-09"
 owner: "G-Maiden"
 ---
@@ -481,6 +481,12 @@ flag.
 
 ## GANN-only announcer event media
 
+**Event taxonomy SOT (ADR-21 / CR-049):** every announcer event id, label, `voice_rank`, `detector`
+and tunable lives in `src-tauri/events/g-events.toml`. `schemas/gmaiden-events.json` and
+`src-tauri/gann-package/events.json` are generated from it (regenerate command in
+`src-tauri/events/README.md`); never hand-edit them, never re-type an event list in Rust/TS/G-Suite.
+Detection logic stays in `announcer.rs`. Module charter: `docs/features/FEAT-G-ANNOUNCER.md`.
+
 The user's 2026-10-31 correction supersedes earlier requirements to preserve legacy
 announcer media. Every event audio/video pair must originate from a verified `.gann`.
 Import and activation verify package identity, registry and media hashes; the hot
@@ -615,3 +621,4 @@ These are **functional requirements**, not flavor text. Maiden must:
 | 0.4.17 | 2026-11-07 | Correct the worktree placement note (`.worktrees/` and `.codex/` are gitignored) and the doc-graph artifact claim (CI regenerates, it does not by itself fail stale commits); point to the lifecycle policy (#134). |
 | 0.4.18 | 2026-11-07 | Document the advisory `agent-attribution-missing` pr-gate finding (warning only, no new blocking rule). |
 | 0.4.19 | 2026-11-09 | Add the mandatory "Before changing a feature" rule: find the feature in the ledger, read its FEAT/ADR/CR docs and impact output, follow accepted decisions and single sources of truth, and update stale docs in the same PR. |
+| 0.4.20 | 2026-11-09 | Point announcer event changes at the g-events.toml SOT and FEAT-G-ANNOUNCER (ADR-21 / CR-049). |

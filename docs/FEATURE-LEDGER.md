@@ -3,7 +3,7 @@
 # FEATURE-LEDGER
 
 > **GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs**  
-> Source manifest: `docs/feature-ledger.manifest.yaml` · generated `2026-11-08T22:04:18.439Z` · `--run-tests`=false · rows=76
+> Source manifest: `docs/feature-ledger.manifest.yaml` · generated `2026-11-09T00:21:41.846Z` · `--run-tests`=false · rows=77
 
 One row per feature / FR / NFR. **Computed** status is derived structurally from evidence on disk (never from a claim); **Claimed** is the manifest row's `claimed_status`; **Drift** flags where a claim outruns the evidence; **Evidence gaps** lists exactly what is missing to advance.
 
@@ -13,7 +13,7 @@ One row per feature / FR / NFR. **Computed** status is derived structurally from
 
 | Kind | Rows |
 | --- | --- |
-| feature | 51 |
+| feature | 52 |
 | fr | 19 |
 | nfr | 6 |
 
@@ -25,7 +25,7 @@ One row per feature / FR / NFR. **Computed** status is derived structurally from
 | designed | 1 |
 | in-code | 11 |
 | code+needs-test-or-review | 19 |
-| code+tests-present [(unrun)] | 15 |
+| code+tests-present [(unrun)] | 16 |
 
 ### Drift
 
@@ -33,7 +33,7 @@ One row per feature / FR / NFR. **Computed** status is derived structurally from
 | --- | --- |
 | status-inflation | 0 |
 | status-understated | 2 |
-| aligned | 68 |
+| aligned | 69 |
 | unclaimed | 6 |
 
 ## Violations
@@ -42,6 +42,7 @@ One row per feature / FR / NFR. **Computed** status is derived structurally from
 | --- | --- | --- | --- |
 | 3-g-arena | status-understated | no | claimed=doc-only below computed=designed |
 | 3-g-party | status-understated | no | claimed=code+needs-test-or-review below computed=code+tests-present (unrun) |
+| 1.1-g-announcer | unbacked-phase-source | no | phase_source: doc but no refs.docs entry both resolves on disk and states a phase (**Phase:** line) — phase_target rendered as derived |
 | fr-4.2.2 | unbacked-phase-source | no | phase_source: doc but no refs.docs entry both resolves on disk and states a phase (**Phase:** line) — phase_target rendered as derived |
 
 ## Features
@@ -53,6 +54,7 @@ One row per feature / FR / NFR. **Computed** status is derived structurally from
 | 1.1-g-sentry | G-Sentry — fog-of-war monitor (enemies missing from vision) | P2 | code+needs-test-or-review | code+needs-test-or-review | aligned | review record missing | bootstrap-extraction, pruned 2026-07-20 |
 | 1.1-g-motion | G-Motion — last-seen history and heading-aware risk heuristic; heatmap/path prediction is a target | P3 | code+needs-test-or-review | code+needs-test-or-review | aligned | review record missing | bootstrap-extraction, pruned 2026-07-20 |
 | 1.1-g-signal | G-Signal — real-time gank warning, voice interrupt (hard-latency path) | P3 | code+tests-present (unrun) | code+tests-present | aligned | tests not run (--run-tests) | bootstrap-extraction, pruned 2026-07-20 |
+| 1.1-g-announcer | G-Announcer — announcer event detection and g-events.toml taxonomy SOT | P3 *(derived)* | code+tests-present (unrun) | code+tests-present | aligned | tests not run (--run-tests) | CR-049 (2026-11-09) |
 | 1.1-g-master | G-Master — strategic/financial advisor (skill/item build vs enemy) | P5 | code+tests-present (unrun) | code+tests-present | aligned | tests not run (--run-tests) | bootstrap-extraction, pruned 2026-07-20 |
 | 1.1-g-sensory | G-Sensory — overlay render + capture + hardware optimization | P6 | doc-only | doc-only | aligned | primary doc status not accepted/stable, no code mapped | bootstrap-extraction, pruned 2026-07-20 |
 | 1.1-g-log | G-Log — feedback loop, local decision/outcome logging | P6 | code+needs-test-or-review | code+needs-test-or-review | aligned | review record missing | bootstrap-extraction, pruned 2026-07-20 |
