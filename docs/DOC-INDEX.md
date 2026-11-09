@@ -1,7 +1,7 @@
 ---
 title: "Documentation Index"
 doc_id: "DOC-INDEX"
-version: "0.2.18"
+version: "0.2.19"
 created_at: "2026-07-19T00:00:00+07:00,Unknown"
 last_update: "2026-11-08T00:00:00+07:00,Codex"
 status: "active"
@@ -148,6 +148,8 @@ attributes:
   - `docs/features/FEAT-G-PARTY.md` — owner-directed own-GSI party sharing, separate consent, relay/protocol และ pending native/live evidence
 - [[FEAT-G-FRIENDS]]
   - `docs/features/FEAT-G-FRIENDS.md` — optional Friends, presence, verified room links and consent-gated invitations
+- [[FEAT-G-ANNOUNCER]]
+  - `docs/features/FEAT-G-ANNOUNCER.md` — announcer event detection charter; every event change goes through the g-events.toml SOT (ADR-21 / CR-049)
 - [[FEAT-G-*]]
   - `docs/features/FEAT-G-*.md` — เอกสารเชิงโมดูลของ G-series
 
@@ -242,3 +244,4 @@ attributes:
 | 0.2.16 | 2026-11-08 | Index the measured Arena dimensional drawing and evidence. |
 | 0.2.17 | 2026-11-08 | CR-047 entry: D-1 and D-2 both approved by Boss. |
 | 0.2.18 | 2026-11-09 | Index ADR-21 and CR-049 (event taxonomy SOT). |
+| 0.2.19 | 2026-11-09 | Index FEAT-G-ANNOUNCER (announcer event charter, CR-049). |

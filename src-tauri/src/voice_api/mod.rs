@@ -39,6 +39,7 @@ pub use commands::{
     action, active_event_clips, ensure_dev_authoring, install_store_pack, state,
 };
 pub use events::event_ids;
+pub(crate) use events::EventDef;
 #[allow(unused_imports)]
 pub use types::{
     ImportResult, VoiceAssetOption, VoiceEvent, VoiceGroup, VoiceMapping, VoicePack, VoiceState,
