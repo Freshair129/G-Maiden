@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-11-09T01:30:28.852Z
+สร้างเมื่อ / Generated at: 2026-11-09T02:13:04.071Z
 
-สแกน 188 ไฟล์เอกสาร, 299 nodes, 1398 edges, 33 รายการปัญหา (7 ตัวบล็อก exit code) / scanned 188 doc files, 299 nodes, 1398 edges, 33 violations (7 blocking exit code).
+สแกน 188 ไฟล์เอกสาร, 299 nodes, 1399 edges, 33 รายการปัญหา (7 ตัวบล็อก exit code) / scanned 188 doc files, 299 nodes, 1399 edges, 33 violations (7 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -119,7 +119,7 @@
 
 ### docs/rca/2026-07-10-voice-pack-path-traversal.md
 
-- [L28] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/gsi.rs", anchor=783, symbol="announcer_install")
+- [L37] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/gsi.rs", anchor=783, symbol="announcer_install")
 
 ### docs/reference/dota-ui/README.md
 

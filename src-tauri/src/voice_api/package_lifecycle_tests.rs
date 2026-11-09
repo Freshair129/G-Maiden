@@ -3,6 +3,86 @@ use crate::package_install::{EquipPolicy, InstallSource, PackageInstaller};
 use crate::package_registry::{ActivationState, ProfileId};
 
 #[test]
+fn installed_taxonomy_matrix_filters_future_media_and_refuses_major_before_selection() {
+    let root = std::env::temp_dir().join(format!(
+        "gann-taxonomy-install-{}-{}",
+        std::process::id(),
+        g_ann_package::local_ipc::random_nonce().unwrap()
+    ));
+    fs::create_dir(&root).unwrap();
+    super::super::paths::set_test_voice_root(Some(root.clone()));
+    let (id, _, _) = super::super::test_package::install_custom(
+        &root,
+        9833,
+        "kill",
+        false,
+        &["future_event"],
+        |registry| {
+            registry["taxonomy_version"] = "1.3".into();
+        },
+    )
+    .unwrap();
+    let installer =
+        PackageInstaller::new(&root.join("data"), ProfileId("taxonomy-test".into())).unwrap();
+    let source = root.join(format!("{id}.gann"));
+    let installed = installer
+        .install_package(InstallSource::Local {
+            expected_digest: g_ann_package::file_digest(&source).unwrap(),
+            path: source,
+            project_binding: None,
+        })
+        .unwrap();
+    installer
+        .equip_package(&installed.installation_id, EquipPolicy::NowIfIdle)
+        .unwrap();
+    adopt_registry_selection(&installer).unwrap();
+    let before_key = installer.adoption_key().unwrap();
+    let before_selection = installer.selection().unwrap();
+    let selected = select_announcer_clip("kill").unwrap();
+    assert!(select_announcer_clip("future_event").is_none());
+    assert!(cached_event_clips("future_event").is_none());
+    assert!(cached_event_playback_clips("future_event").is_none());
+
+    // Keep the installed identity/revision so refusal must precede replacement.
+    let manifest = format!("{id}.json");
+    let authoring = root.join("source-9833");
+    let mut registry: serde_json::Value =
+        serde_json::from_slice(&fs::read(authoring.join(&manifest)).unwrap()).unwrap();
+    registry["taxonomy_version"] = "2.0".into();
+    fs::write(
+        authoring.join(&manifest),
+        serde_json::to_vec(&registry).unwrap(),
+    )
+    .unwrap();
+    let future = root.join("wrong-major.gann");
+    g_ann_package::create(&authoring, &manifest, &future).unwrap();
+    let error = installer
+        .install_package(InstallSource::Local {
+            expected_digest: g_ann_package::file_digest(&future).unwrap(),
+            path: future,
+            project_binding: installed.project_binding.clone(),
+        })
+        .unwrap_err();
+    assert!(
+        error.to_string().contains("taxonomy major mismatch"),
+        "{error}"
+    );
+    assert_eq!(installer.selection().unwrap(), before_selection);
+    assert_eq!(installer.adoption_key().unwrap(), before_key);
+    assert_eq!(installer.installed().unwrap().len(), 1);
+    assert_eq!(
+        select_announcer_clip("kill").unwrap().revision,
+        selected.revision
+    );
+    assert!(with_current_announcer_clip("kill", &selected, || ()).is_some());
+    clear_resolved_cache_for_test();
+    super::super::paths::set_test_voice_root(None);
+    drop(selected);
+    drop(installer);
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn installed_event_lease_keeps_exact_pair_until_safe_boundary() {
     let root = std::env::temp_dir().join(format!(
         "gann-runtime-{}-{}",

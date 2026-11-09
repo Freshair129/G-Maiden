@@ -5,6 +5,7 @@ mod strict_json;
 pub use compression::{validate_producer_profile, CompressionReport, PRODUCER_PROFILE};
 mod install;
 mod playback;
+pub use playback::{taxonomy_version, validate_playback_registry, AdmissionReport};
 mod webm;
 mod release;
 pub use release::{canonical_release_message, verify_store_release, PackageError, ReleasePayload, ReleaseEnvelope, TrustedKey, TrustedKeyState, VerifiedRelease};
