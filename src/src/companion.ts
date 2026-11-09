@@ -603,6 +603,9 @@ type CompanionSnapshot = {
 };
 
 const CV_UPDATE_MS = 1000;
+// HUD samples arrive about once per second; one late or missed sample must not
+// blank every death cue. Older readings still expire well before a respawn.
+export const HERO_HUD_EXPIRY_MS = 3500;
 const LIVE_FLUSH_MS = 250;
 const subscribers = new Set<() => void>();
 const expiryTimers = new Map<string, number>();
@@ -1131,7 +1134,7 @@ function ensureRuntime() {
     expiryTimers.set("hero-hud", window.setTimeout(() => {
       updateLive((s) => s.session?.session_epoch === p.session_epoch ? { ...s, heroHud: null } : s, true);
       expiryTimers.delete("hero-hud");
-    }, 1500));
+    }, HERO_HUD_EXPIRY_MS));
   });
   sub<SignalAlert>("gank-alert", (p) => {
     if (!sessionEventIsCurrent(pendingLive ?? liveState, p, ["live", "disconnected"])) return;

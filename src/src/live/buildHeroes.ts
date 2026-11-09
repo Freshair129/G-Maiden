@@ -87,7 +87,12 @@ export function buildHeroes(
     const localShort = tick ? shortName(tick.hero) : "";
     const localSlot = mine.findIndex((name) => name !== null && shortName(name) === localShort);
     // Preserve unknown portrait slots; compacting them would reorder teammates.
-    if (localSlot >= 0) allyOthers = mine.filter((_, slot) => slot !== localSlot);
+    // The local portrait is often unrecognized (highlighted, or grey while dead).
+    // When it is unmatched and exactly one own-team slot is unknown, that slot
+    // must be the local player, so dropping it is exact rather than a guess.
+    const unknownSlots = mine.flatMap((name, slot) => (name === null ? [slot] : []));
+    const ownSlot = localSlot >= 0 ? localSlot : unknownSlots.length === 1 ? unknownSlots[0] : -1;
+    if (ownSlot >= 0) allyOthers = mine.filter((_, slot) => slot !== ownSlot);
   }
 
   let allyIndex = 0;
