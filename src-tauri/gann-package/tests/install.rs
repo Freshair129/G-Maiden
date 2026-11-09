@@ -2,6 +2,8 @@ use g_ann_package::{sha256, Package};
 use serde_json::json;
 use std::{fs, path::PathBuf, process::Command};
 
+static INSTALL_TESTS: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 fn fixture(tag: &str) -> (PathBuf, PathBuf, String) {
     let root = std::env::temp_dir().join(format!("gann-install-{tag}-{}", std::process::id()));
     fs::create_dir_all(root.join("source/audio")).unwrap();
@@ -158,6 +160,7 @@ fn playback_validation_rejects_extreme_wav_rate_without_panicking() {
 
 #[test]
 fn install_rejects_cache_tampering_and_conflicting_revision_preserving_selection() {
+    let _order = INSTALL_TESTS.lock().unwrap();
     let (root, package, ann) = fixture("conflict");
     let voice = root.join("voice");
     let installed = g_ann_package::install(&package, &voice).unwrap();
@@ -249,5 +252,265 @@ fn unused_authoring_bucket_cannot_be_admitted_as_a_runtime_event() {
         p.validate_playback().is_err(),
         "the unassigned authoring bucket is not a runtime event"
     );
+    fs::remove_dir_all(root).unwrap();
+}
+
+fn write_registry(root: &std::path::Path, ann: &str, registry: &serde_json::Value) {
+    fs::write(
+        root.join("source").join(format!("{ann}.json")),
+        serde_json::to_vec(registry).unwrap(),
+    )
+    .unwrap();
+}
+
+fn future_registry(root: &std::path::Path, package: &Package) -> serde_json::Value {
+    let mut registry = package.registry.clone();
+    registry["taxonomy_version"] = "1.3".into();
+    let original = "snd_00000000-0000-0000-0000-000000000005";
+    let mixed = "snd_00000000-0000-0000-0000-000000000006";
+    let banner_id = "bnr_00000000-0000-0000-0000-000000000007";
+    for (index, id) in [original, mixed].iter().enumerate() {
+        let mut sound = registry["sounds"][index].clone();
+        let bytes = package.read(sound["path"].as_str().unwrap()).unwrap();
+        sound["sound_id"] = (*id).into();
+        sound["path"] = format!("audio/{id}.wav").into();
+        fs::write(
+            root.join("source").join(sound["path"].as_str().unwrap()),
+            bytes,
+        )
+        .unwrap();
+        registry["sounds"].as_array_mut().unwrap().push(sound);
+    }
+    let mut banner = registry["banners"][0].clone();
+    let video = package
+        .read(banner["visual_source"]["video"].as_str().unwrap())
+        .unwrap();
+    banner["banner_id"] = banner_id.into();
+    banner["event_key"] = "future_event".into();
+    banner["original_sound_id"] = original.into();
+    banner["playback_sound_id"] = mixed.into();
+    banner["visual_source"]["video"] = format!("video/{banner_id}.webm").into();
+    fs::write(
+        root.join("source").join(format!("video/{banner_id}.webm")),
+        video,
+    )
+    .unwrap();
+    registry["banners"].as_array_mut().unwrap().push(banner);
+    registry["events"]["future_event"] = json!([{"sound_id":original,"banner_id":banner_id}]);
+    registry
+}
+
+#[test]
+fn taxonomy_legacy_and_absent_versions_have_identical_admission() {
+    let (root, path, ann) = fixture("taxonomy-legacy");
+    let absent = Package::open(&path).unwrap();
+    let mut registry = absent.registry.clone();
+    registry["taxonomy_version"] = "1.1".into();
+    write_registry(&root, &ann, &registry);
+    let explicit = g_ann_package::create(
+        &root.join("source"),
+        &format!("{ann}.json"),
+        &root.join("legacy.gann"),
+    )
+    .unwrap();
+    let report = explicit.validate_playback_with_report().unwrap();
+    assert_eq!(report, absent.validate_playback_with_report().unwrap());
+    assert_eq!(report.pack_taxonomy_version, "1.1");
+    assert_eq!(
+        report.runtime_taxonomy_version,
+        g_ann_package::taxonomy_version()
+    );
+    assert!(report.inert_events.is_empty());
+    assert_eq!(explicit.registry["events"], absent.registry["events"]);
+    assert!(explicit.registry["events"]["enemy_missing"].is_null());
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn taxonomy_newer_minor_reports_verified_inert_ids_and_preserves_known_mapping() {
+    let (root, path, ann) = fixture("taxonomy-future");
+    let original = Package::open(&path).unwrap();
+    let registry = future_registry(&root, &original);
+    write_registry(&root, &ann, &registry);
+    let package = g_ann_package::create(
+        &root.join("source"),
+        &format!("{ann}.json"),
+        &root.join("future.gann"),
+    )
+    .unwrap();
+    let report = package.validate_playback_with_report().unwrap();
+    assert_eq!(report.inert_events.len(), 1);
+    assert_eq!(
+        report.inert_events["future_event"],
+        format!(
+            "inert: unknown to taxonomy {}",
+            g_ann_package::taxonomy_version()
+        )
+    );
+    assert_eq!(
+        package.registry["events"]["kill"],
+        original.registry["events"]["kill"]
+    );
+    // The original Result<(), String> API applies exactly the same admission.
+    package.validate_playback().unwrap();
+    for entry in &package.index.files {
+        assert_eq!(sha256(&package.read(&entry.path).unwrap()), entry.sha256);
+    }
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn taxonomy_unknown_event_still_checks_hash_pairing_and_media_format() {
+    let (root, path, ann) = fixture("taxonomy-integrity");
+    let original = Package::open(&path).unwrap();
+    let registry = future_registry(&root, &original);
+    let mut bad_hash = registry.clone();
+    bad_hash["sounds"][3]["sha256"] = "0".repeat(64).into();
+    write_registry(&root, &ann, &bad_hash);
+    let error = g_ann_package::create(
+        &root.join("source"),
+        &format!("{ann}.json"),
+        &root.join("bad-hash.gann"),
+    )
+    .err()
+    .unwrap();
+    assert!(error.contains("sound file/hash reference"), "{error}");
+    assert!(!root.join("bad-hash.gann").exists());
+
+    let mut bad_pair = registry.clone();
+    bad_pair["events"]["future_event"][0]["sound_id"] = registry["sounds"][0]["sound_id"].clone();
+    assert!(g_ann_package::validate_playback_registry(&bad_pair)
+        .unwrap_err()
+        .contains("pairing"));
+
+    let mut bad_video = registry.clone();
+    let video = include_bytes!("fixtures/with-audio.webm");
+    let visual = &mut bad_video["banners"][1]["visual_source"];
+    fs::write(
+        root.join("source").join(visual["video"].as_str().unwrap()),
+        video,
+    )
+    .unwrap();
+    visual["sha256"] = sha256(video).into();
+    write_registry(&root, &ann, &bad_video);
+    let package = g_ann_package::create(
+        &root.join("source"),
+        &format!("{ann}.json"),
+        &root.join("bad-video.gann"),
+    )
+    .unwrap();
+    assert!(package.validate_playback_with_report().is_err());
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn taxonomy_wrong_major_install_preserves_selection_and_installed_bytes() {
+    let _order = INSTALL_TESTS.lock().unwrap();
+    let (root, path, ann) = fixture("taxonomy-major");
+    let voice = root.join("voice");
+    let original = g_ann_package::install(&path, &voice).unwrap();
+    fs::write(voice.join("active-pack.txt"), &ann).unwrap();
+    let mut registry = Package::open(&path).unwrap().registry;
+    registry["taxonomy_version"] = "2.0".into();
+    write_registry(&root, &ann, &registry);
+    let future = root.join("major.gann");
+    g_ann_package::create(&root.join("source"), &format!("{ann}.json"), &future).unwrap();
+    let error = g_ann_package::install(&future, &voice).unwrap_err();
+    assert!(error.contains("taxonomy major mismatch"), "{error}");
+    assert_eq!(
+        fs::read_to_string(voice.join("active-pack.txt")).unwrap(),
+        ann
+    );
+    assert_eq!(
+        fs::read(original.pack_dir.join(format!("{ann}.json"))).unwrap(),
+        Package::open(&path)
+            .unwrap()
+            .read(&format!("{ann}.json"))
+            .unwrap()
+    );
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn taxonomy_rejects_malformed_versions_and_unknown_ids_at_or_below_runtime() {
+    let (root, path, _) = fixture("taxonomy-grammar");
+    let package = Package::open(&path).unwrap();
+    for value in [
+        json!("1"),
+        json!("x.y"),
+        json!("1.2.3"),
+        json!("01.2"),
+        json!("1.02"),
+        json!("+1.2"),
+        json!("1.2 "),
+        json!("1.-2"),
+        json!("1.4294967296"),
+        json!(null),
+        json!(1.2),
+    ] {
+        let mut registry = package.registry.clone();
+        registry["taxonomy_version"] = value.clone();
+        let error = g_ann_package::validate_playback_registry(&registry).unwrap_err();
+        assert!(
+            error.contains("Invalid taxonomy_version"),
+            "{value}: {error}"
+        );
+    }
+    for version in ["1.0", "1.1", "1.2", "1.3", "1.10"] {
+        let mut known_only = package.registry.clone();
+        known_only["taxonomy_version"] = version.into();
+        assert!(g_ann_package::validate_playback_registry(&known_only)
+            .unwrap()
+            .inert_events
+            .is_empty());
+    }
+    let registry = future_registry(&root, &package);
+    let mut numeric_minor = registry.clone();
+    numeric_minor["taxonomy_version"] = "1.10".into();
+    assert!(g_ann_package::validate_playback_registry(&numeric_minor)
+        .unwrap()
+        .inert_events
+        .contains_key("future_event"));
+    for version in [None, Some("1.1"), Some("1.2")] {
+        let mut registry = registry.clone();
+        if let Some(version) = version {
+            registry["taxonomy_version"] = version.into();
+        } else {
+            registry.as_object_mut().unwrap().remove("taxonomy_version");
+        }
+        let error = g_ann_package::validate_playback_registry(&registry).unwrap_err();
+        assert!(error.contains("unknown event"), "{error}");
+    }
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn taxonomy_event_bound_is_independent_of_the_known_event_count() {
+    let (root, path, _) = fixture("taxonomy-bound");
+    let mut registry = Package::open(&path).unwrap().registry;
+    registry["taxonomy_version"] = "1.3".into();
+    let template = registry["banners"][0].clone();
+    for n in 1..128 {
+        let event = format!("future_{n}");
+        let id = format!("bnr_10000000-0000-0000-0000-{n:012x}");
+        let mut banner = template.clone();
+        banner["banner_id"] = id.clone().into();
+        banner["event_key"] = event.clone().into();
+        banner["visual_source"]["video"] = format!("video/{id}.webm").into();
+        registry["events"][&event] =
+            json!([{"sound_id":template["original_sound_id"],"banner_id":id}]);
+        registry["banners"].as_array_mut().unwrap().push(banner);
+    }
+    assert_eq!(
+        g_ann_package::validate_playback_registry(&registry)
+            .unwrap()
+            .inert_events
+            .len(),
+        127
+    );
+    registry["events"]["overflow"] = json!([]);
+    assert!(g_ann_package::validate_playback_registry(&registry)
+        .unwrap_err()
+        .contains("event count"));
     fs::remove_dir_all(root).unwrap();
 }
