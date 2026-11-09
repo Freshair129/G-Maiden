@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-08T22:03:17.300Z",
+  "generatedAt": "2026-11-09T00:20:00.692Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -825,6 +825,13 @@
       "type": "doc",
       "path": "docs/engineering/GIT-WORKTREE-POLICY.md",
       "title": "Git and Worktree Lifecycle Policy",
+      "status": "active"
+    },
+    {
+      "id": "docs/features/FEAT-G-ANNOUNCER.md",
+      "type": "doc",
+      "path": "docs/features/FEAT-G-ANNOUNCER.md",
+      "title": "FEAT-G-ANNOUNCER — Announcer event detection and taxonomy",
       "status": "active"
     },
     {
@@ -2090,51 +2097,57 @@
     },
     {
       "from": "docs/DOC-INDEX.md",
+      "to": "docs/features/FEAT-G-ANNOUNCER.md",
+      "type": "wikilink",
+      "line": 151
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
       "to": "docs/change request/CR-047-pro-tier-entitlement-contract.md",
       "type": "wikilink",
-      "line": 166
+      "line": 168
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/change request/CR-049-event-taxonomy-sot.md",
       "type": "wikilink",
-      "line": 167
+      "line": 169
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/operations/g-party-social-operations.md",
       "type": "wikilink",
-      "line": 172
+      "line": 174
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/scaffold-setup.md",
       "type": "wikilink",
-      "line": 191
+      "line": 193
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/small-model-prompting.md",
       "type": "wikilink",
-      "line": 193
+      "line": 195
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/research/concepts/subagent-context-scoping.md",
       "type": "wikilink",
-      "line": 198
+      "line": 200
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
       "type": "wikilink",
-      "line": 209
+      "line": 211
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/superpowers/plans/2026-11-01-g-party-friends.md",
       "type": "wikilink",
-      "line": 211
+      "line": 213
     },
     {
       "from": "docs/README.md",
@@ -7645,6 +7658,24 @@
       "line": 89
     },
     {
+      "from": "docs/features/FEAT-G-ANNOUNCER.md",
+      "to": "docs/architecture/adr/ADR-21-event-taxonomy-sot.md",
+      "type": "wikilink",
+      "line": 17
+    },
+    {
+      "from": "docs/features/FEAT-G-ANNOUNCER.md",
+      "to": "docs/architecture/gann-event-media-contract.md",
+      "type": "wikilink",
+      "line": 24
+    },
+    {
+      "from": "docs/features/FEAT-G-ANNOUNCER.md",
+      "to": "docs/features/FEAT-G-SIGNAL.md",
+      "type": "wikilink",
+      "line": 33
+    },
+    {
       "from": "docs/features/FEAT-G-ARENA.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
@@ -10209,7 +10240,7 @@
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 151,
+      "line": 153,
       "reason": "glob-slug",
       "slug": "FEAT-G-*"
     },
@@ -10247,6 +10278,14 @@
       "file": "docs/architecture/spikes/S-1-minimap-cv.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 82,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/announcer.rs",
+      "anchor": 97,
+      "symbol": "most_important"
     },
     {
       "file": "docs/change request/CR-007-frostline-deck-refresh.md",
@@ -10380,25 +10419,25 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-08T22:03:27.410Z",
+    "generatedAt": "2026-11-09T00:20:08.998Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
-    "rowCount": 76,
+    "rowCount": 77,
     "byKind": {
-      "feature": 51,
+      "feature": 52,
       "nfr": 6,
       "fr": 19
     },
     "byStatus": {
       "designed": 1,
-      "code+tests-present (unrun)": 15,
+      "code+tests-present (unrun)": 16,
       "code+needs-test-or-review": 19,
       "doc-only": 30,
       "in-code": 11
     },
     "byDrift": {
       "status-understated": 2,
-      "aligned": 68,
+      "aligned": 69,
       "unclaimed": 6
     },
     "rows": [
@@ -10471,6 +10510,20 @@
           "tests not run (--run-tests)"
         ],
         "source": "bootstrap-extraction, pruned 2026-07-20"
+      },
+      {
+        "id": "1.1-g-announcer",
+        "kind": "feature",
+        "phase_target": "P3",
+        "phase_source": "doc",
+        "phase_target_source": "derived",
+        "computed": "code+tests-present (unrun)",
+        "claimed": "code+tests-present",
+        "drift": "aligned",
+        "gaps": [
+          "tests not run (--run-tests)"
+        ],
+        "source": "CR-049 (2026-11-09)"
       },
       {
         "id": "1.1-g-master",
@@ -11520,6 +11573,12 @@
         "type": "status-understated",
         "blocking": false,
         "detail": "claimed=code+needs-test-or-review below computed=code+tests-present (unrun)"
+      },
+      {
+        "id": "1.1-g-announcer",
+        "type": "unbacked-phase-source",
+        "blocking": false,
+        "detail": "phase_source: doc but no refs.docs entry both resolves on disk and states a phase (**Phase:** line) — phase_target rendered as derived"
       },
       {
         "id": "fr-4.2.2",

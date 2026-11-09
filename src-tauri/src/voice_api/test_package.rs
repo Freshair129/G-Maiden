@@ -4,6 +4,15 @@ use std::{
 };
 
 pub(crate) fn install(root: &Path, serial: u64, event: &str) -> (String, PathBuf, PathBuf) {
+    try_install(root, serial, event)
+        .unwrap_or_else(|error| panic!("failed to import event {event}: {error}"))
+}
+
+pub(crate) fn try_install(
+    root: &Path,
+    serial: u64,
+    event: &str,
+) -> Result<(String, PathBuf, PathBuf), String> {
     install_with_variants(root, serial, event, false, &[])
 }
 
@@ -12,7 +21,7 @@ pub(crate) fn install_two_variants(
     serial: u64,
     event: &str,
 ) -> (String, PathBuf, PathBuf) {
-    install_with_variants(root, serial, event, true, &[])
+    install_with_variants(root, serial, event, true, &[]).unwrap()
 }
 
 /// One verified package with two `kill` pairs and single-pair event mappings.
@@ -26,6 +35,7 @@ pub(crate) fn install_rotation_fixture(root: &Path, serial: u64) -> String {
         true,
         &["death", "gank", "danger", "revision"],
     )
+    .unwrap()
     .0
 }
 
@@ -35,7 +45,7 @@ fn install_with_variants(
     event: &str,
     second: bool,
     single_pair_events: &[&str],
-) -> (String, PathBuf, PathBuf) {
+) -> Result<(String, PathBuf, PathBuf), String> {
     let id = format!("ann_00000000-0000-0000-0000-{serial:012x}");
     let original = format!("snd_00000000-0000-0000-0000-{:012x}", serial * 3);
     let mixed = format!("snd_00000000-0000-0000-0000-{:012x}", serial * 3 + 1);
@@ -134,11 +144,11 @@ fn install_with_variants(
     g_ann_package::create(&source, &manifest, &archive).unwrap();
     static INSTALL: std::sync::Mutex<()> = std::sync::Mutex::new(());
     let _order = INSTALL.lock().unwrap();
-    super::import_file(&archive).unwrap();
+    super::import_file(&archive)?;
     let dir = root.join("packs").join(&id);
-    (
+    Ok((
         id,
         dir.join(format!("audio/{original}.wav")),
         dir.join(format!("audio/{mixed}.wav")),
-    )
+    ))
 }
