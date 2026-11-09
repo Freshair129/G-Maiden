@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-09T01:29:37.458Z",
+  "generatedAt": "2026-11-09T02:44:51.625Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -329,6 +329,13 @@
       "path": "docs/audits/2026-10-28-related-webviews-memory-spike.md",
       "title": "G-Maiden — Related WebViews Memory Spike",
       "status": "draft"
+    },
+    {
+      "id": "docs/audits/2026-11-09-mvp011-runtime-rundown.md",
+      "type": "doc",
+      "path": "docs/audits/2026-11-09-mvp011-runtime-rundown.md",
+      "title": "G-Maiden MVP-011 Phase A runtime rundown",
+      "status": "active"
     },
     {
       "id": "docs/audits/SEC-001-auth-identity-hardening.md",
@@ -1130,7 +1137,9 @@
     {
       "id": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "type": "doc",
-      "path": "docs/rca/2026-07-10-voice-pack-path-traversal.md"
+      "path": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "title": "RCA — voice-pack manifest path traversal + archive zip-slip",
+      "status": "historical"
     },
     {
       "id": "docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md",
@@ -3126,15 +3135,21 @@
     },
     {
       "from": "docs/architecture/gann-event-media-contract.md",
+      "to": "docs/architecture/adr/ADR-21-event-taxonomy-sot.md",
+      "type": "wikilink",
+      "line": 18
+    },
+    {
+      "from": "docs/architecture/gann-event-media-contract.md",
       "to": "docs/architecture/gann-package-v1-local-authoring.md",
       "type": "wikilink",
-      "line": 48
+      "line": 50
     },
     {
       "from": "docs/architecture/gann-event-media-contract.md",
       "to": "docs/superpowers/plans/2026-10-31-gann-only-events.md",
       "type": "wikilink",
-      "line": 58
+      "line": 62
     },
     {
       "from": "docs/architecture/gann-package-v1-local-authoring.md",
@@ -3837,6 +3852,18 @@
       "to": "docs/audits/2026-10-28-mvp011-readiness-semantics-plan.md",
       "type": "wikilink",
       "line": 48
+    },
+    {
+      "from": "docs/audits/2026-11-09-mvp011-runtime-rundown.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 15
+    },
+    {
+      "from": "docs/audits/2026-11-09-mvp011-runtime-rundown.md",
+      "to": "docs/product/mvp-backlog.md",
+      "type": "wikilink",
+      "line": 15
     },
     {
       "from": "docs/audits/SEC-001-auth-identity-hardening.md",
@@ -9896,55 +9923,25 @@
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "docs/audits/2026-07-07-independent-full-audit.md",
       "type": "wikilink",
-      "line": 52
+      "line": 61
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/voice_api/mod.rs",
       "type": "symbol",
-      "line": 3
+      "line": 12
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/audio.rs",
       "type": "symbol",
-      "line": 6
+      "line": 15
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/voice_api/commands.rs",
       "type": "symbol",
-      "line": 6
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/path_safety.rs",
-      "type": "symbol",
-      "line": 7
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 9
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/pack_io.rs",
-      "type": "symbol",
-      "line": 10
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/commands.rs",
-      "type": "symbol",
-      "line": 10
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/commands.rs",
-      "type": "symbol",
-      "line": 12
+      "line": 15
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
@@ -9954,61 +9951,55 @@
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/audio.rs",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 18
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/pack_io.rs",
       "type": "symbol",
       "line": 19
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
+      "to": "src-tauri/src/voice_api/commands.rs",
       "type": "symbol",
-      "line": 20
+      "line": 19
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
+      "to": "src-tauri/src/voice_api/commands.rs",
       "type": "symbol",
       "line": 21
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/pack_io.rs",
-      "type": "symbol",
-      "line": 23
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/commands.rs",
-      "type": "symbol",
-      "line": 24
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/commands.rs",
+      "to": "src-tauri/src/voice_api/path_safety.rs",
       "type": "symbol",
       "line": 25
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/pack_io.rs",
-      "type": "symbol",
-      "line": 25
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 26
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/gsi.rs",
+      "to": "src-tauri/src/audio.rs",
       "type": "symbol",
       "line": 28
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/mod.rs",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 29
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 30
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/pack_io.rs",
       "type": "symbol",
       "line": 32
     },
@@ -10016,85 +10007,121 @@
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/voice_api/commands.rs",
       "type": "symbol",
-      "line": 37
+      "line": 33
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/commands.rs",
+      "type": "symbol",
+      "line": 34
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/voice_api/pack_io.rs",
+      "type": "symbol",
+      "line": 34
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 35
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/gsi.rs",
+      "type": "symbol",
+      "line": 37
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/mod.rs",
       "type": "symbol",
       "line": 41
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/pack_io.rs",
+      "to": "src-tauri/src/voice_api/commands.rs",
       "type": "symbol",
-      "line": 42
+      "line": 46
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/mod.rs",
+      "to": "src-tauri/src/voice_api/pack_io.rs",
+      "type": "symbol",
+      "line": 50
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/pack_io.rs",
       "type": "symbol",
       "line": 51
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/mod.rs",
+      "type": "symbol",
+      "line": 60
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/voice_api/pack_io.rs",
       "type": "symbol",
-      "line": 55
+      "line": 64
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/voice_api/commands.rs",
       "type": "symbol",
-      "line": 55
+      "line": 64
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/voice_api/mod.rs",
       "type": "symbol",
-      "line": 58
+      "line": 67
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/voice_api/mod.rs",
       "type": "symbol",
-      "line": 60
+      "line": 69
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/voice_api/path_safety.rs",
       "type": "symbol",
-      "line": 60
+      "line": 69
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/voice_api/commands.rs",
       "type": "symbol",
-      "line": 60
+      "line": 69
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/voice_api/banner.rs",
       "type": "symbol",
-      "line": 61
+      "line": 70
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/voice_api/banner.rs",
       "type": "symbol",
-      "line": 61
+      "line": 70
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/voice_api/banner.rs",
       "type": "symbol",
-      "line": 61
+      "line": 70
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/voice_api/pack_io.rs",
       "type": "symbol",
-      "line": 61
+      "line": 70
     },
     {
       "from": "docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md",
@@ -10308,9 +10335,25 @@
       "reason": "no-metadata"
     },
     {
+      "file": "docs/architecture/engineering-spec.md",
+      "line": 277,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/companion.ts",
+      "anchor": 1201,
+      "symbol": "useCompanionData"
+    },
+    {
       "file": "docs/architecture/spikes/S-1-minimap-cv.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/audits/2026-07-07-independent-full-audit.md",
+      "line": 122,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/companion.ts",
+      "anchor": 1201,
+      "symbol": "useCompanionData"
     },
     {
       "file": "docs/change request/CR-007-frostline-deck-refresh.md",
@@ -10377,6 +10420,22 @@
       "changelog": "0.1.0"
     },
     {
+      "file": "docs/design-system/04-components.md",
+      "line": 257,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4246,
+      "symbol": "gm-hero-slot"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 414,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4249,
+      "symbol": "g-sig"
+    },
+    {
       "file": "docs/design-system/landing_page_prompt.md",
       "line": null,
       "reason": "no-metadata"
@@ -10418,7 +10477,7 @@
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 28,
+      "line": 37,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/gsi.rs",
       "anchor": 783,
@@ -10452,7 +10511,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-09T01:29:44.785Z",
+    "generatedAt": "2026-11-09T02:44:58.684Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 77,

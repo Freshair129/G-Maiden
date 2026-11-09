@@ -3,6 +3,7 @@ import { listen } from '@tauri-apps/api/event'
 import { C } from '../theme'
 import { panel, Gem } from '../primitives'
 import type { GsiStatus, SetupStatus } from '../types'
+import { buildGsiSetupHealth } from '../gsiSetupHealth'
 import {
   chooseDotaInstallPath,
   detectGsiSetup,
@@ -62,8 +63,8 @@ export const Welcome: React.FC<{ onDone: () => void }> = ({ onDone }) => {
     catch (error) { setPathError(`เปลี่ยนตำแหน่ง Dota 2 ไม่สำเร็จ: ${String(error)}`) }
     finally { setBusy(false) }
   }
-  const step1Done = st?.installed === true
-  const portConflict = health?.server_state === 'port_conflict'
+  const setupHealth = buildGsiSetupHealth(st, health)
+  const step1Done = setupHealth.stages.configValid.state === 'ok'
   const overlay: React.CSSProperties = {
     position: 'fixed', inset: 0, background: 'rgba(8,9,12,0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
     display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50,
@@ -118,11 +119,16 @@ export const Welcome: React.FC<{ onDone: () => void }> = ({ onDone }) => {
 
           <div style={{ marginLeft: 38, fontSize: 12, color: C.mut, lineHeight: 1.55 }}>
             <div style={{ color: C.txt, fontWeight: 600 }}>สถานะการเชื่อมต่อ</div>
-            <div>{!health ? 'กำลังตรวจพอร์ต GSI…' : health.server_state === 'listening' ? 'listener พร้อมรับ GSI' : health.server_state === 'port_conflict' ? 'พอร์ต 3000 ถูกใช้งาน ซึ่งกระทบทั้ง GSI และ Google OAuth callback' : health.server_state === 'bind_error' ? 'เปิดพอร์ต 3000 ไม่สำเร็จ ตรวจโปรแกรมที่ใช้งานพอร์ตแล้วลองตรวจซ้ำ' : 'กำลังเริ่ม listener…'}</div>
-            <div>{health?.gsi_freshness === 'stale'
-              ? `Dota 2 ยังเปิด แต่ feed GSI ล้าสมัย${health.gsi_age_ms === null ? '' : ` ${(health.gsi_age_ms / 1000).toFixed(1)} วินาที`}; Maiden จะพักข้อสรุปจากสถานะผู้เล่นจน feed กลับมา`
-              : health?.gsi_active ? 'ได้รับข้อมูลเกมล่าสุดแล้ว · live' : health?.dota_running ? 'Dota 2 เปิดอยู่แต่ยังไม่ส่งข้อมูล; หลังติดตั้งหรือซ่อม config ให้ปิดแล้วเปิดเกมใหม่' : 'รอเปิด Dota 2'}</div>
-            {portConflict && <div>ปิด G-Maiden ที่เปิดซ้ำหรือโปรแกรมที่ใช้พอร์ตนี้ แล้วระบบจะลองเชื่อมต่อใหม่อัตโนมัติทุก 3 วินาที</div>}
+            {Object.entries(setupHealth.stages).map(([key, stage], index) => (
+              <div key={key} style={{ color: stage.state === 'ok' ? C.ok : stage.state === 'blocked' ? C.warn : C.mut }}>
+                {index + 1}. {stage.text}
+              </div>
+            ))}
+            <div role={setupHealth.oauthCallback.state === 'blocked' ? 'alert' : undefined}
+              style={{ color: setupHealth.oauthCallback.state === 'blocked' ? C.warn : C.mut }}>
+              {setupHealth.oauthCallback.text}
+            </div>
+            {setupHealth.remediation.map((text) => <div key={text}>{text}</div>)}
           </div>
         </div>
 

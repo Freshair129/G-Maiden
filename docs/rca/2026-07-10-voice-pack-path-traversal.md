@@ -1,3 +1,12 @@
+---
+title: "RCA — voice-pack manifest path traversal + archive zip-slip"
+doc_id: "2026-07-10-voice-pack-path-traversal"
+status: historical
+version: "0.1.0"
+updated: "2026-11-09"
+owner: "G-Maiden"
+---
+
 # RCA — voice-pack manifest path traversal + archive zip-slip
 
 - **Symptom:** [`src-tauri/src/voice_api.rs`](file:///g:/G-Maiden/src-tauri/src/voice_api/mod.rs) joined three attacker-influenced
@@ -38,7 +47,7 @@
     (traversal entry, absolute-path entry, clean archive) — all pass under
     `cargo test`; `cargo clippy --all-targets -- -D warnings` is clean.
 - **Root Cause:** the codebase had one existing, well-tested sanitizer
-  ([`sanitize_id`](file:///g:/G-Maiden/src-tauri/src/voice_api/pack_io.rs#L962), applied to `pack_id` and to *upload* file names via
+  ([`sanitize_id`](file:///g:/G-Maiden/src-tauri/src/voice_api/pack_io.rs#L966), applied to `pack_id` and to *upload* file names via
   [`sanitize_file_name`](file:///g:/G-Maiden/src-tauri/src/voice_api/pack_io.rs)) but no equivalent guard for strings that arrive
   through `manifest.json` content itself. The manifest was implicitly
   trusted as "our own file format" even though it ships inside user-imported
@@ -71,3 +80,9 @@
   partially extracted. Any future manifest-derived (or archive-entry-derived)
   path join must go through one of these two helpers — reviewers should treat
   a bare `dir.join(<manifest field>)` in this file as a rejected pattern.
+
+## Changelog
+
+| Version | Date | Change |
+| --- | --- | --- |
+| 0.1.0 | 2026-11-09 | Retain the original RCA as historical evidence; add document metadata and refresh the sanitize_id source anchor after CR-049 PR2 admission logging. |
