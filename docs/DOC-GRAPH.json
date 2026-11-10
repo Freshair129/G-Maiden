@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-02T15:40:26.397Z",
+  "generatedAt": "2026-11-02T19:01:09.683Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -1155,6 +1155,13 @@
       "path": "docs/superpowers/plans/2026-11-02-native-media-preview-budget.md",
       "title": "Native media minimap preview budget",
       "status": "active"
+    },
+    {
+      "id": "docs/superpowers/plans/2026-11-03-gann-variant-selection.md",
+      "type": "doc",
+      "path": "docs/superpowers/plans/2026-11-03-gann-variant-selection.md",
+      "title": "GANN variant selection without consecutive repeats",
+      "status": "draft"
     },
     {
       "id": "docs/superpowers/specs/2026-10-29-minimap-live-preview-60fps-design.md",
@@ -11356,7 +11363,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-02T15:40:46.822Z",
+    "generatedAt": "2026-11-02T19:01:14.706Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,

@@ -72,6 +72,8 @@ mod voice_api;
 mod vrzo_mix;
 mod vrzo_playback;
 mod webview_bootstrap;
+#[cfg(debug_assertions)]
+mod gsi_replay_test;
 
 /// The update found by the last `check_channel_update`, held so `install_pending_update`
 /// installs exactly what the user was shown rather than re-resolving and racing a
@@ -366,7 +368,7 @@ fn quit_application(app: tauri::AppHandle) {
 #[tauri::command]
 async fn speak_event(app: tauri::AppHandle, event: String) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || {
-        voice_api::play_event(app, event, 0, true, audio::Priority::Normal)
+        voice_api::play_event(app, event, 0, true, audio::Priority::Normal, None)
     })
     .await
     .map_err(|e| e.to_string())?
@@ -915,6 +917,7 @@ async fn preview_announcer_variant(
                 let _ = tx.try_send(outcome == audio::PlaybackResult::Admitted);
             },
             observer,
+            None,
         );
         if rx
             .recv_timeout(std::time::Duration::from_secs(3))
@@ -1440,7 +1443,31 @@ fn delete_all_match_logs() -> Result<u32, String> {
 /// Runs the Tauri application. Called from the thin `main.rs` bin shim — kept
 /// as a plain function (not `fn main`) so external tools (e.g. `tests/perf`)
 /// can depend on this crate as a library without linking the app entry point.
+#[cfg(any(not(debug_assertions), test))]
+fn replay_test_arguments_present(args: &[std::ffi::OsString]) -> bool {
+    args.iter().any(|arg| {
+        matches!(
+            arg.to_str(),
+            Some(
+                "--gsi-replay-test"
+                    | "--expected-binary-sha256"
+                    | "--first-sequence"
+                    | "--expected-record-count"
+            )
+        )
+    })
+}
+
 pub fn run() {
+    #[cfg(debug_assertions)]
+    if let Some(code) = gsi_replay_test::run_if_requested() {
+        std::process::exit(code);
+    }
+    #[cfg(not(debug_assertions))]
+    if replay_test_arguments_present(&std::env::args_os().skip(1).collect::<Vec<_>>()) {
+        eprintln!("GSI replay test host is debug-build-only");
+        std::process::exit(2);
+    }
     if let Some(code) = minimap_preview_process::run_if_requested() {
         std::process::exit(code);
     }
@@ -1726,4 +1753,22 @@ pub fn run() {
                 }
             }
         });
+}
+
+#[cfg(test)]
+mod replay_test_argument_guard_tests {
+    use super::replay_test_arguments_present;
+    use std::ffi::OsString;
+
+    #[test]
+    fn replay_host_arguments_are_recognized_for_fail_closed_startup() {
+        assert!(replay_test_arguments_present(&[
+            OsString::from("--gsi-replay-test")
+        ]));
+        assert!(replay_test_arguments_present(&[
+            OsString::from("--expected-binary-sha256"),
+            OsString::from("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"),
+        ]));
+        assert!(!replay_test_arguments_present(&[]));
+    }
 }

@@ -4,6 +4,14 @@ use std::{
 };
 
 pub(crate) fn install(root: &Path, serial: u64, event: &str) -> (String, PathBuf, PathBuf) {
+    install_with_variants(root, serial, event, false)
+}
+
+pub(crate) fn install_two_variants(root: &Path, serial: u64, event: &str) -> (String, PathBuf, PathBuf) {
+    install_with_variants(root, serial, event, true)
+}
+
+fn install_with_variants(root: &Path, serial: u64, event: &str, second: bool) -> (String, PathBuf, PathBuf) {
     let id = format!("ann_00000000-0000-0000-0000-{serial:012x}");
     let original = format!("snd_00000000-0000-0000-0000-{:012x}", serial * 3);
     let mixed = format!("snd_00000000-0000-0000-0000-{:012x}", serial * 3 + 1);
@@ -39,13 +47,33 @@ pub(crate) fn install(root: &Path, serial: u64, event: &str) -> (String, PathBuf
     fs::write(source.join(format!("audio/{original}.wav")), &wav).unwrap();
     fs::write(source.join(format!("audio/{mixed}.wav")), &mixed_wav).unwrap();
     fs::write(source.join(format!("video/{banner}.webm")), video).unwrap();
-    let registry = serde_json::json!({"schema_version":1,"announcer_id":id,"revision":1,"name":"GANN test","locale":"th",
+    let mut registry = serde_json::json!({"schema_version":1,"announcer_id":id,"revision":1,"name":"GANN test","locale":"th",
         "sounds":[{"sound_id":original,"role":"original_voice","label":"original","path":format!("audio/{original}.wav"),"sha256":g_ann_package::sha256(&wav)},
           {"sound_id":mixed,"role":"mixed_voice_sfx","label":"played","path":format!("audio/{mixed}.wav"),"sha256":g_ann_package::sha256(&mixed_wav)}],
         "events":{(event):[{"sound_id":original,"banner_id":banner}]},
         "banners":[{"banner_id":banner,"event_key":event,"original_sound_id":original,"playback_sound_id":mixed,
           "visual_source":{"root":".","silent":true,"video":format!("video/{banner}.webm"),"sha256":g_ann_package::sha256(video)},
           "components":[],"cues":[],"config":{"duration_seconds":0.01}}],"components":[],"unmapped_sound_ids":[]});
+    if second {
+        let original2 = format!("snd_10000000-0000-0000-0000-{:012x}", serial * 3);
+        let mixed2 = format!("snd_10000000-0000-0000-0000-{:012x}", serial * 3 + 1);
+        let banner2 = format!("bnr_10000000-0000-0000-0000-{serial:012x}");
+        let mut wav2 = wav.clone();
+        let mut mixed_wav2 = mixed_wav.clone();
+        wav2[44..46].copy_from_slice(&150i16.to_le_bytes());
+        mixed_wav2[44..46].copy_from_slice(&300i16.to_le_bytes());
+        fs::write(source.join(format!("audio/{original2}.wav")), &wav2).unwrap();
+        fs::write(source.join(format!("audio/{mixed2}.wav")), &mixed_wav2).unwrap();
+        fs::write(source.join(format!("video/{banner2}.webm")), video).unwrap();
+        registry["sounds"].as_array_mut().unwrap().extend([
+            serde_json::json!({"sound_id":original2,"role":"original_voice","label":"second original","path":format!("audio/{original2}.wav"),"sha256":g_ann_package::sha256(&wav2)}),
+            serde_json::json!({"sound_id":mixed2,"role":"mixed_voice_sfx","label":"second played","path":format!("audio/{mixed2}.wav"),"sha256":g_ann_package::sha256(&mixed_wav2)})
+        ]);
+        registry["events"][event].as_array_mut().unwrap().push(serde_json::json!({"sound_id":original2,"banner_id":banner2}));
+        registry["banners"].as_array_mut().unwrap().push(serde_json::json!({"banner_id":banner2,"event_key":event,"original_sound_id":original2,"playback_sound_id":mixed2,
+          "visual_source":{"root":".","silent":true,"video":format!("video/{banner2}.webm"),"sha256":g_ann_package::sha256(video)},
+          "components":[],"cues":[],"config":{"duration_seconds":0.01}}));
+    }
     let manifest = format!("{id}.json");
     fs::write(
         source.join(&manifest),

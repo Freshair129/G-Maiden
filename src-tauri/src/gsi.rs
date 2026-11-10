@@ -38,6 +38,8 @@ const OVERLAY_MODULE_IDS: [&str; 19] = [
 const SETTINGS_EVENT: &str = "settings";
 const OVERLAY_LAYOUT_SYNC_EVENT: &str = "overlay-layout-sync";
 const GSI_STATUS_INTERVAL_MS: u64 = 500;
+#[cfg(debug_assertions)]
+pub(crate) const SYNTHETIC_REPLAY_PLAYER_ID: &str = "gtrace-synthetic-player";
 
 /// Clean, UI-facing snapshot of the current game state.
 #[derive(Serialize, serde::Deserialize, Clone, Default)]
@@ -197,7 +199,7 @@ fn is_in_draft(game_state: &str) -> bool {
     )
 }
 
-fn lifecycle_for_tick(tick: &GameTick) -> crate::runtime::MatchLifecycle {
+pub(crate) fn lifecycle_for_tick(tick: &GameTick) -> crate::runtime::MatchLifecycle {
     use crate::runtime::MatchLifecycle;
     match tick.game_state.as_str() {
         "DOTA_GAMERULES_STATE_DISCONNECT" => MatchLifecycle::Disconnected,
@@ -208,6 +210,18 @@ fn lifecycle_for_tick(tick: &GameTick) -> crate::runtime::MatchLifecycle {
 }
 
 fn parse_tick_from_value(v: &Value) -> GameTick {
+    let active_steam_id = crate::local_player::active_steam_id();
+    parse_tick_from_value_with_identity(v, IdentitySource::Active(active_steam_id.as_deref()))
+}
+
+#[derive(Clone, Copy)]
+enum IdentitySource<'a> {
+    Active(Option<&'a str>),
+    #[cfg(debug_assertions)]
+    Synthetic,
+}
+
+fn parse_tick_from_value_with_identity(v: &Value, identity: IdentitySource<'_>) -> GameTick {
     let game_state = s(v, &["map", "game_state"]);
     let gold = i(v, &["player", "gold"]);
     let raw_nw = i(v, &["player", "net_worth"]);
@@ -217,6 +231,17 @@ fn parse_tick_from_value(v: &Value) -> GameTick {
         crate::items::net_worth_from(&v["items"], gold)
     };
     let (kl_len, last_victim) = parse_kill_list(v);
+    let (steamid, local_player_verified) = match identity {
+        IdentitySource::Active(active_steam_id) => (
+            s(v, &["player", "steamid"]),
+            local_player_verified(v, active_steam_id),
+        ),
+        #[cfg(debug_assertions)]
+        IdentitySource::Synthetic => (
+            SYNTHETIC_REPLAY_PLAYER_ID.to_string(),
+            synthetic_player_verified(v),
+        ),
+    };
     GameTick {
         in_game: is_in_game(&game_state),
         clock_time: i(v, &["map", "clock_time"]),
@@ -241,11 +266,8 @@ fn parse_tick_from_value(v: &Value) -> GameTick {
         mana_percent: i(v, &["hero", "mana_percent"]),
         hp: i(v, &["hero", "health"]),
         max_hp: i(v, &["hero", "max_health"]),
-        steamid: s(v, &["player", "steamid"]),
-        local_player_verified: local_player_verified(
-            v,
-            crate::local_player::active_steam_id().as_deref(),
-        ),
+        steamid,
+        local_player_verified,
         buyback_cost: i(v, &["hero", "buyback_cost"]),
         respawn_seconds: i(v, &["hero", "respawn_seconds"]),
         kill_list_len: kl_len,
@@ -259,6 +281,14 @@ fn local_player_verified(v: &Value, active_steam_id: Option<&str>) -> bool {
     let player = s(v, &["player", "steamid"]);
     active_steam_id.is_some_and(|active| active.len() == 17 && active == player)
         && matches!(s(v, &["player", "team_name"]).as_str(), "radiant" | "dire")
+        && value_at(v, &["player", "activity"])
+            .is_none_or(|activity| activity.as_str() == Some("playing"))
+}
+
+#[cfg(debug_assertions)]
+fn synthetic_player_verified(v: &Value) -> bool {
+    let team_name = s(v, &["player", "team_name"]);
+    (team_name.eq_ignore_ascii_case("radiant") || team_name.eq_ignore_ascii_case("dire"))
         && value_at(v, &["player", "activity"])
             .is_none_or(|activity| activity.as_str() == Some("playing"))
 }
@@ -293,22 +323,62 @@ struct ParsedGsiPayload {
     party_observation: Option<g_party::LocalObservation>,
 }
 
+struct ParsedGsiCore {
+    tick: GameTick,
+    match_id: Option<String>,
+}
+
+fn decode_gsi_payload(body: &str) -> Result<Value, GsiPayloadError> {
+    serde_json::from_str(body).map_err(|_| GsiPayloadError::InvalidJson)
+}
+
+#[cfg(debug_assertions)]
+fn parse_gsi_payload_value(body: &str) -> Result<Value, GsiPayloadError> {
+    let value = decode_gsi_payload(body)?;
+    validate_gsi_payload(&value).map_err(|_| GsiPayloadError::InvalidSchema)?;
+    Ok(value)
+}
+
+fn parse_gsi_payload_core(value: &Value, identity: IdentitySource<'_>) -> ParsedGsiCore {
+    ParsedGsiCore {
+        tick: parse_tick_from_value_with_identity(value, identity),
+        match_id: match identity {
+            IdentitySource::Active(_) => parse_match_id(value),
+            #[cfg(debug_assertions)]
+            IdentitySource::Synthetic => None,
+        },
+    }
+}
+
 fn parse_gsi_payload_with_identity(body: &str) -> Result<ParsedGsiPayload, GsiPayloadError> {
-    let value: Value = serde_json::from_str(body).map_err(|_| GsiPayloadError::InvalidJson)?;
-    validate_gsi_payload(&value).map_err(|reason| {
+    let value = decode_gsi_payload(body)?;
+    if let Err(reason) = validate_gsi_payload(&value) {
         #[cfg(not(test))]
         log_schema_rejection(reason);
         #[cfg(test)]
         let _ = reason;
-        GsiPayloadError::InvalidSchema
-    })?;
-    let tick = parse_tick_from_value(&value);
+        return Err(GsiPayloadError::InvalidSchema);
+    }
+    let active_steam_id = crate::local_player::active_steam_id();
+    let ParsedGsiCore { tick, match_id } =
+        parse_gsi_payload_core(&value, IdentitySource::Active(active_steam_id.as_deref()));
     let party_observation = g_party::project_local(&value, tick.local_player_verified);
     Ok(ParsedGsiPayload {
         tick,
-        match_id: parse_match_id(&value),
+        match_id,
         party_observation,
     })
+}
+
+#[cfg(debug_assertions)]
+pub(crate) fn parse_gsi_payload_for_replay(body: &str) -> Result<GameTick, ()> {
+    let value = parse_gsi_payload_value(body).map_err(|_| ())?;
+    let parsed = parse_gsi_payload_core(&value, IdentitySource::Synthetic);
+    if parsed.tick.local_player_verified && parsed.tick.steamid == SYNTHETIC_REPLAY_PLAYER_ID {
+        Ok(parsed.tick)
+    } else {
+        Err(())
+    }
 }
 
 #[cfg(not(test))]
@@ -638,6 +708,7 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
                 epoch,
                 false,
                 crate::audio::Priority::Critical,
+                None,
             ) {
                 eprintln!("[G-AnnouncerMedia] phase=rejected owner=hp reason={reason}");
             }
@@ -710,6 +781,9 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
         {
             let app = app.clone();
             let epoch = session.session_epoch;
+            // Capture cancellation before dispatch: Stop can occur while the
+            // blocking-pool request is still queued.
+            let request_fence = crate::audio::AnnouncerRequestFence::capture();
             tauri::async_runtime::spawn_blocking(move || {
                 if let Err(reason) = crate::voice_api::play_event(
                     app,
@@ -717,6 +791,7 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
                     epoch,
                     false,
                     crate::audio::Priority::Announcer,
+                    Some(request_fence),
                 ) {
                     eprintln!("[G-AnnouncerMedia] phase=rejected reason={reason}");
                 }

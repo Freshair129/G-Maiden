@@ -20,8 +20,11 @@ webview2-com = "=0.39.1"
 webview2-core = { package = "windows-core", version = "=0.62.2" }
 serde      = { version = "1", features = ["derive"] }
 serde_json = "1"
-tokio      = { version = "1", features = ["rt-multi-thread", "net", "macros"] }
+tokio      = { version = "1", features = ["rt-multi-thread", "net", "macros", "io-util", "sync", "time"] }
 axum       = "0.7"
+hyper      = { version = "=1.10.1", default-features = false, features = ["http1", "server"] }
+hyper-util = { version = "=0.1.20", default-features = false, features = ["service", "tokio"] }
+http-body-util = "0.1"
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-updater = { version = "=2.10.1", path = "vendor/tauri-plugin-updater" }
 tauri-plugin-dialog = "=2.7.3"
@@ -30,6 +33,7 @@ tauri-plugin-store = "2"
 reqwest = { version = "0.13", features = ["blocking"] }
 base64 = "0.22"
 ring = "0.17"
+subtle = "2.6"
 windows-capture = { version = "2.0", optional = true }
 windows = { version = "0.61", features = [
     "Win32_Media_Speech",

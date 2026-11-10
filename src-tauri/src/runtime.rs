@@ -79,6 +79,26 @@ struct MatchSessionState {
     next_local_id: u64,
 }
 
+/// A session tracker with the same pure transition function as the production
+/// GSI observer, but with isolated state and no global lifecycle notifications.
+#[cfg(debug_assertions)]
+#[derive(Default)]
+pub(crate) struct IsolatedMatchSessionObserver {
+    state: MatchSessionState,
+}
+
+#[cfg(debug_assertions)]
+impl IsolatedMatchSessionObserver {
+    pub(crate) fn observe(
+        &mut self,
+        lifecycle: MatchLifecycle,
+        match_id: Option<String>,
+        clock_time: i64,
+    ) -> MatchSessionSnapshot {
+        observe_session_state(&mut self.state, lifecycle, match_id, clock_time).0
+    }
+}
+
 static MATCH_SESSION: Mutex<MatchSessionState> = Mutex::new(MatchSessionState {
     current: None,
     next_epoch: 0,
