@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-09T19:40:14.156Z",
+  "generatedAt": "2026-11-10T01:12:48.722Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -7712,6 +7712,12 @@
       "line": 33
     },
     {
+      "from": "docs/features/FEAT-G-ANNOUNCER.md",
+      "to": "docs/features/FEAT-G-SIGNAL.md",
+      "type": "wikilink",
+      "line": 112
+    },
+    {
       "from": "docs/features/FEAT-G-ARENA.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
@@ -10559,7 +10565,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-09T19:40:21.090Z",
+    "generatedAt": "2026-11-10T01:12:56.736Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 77,

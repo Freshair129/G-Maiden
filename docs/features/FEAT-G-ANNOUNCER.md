@@ -2,8 +2,8 @@
 title: "FEAT-G-ANNOUNCER — Announcer event detection and taxonomy"
 doc_id: "FEAT-G-ANNOUNCER"
 status: "active"
-version: "0.1.1"
-updated: "2026-11-09"
+version: "0.2.0"
+updated: "2026-11-10"
 owner: "Boss"
 source_of_truth: true
 complexity: "C-2"
@@ -69,6 +69,59 @@ pinned G-Suite snapshot.
 
 See CR-049 §5 (EVT-AC-001..008). Source and unit evidence are not live-match or acoustic acceptance.
 
+## 8. Pack mapping guidance
+
+Detection decides *when* an id fires; a pack decides *whether* it is voiced. Leaving an id
+unmapped is valid: it stays silent and logs `phase=unmapped`. Map an id only when the callout
+means the same thing as the trigger below. Triggers summarize `announcer.rs` `step()` on the
+date in the changelog; `g-events.toml` remains the id/rank source of truth.
+
+### 8.1 How ids fire together
+
+- One tick can emit several ids. `most_important()` voices only the highest `voice_rank`.
+- A kill without a multikill emits `kill`; with one it emits `double_kill`..`rampage` instead.
+  The same tick can also emit a streak rung (`killing_spree`..`beyond_godlike`) and
+  `first_blood`. Multikills (113..110) outrank streaks (99..70), which outrank `first_blood` (60)
+  and `kill` (50).
+- **Multikill** = kills inside the `multikill_window_s` window (default 18 s): 2 double, 3 triple,
+  4 ultra, 5+ rampage. A batch that also contains a death resets the window and emits `kill`.
+- **Streak** = kills since the last death, one rung per new count: 3 `killing_spree` … 9
+  `godlike`, 10 `beyond_godlike` (fires once; later kills add no rung). Any death resets it.
+- `death` fires on `alive` 1→0; `respawn` fires on `alive` 0→1, i.e. after every death.
+- `levelUp` fires only when crossing a milestone in `level_up_milestones` (6, 12, 18, 25), not on
+  every level. `hpLow`/`manaLow` are edge-triggered when crossing their thresholds.
+- `gank`, `revision` and `danger` are G-Signal/safety cues with their own critical audio path;
+  they have `voice_rank = 0` and are not arbitrated by `most_important()`.
+
+### 8.2 Per-id guidance
+
+`Decision` is either an owner decision (dated) or `proposed` (agent recommendation awaiting the
+owner). A proposed row does not bind a pack.
+
+| id | Fires when | Fitting callout | Map? | Decision |
+| --- | --- | --- | --- | --- |
+| `match_start` | clock passes 0 at the opening (≤5 s) | game-start line | yes | proposed |
+| `first_blood` | first kill of the match by score | "First Blood" | yes | proposed |
+| `kill` | single kill, no multikill/streak rung outranks it | short, generic kill line | optional (frequent) | proposed |
+| `double_kill` … `rampage` | 2 / 3 / 4 / 5+ kills in the window | line naming that count in quick succession | yes | proposed |
+| `killing_spree` … `beyond_godlike` | streak rung 3 … 10 without dying | line naming the streak rung, not a multikill | yes | proposed |
+| `death` | local hero dies | optional; keep Maiden's gentle persona | optional (frequent) | proposed |
+| `respawn` | local hero revives after any death | none — routine, not an achievement | **no** | owner, 2026-11-10 |
+| `levelUp` | crosses level 6/12/18/25 | milestone line | optional | proposed |
+| `hpLow` / `manaLow` | HP < 20 % / mana < 15 % edge | short warning | optional | proposed |
+| `gank` / `danger` / `revision` | G-Signal / HP safety ([[FEAT-G-SIGNAL]]) | warning / retraction line | yes | proposed |
+| `enemy_missing` | pending detector; never fires | — | no effect | — |
+
+A callout that fits no fired id (for example a revenge-kill or objective line) stays in
+`unmapped_sound_ids` until an id with that meaning exists (§5).
+
+### 8.3 Observed arbitration gap (not a requirement)
+
+In one local match on 2026-11-10 (pack revision 8), `kill` and `death` requests were logged
+`phase=rejected` while a critical `revision` cue that started on the same tick was playing.
+The rejection receipt carries no reason, so the cause is inferred, not verified. Recorded for
+follow-up; no behavior is specified here.
+
 ## Pack compatibility
 
 `ann_<UUID>.json` may declare `taxonomy_version`. Its grammar is canonical `MAJOR.MINOR`:
@@ -103,3 +156,4 @@ is test-only. CR-049 PR2 does not restore that endpoint. Studio consumer integra
 | --- | --- | --- |
 | 0.1.0 | 2026-11-09 | Module charter for announcer event detection; points every event change at the g-events.toml SOT (ADR-21 / CR-049). |
 | 0.1.1 | 2026-11-09 | CR-049 PR2: document taxonomy admission matrix, legacy default, report API, verified inert mappings and current install transport; native acceptance remains separate. |
+| 0.2.0 | 2026-11-10 | Add §8 pack mapping guidance: co-firing rules from `step()`, per-id callout fit, owner decision that `respawn` is not voiced, and an observed critical-cue arbitration gap. |
