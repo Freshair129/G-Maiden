@@ -52,6 +52,20 @@ it('roster knowledge alone leaves enemy presence unknown', () => {
   expect(container.textContent).toContain('Axe:empty')
 })
 
+it('Arena projection carries admitted percentages and generations without raw identity/items/abilities', async () => {
+  const tick = { ...session, in_game: true, clock_time: 100, game_state: 'DOTA_GAMERULES_STATE_GAME_IN_PROGRESS', hero: 'npc_dota_hero_crystal_maiden', team_name: 'radiant', alive: true, level: 5, hp_percent: 64, mana_percent: 27, respawn_seconds: 0, steamid: 'fixture-owner', item_names: ['item_blink'], abilities: { ability0: 'unadmitted' } }
+  await send('game-tick', tick)
+  expect(currentData.arenaSource?.own).toMatchObject({ hp_percent: 64, mana_percent: 27 })
+  expect(currentData.arenaSource?.own).not.toHaveProperty('steamid')
+  expect(currentData.arenaSource?.own).not.toHaveProperty('item_names')
+  expect(currentData.arenaSource?.own).not.toHaveProperty('abilities')
+  const generation = currentData.arenaSource?.generation
+  await send('game-tick', { ...tick, steamid: 'next-owner' })
+  expect(currentData.arenaSource?.generation).not.toBe(generation)
+  await send('game-tick', { ...tick, session_epoch: 7, hp_percent: 1 })
+  expect(currentData.arenaSource?.own?.hp_percent).toBe(64)
+})
+
 it('uses confirmed current observations, then clears presence on unready without losing identities', async () => {
   await send('missing-state', { ...snapshot, heroes: ['zeus'], observations: [observation] })
   expect(container.textContent).toContain('Axe:visible,Zeus:missing')
