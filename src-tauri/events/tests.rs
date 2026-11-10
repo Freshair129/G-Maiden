@@ -77,6 +77,13 @@ fn deck_preserves_legacy_event_def_order_and_labels() {
             "Belief revision",
             "ยกเลิกเตือน",
         ),
+        (
+            "enemy_missing",
+            "warning",
+            "Enemy Missing",
+            "Enemy missing from minimap",
+            "ศัตรูหาย",
+        ),
         ("hpLow", "warning", "HP Low", "Health is low", "เลือดต่ำ"),
         ("manaLow", "warning", "Mana Low", "Mana is low", "มานาต่ำ"),
         (
@@ -210,10 +217,7 @@ fn generated_table_version_and_ids_match_source() {
             )
         );
     }
-    assert_eq!(
-        crate::events::NON_FIRING_EVENTS,
-        &["enemy_missing", "unused"]
-    );
+    assert_eq!(crate::events::NON_FIRING_EVENTS, &["unused"]);
 }
 
 #[test]
@@ -279,7 +283,13 @@ fn validation_rejects_bad_inputs_with_source_location() {
             "deck_order and deck_label are required",
         ),
         (
-            SOURCE.replace("since = \"1.2\"", "since = \"1.1\""),
+            SOURCE
+                .replacen("deck_order = 3", "", 1)
+                .replace("deck_label = \"Enemy Missing\"", "")
+                .replace(
+                    "detector = \"sentry.enemy_missing\"",
+                    "detector = \"pending\"",
+                ),
             "pending misuse",
         ),
         (SOURCE.replace("max = 60", "max = 99"), "bounds must remain"),

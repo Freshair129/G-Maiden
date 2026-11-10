@@ -206,6 +206,29 @@ fn gann_only_selects_the_indexed_pair_and_never_substitutes_an_unmapped_event() 
 }
 
 #[test]
+fn gann_only_keeps_enemy_missing_silent_when_the_selected_pack_has_no_mapping() {
+    let root = temp_root("gann-enemy-missing-unmapped");
+    set_test_voice_root(Some(root.clone()));
+    let _guard = RootGuard(root.clone());
+    let (id, _, _) = super::test_package::install(&root, 4, "kill");
+    activate_if_exists(&id).unwrap();
+
+    assert!(super::select_announcer_clip("enemy_missing").is_none());
+    assert!(active_event_clips("enemy_missing").is_empty());
+}
+
+#[test]
+fn enemy_missing_is_a_warning_event_with_its_thai_pack_label() {
+    let event = EVENTS
+        .iter()
+        .find(|event| event.id == "enemy_missing")
+        .expect("enemy_missing must be available to GANN pack tooling");
+
+    assert_eq!(event.group, "warning");
+    assert_eq!(event.thai, "ศัตรูหาย");
+}
+
+#[test]
 fn named_preview_uses_admitted_generation_and_fences_other_events() {
     let root = temp_root("preview-admitted-generation");
     set_test_voice_root(Some(root.clone()));

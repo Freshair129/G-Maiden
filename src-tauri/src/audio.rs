@@ -1313,9 +1313,15 @@ mod tests {
     }
 
     #[test]
-    fn critical_events_outrank_cosmetic() {
+    fn enemy_missing_stays_below_unchanged_critical_signal_priorities() {
         assert_eq!(priority_for_event("gank"), Priority::Critical);
+        assert_eq!(priority_for_event("danger"), Priority::Critical);
         assert_eq!(priority_for_event("revision"), Priority::Critical);
+        assert_eq!(priority_for_event("enemy_missing"), Priority::Cosmetic);
+        assert!(!should_accept_incoming(
+            Priority::Critical,
+            priority_for_event("enemy_missing")
+        ));
         assert_eq!(priority_for_event("levelUp"), Priority::Cosmetic);
     }
 

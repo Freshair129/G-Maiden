@@ -262,6 +262,7 @@ mod backend {
         sentry: Sentry,
         motion: Motion,
         signal: Signal,
+        enemy_missing_voice: crate::announcer::EnemyMissingVoiceGate,
         /// monotonic clock origin for ms timestamps fed to the pipeline.
         start: Instant,
         /// last debug `minimap-cv` emit (throttled ≈5 Hz).
@@ -363,6 +364,7 @@ mod backend {
                 sentry: Sentry::new(),
                 motion: Motion::for_next_match(),
                 signal: Signal::new(),
+                enemy_missing_voice: crate::announcer::EnemyMissingVoiceGate::default(),
                 start: now,
                 last_emit: now,
                 last_calib: now,
@@ -1581,8 +1583,15 @@ mod backend {
                 }
             }
 
-            // G-Sentry: flag enemies missing >5s (edge-triggered).
-            for em in state.sentry.update(&detections, &r, now_ms) {
+            // G-Sentry: flag enemies missing >5s (edge-triggered). The overlay
+            // receives this immediately; the optional low-priority GANN voice is
+            // admitted only after this frame's coverage and critical-signal gates.
+            let missing_events = state.sentry.update(&detections, &r, now_ms);
+            let visible = state.sentry.visible(now_ms);
+            state
+                .enemy_missing_voice
+                .observe_visible(visible.iter().map(String::as_str));
+            for em in &missing_events {
                 if !crate::runtime::is_current_capture_session(session.session_epoch) {
                     return;
                 }
@@ -1606,7 +1615,7 @@ mod backend {
                 }
             }
 
-            state.signal.observe_visible(&state.sentry.visible(now_ms));
+            state.signal.observe_visible(&visible);
 
             // G-Motion: history + gank-risk over currently-missing enemies.
             state.motion.record(&detections, &r, now_ms);
@@ -1828,6 +1837,62 @@ mod backend {
                         }
                     }
                     SignalEvent::None => {}
+                }
+            }
+
+            // Keep the optional announcer work after the critical G-Signal
+            // dispatch. It never joins the <=300ms path and sees a just-admitted
+            // critical clip before it can enqueue lower-priority media.
+            for em in missing_events {
+                let mapping_present =
+                    crate::voice_api::select_announcer_clip("enemy_missing").is_some();
+                match state.enemy_missing_voice.admit(
+                    session.session_epoch,
+                    &em.hero,
+                    now_ms,
+                    eligible,
+                    crate::audio::active_priority() == crate::audio::Priority::Critical,
+                    mapping_present,
+                ) {
+                    crate::announcer::EnemyMissingVoiceDecision::Play
+                        if crate::runtime::announcer_enabled() =>
+                    {
+                        let app = state.app.clone();
+                        let epoch = session.session_epoch;
+                        let request_fence = crate::audio::AnnouncerRequestFence::capture();
+                        tauri::async_runtime::spawn_blocking(move || {
+                            if crate::audio::active_priority() == crate::audio::Priority::Critical {
+                                eprintln!("[G-AnnouncerMedia] phase=dropped event=enemy_missing reason=critical_active");
+                                return;
+                            }
+                            if let Err(reason) = crate::voice_api::play_event(
+                                app,
+                                "enemy_missing".to_owned(),
+                                epoch,
+                                false,
+                                crate::audio::Priority::Cosmetic,
+                                Some(request_fence),
+                            ) {
+                                eprintln!("[G-AnnouncerMedia] phase=rejected event=enemy_missing reason={reason}");
+                            }
+                        });
+                    }
+                    crate::announcer::EnemyMissingVoiceDecision::Play => {
+                        eprintln!("[G-AnnouncerMedia] phase=dropped event=enemy_missing reason=announcer_disabled");
+                    }
+                    crate::announcer::EnemyMissingVoiceDecision::Cooldown => {
+                        eprintln!(
+                            "[G-AnnouncerMedia] phase=dropped event=enemy_missing reason=cooldown"
+                        );
+                    }
+                    crate::announcer::EnemyMissingVoiceDecision::CriticalActive => {
+                        eprintln!("[G-AnnouncerMedia] phase=dropped event=enemy_missing reason=critical_active");
+                    }
+                    crate::announcer::EnemyMissingVoiceDecision::Unmapped => {
+                        eprintln!("[G-AnnouncerMedia] phase=unmapped event=enemy_missing source=gann reason=missing_mapping");
+                    }
+                    crate::announcer::EnemyMissingVoiceDecision::NoCoverage
+                    | crate::announcer::EnemyMissingVoiceDecision::Duplicate => {}
                 }
             }
 

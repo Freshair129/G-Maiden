@@ -73,19 +73,21 @@ id = "enemy_missing"
 label = { en = "Enemy Missing", th = "ศัตรูหาย" }
 category = "signal"
 group = "warning"
-subtitle = "Enemy missing (pending detector)"
-detector = "pending"
+deck_order = 3
+deck_label = "Enemy Missing"
+subtitle = "Enemy missing from minimap"
+detector = "sentry.enemy_missing"
 voice_rank = 0
 since = "1.2"
 priority = "low"
 status = "new"
 trigger = "ฮีโร่ศัตรูที่ยืนยันตัวตนแล้วหายจาก minimap เกิน 5 วินาที ภายใต้ capture coverage ที่ยืนยันแล้ว (G-Sentry/capture)"
-notes = "Registered for taxonomy 1.2; CR-046 D1 detection is not present in this runtime and this event does not fire."
+notes = "CR-046 D1: capture-owned EnemyMissingVoiceGate (announcer.rs) admits one low-priority utterance per coverage-confirmed episode, 10 s cooldown, never over a critical alert."
 
 [[events]]
 id = "match_start"
 label = { en = "Match Start", th = "เริ่มเกม" }
-deck_order = 20
+deck_order = 21
 deck_label = "Match Start"
 category = "flow"
 group = "state"
@@ -100,7 +102,7 @@ trigger = "เกมเริ่ม (clock เริ่มเดินจาก 
 [[events]]
 id = "first_blood"
 label = { en = "First Blood", th = "เลือดแรก" }
-deck_order = 5
+deck_order = 6
 deck_label = "First Blood"
 category = "kill"
 group = "combat"
@@ -115,7 +117,7 @@ trigger = "ฆ่าครั้งแรกของทั้งเกม"
 [[events]]
 id = "kill"
 label = { en = "Kill", th = "คิล" }
-deck_order = 6
+deck_order = 7
 deck_label = "Kill"
 category = "kill"
 group = "combat"
@@ -130,7 +132,7 @@ trigger = "ผู้เล่นฆ่าศัตรูได้ (เดี่�
 [[events]]
 id = "double_kill"
 label = { en = "Double Kill", th = "ดับเบิลคิล" }
-deck_order = 7
+deck_order = 8
 deck_label = "Double Kill"
 category = "kill"
 group = "combat"
@@ -147,7 +149,7 @@ notes = "Two kills within the announcer multikill window; see params.announcer.m
 [[events]]
 id = "triple_kill"
 label = { en = "Triple Kill", th = "ทริปเปิลคิล" }
-deck_order = 8
+deck_order = 9
 deck_label = "Triple Kill"
 category = "kill"
 group = "combat"
@@ -163,7 +165,7 @@ trigger = "ฆ่า 3 ศพต่อเนื่องในหน้าต่
 [[events]]
 id = "ultra_kill"
 label = { en = "Ultra Kill", th = "อัลตร้า" }
-deck_order = 9
+deck_order = 10
 deck_label = "Ultra Kill"
 category = "kill"
 group = "combat"
@@ -179,7 +181,7 @@ trigger = "ฆ่า 4 ศพต่อเนื่อง"
 [[events]]
 id = "rampage"
 label = { en = "Rampage", th = "แรมเพจ" }
-deck_order = 10
+deck_order = 11
 deck_label = "Rampage"
 category = "kill"
 group = "combat"
@@ -195,7 +197,7 @@ trigger = "ฆ่า 5 ศพต่อเนื่อง"
 [[events]]
 id = "killing_spree"
 label = { en = "Killing Spree", th = "สปรี" }
-deck_order = 11
+deck_order = 12
 deck_label = "Killing Spree"
 category = "streak"
 group = "streak"
@@ -211,7 +213,7 @@ trigger = "streak ไม่ตาย 3 ครั้ง (ตรงกับ kill 
 [[events]]
 id = "dominating"
 label = { en = "Dominating", th = "ครอบครอง" }
-deck_order = 12
+deck_order = 13
 deck_label = "Dominating"
 category = "streak"
 group = "streak"
@@ -227,7 +229,7 @@ trigger = "streak ไม่ตาย 4 ครั้ง"
 [[events]]
 id = "mega_kill"
 label = { en = "Mega Kill", th = "เมก้าคิล" }
-deck_order = 13
+deck_order = 14
 deck_label = "Mega Kill"
 category = "streak"
 group = "streak"
@@ -243,7 +245,7 @@ trigger = "streak ไม่ตาย 5 ครั้ง"
 [[events]]
 id = "unstoppable"
 label = { en = "Unstoppable", th = "หยุดไม่ได้" }
-deck_order = 14
+deck_order = 15
 deck_label = "Unstoppable"
 category = "streak"
 group = "streak"
@@ -259,7 +261,7 @@ trigger = "streak ไม่ตาย 6 ครั้ง"
 [[events]]
 id = "wicked_sick"
 label = { en = "Wicked Sick", th = "โหดจัด" }
-deck_order = 15
+deck_order = 16
 deck_label = "Wicked Sick"
 category = "streak"
 group = "streak"
@@ -275,7 +277,7 @@ trigger = "streak ไม่ตาย 7 ครั้ง"
 [[events]]
 id = "monster_kill"
 label = { en = "Monster Kill", th = "มอนสเตอร์คิล" }
-deck_order = 16
+deck_order = 17
 deck_label = "Monster Kill"
 category = "streak"
 group = "streak"
@@ -291,7 +293,7 @@ trigger = "streak ไม่ตาย 8 ครั้ง"
 [[events]]
 id = "godlike"
 label = { en = "Godlike", th = "เทพเจ้า" }
-deck_order = 17
+deck_order = 18
 deck_label = "Godlike"
 category = "streak"
 group = "streak"
@@ -307,7 +309,7 @@ trigger = "streak ไม่ตาย 9 ครั้ง"
 [[events]]
 id = "beyond_godlike"
 label = { en = "Beyond Godlike", th = "เหนือเทพเจ้า" }
-deck_order = 18
+deck_order = 19
 deck_label = "Beyond Godlike"
 category = "streak"
 group = "streak"
@@ -323,7 +325,7 @@ trigger = "streak ไม่ตาย 10 ครั้งขึ้นไป"
 [[events]]
 id = "death"
 label = { en = "Death", th = "ตาย" }
-deck_order = 21
+deck_order = 22
 deck_label = "Death"
 category = "state"
 group = "state"
@@ -338,7 +340,7 @@ trigger = "ผู้เล่นตาย (alive 1→0)"
 [[events]]
 id = "respawn"
 label = { en = "Respawn", th = "เกิดใหม่" }
-deck_order = 22
+deck_order = 23
 deck_label = "Respawn"
 category = "state"
 group = "state"
@@ -353,7 +355,7 @@ trigger = "ผู้เล่นเกิดใหม่ (alive 0→1)"
 [[events]]
 id = "levelUp"
 label = { en = "Level Up", th = "เลเวลอัพ" }
-deck_order = 19
+deck_order = 20
 deck_label = "Level Up"
 category = "state"
 group = "state"
@@ -369,7 +371,7 @@ notes = "Crosses an announcer level milestone; see params.announcer.level_up_mil
 [[events]]
 id = "hpLow"
 label = { en = "HP Low", th = "เลือดต่ำ" }
-deck_order = 3
+deck_order = 4
 deck_label = "HP Low"
 category = "state"
 group = "warning"
@@ -385,7 +387,7 @@ notes = "Alive HP downward crossing; see params.announcer.hp_low_percent (separa
 [[events]]
 id = "manaLow"
 label = { en = "Mana Low", th = "มานาต่ำ" }
-deck_order = 4
+deck_order = 5
 deck_label = "Mana Low"
 category = "state"
 group = "warning"
@@ -401,7 +403,7 @@ notes = "Mana downward crossing; see params.announcer.mana_low_percent."
 [[events]]
 id = "advice"
 label = { en = "Maiden Advice", th = "คำแนะนำ" }
-deck_order = 23
+deck_order = 24
 deck_label = "Advice"
 category = "strategy"
 group = "advisor"
