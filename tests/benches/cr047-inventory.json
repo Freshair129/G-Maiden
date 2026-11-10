@@ -1,0 +1,128 @@
+{
+  "evidence": "measured-offline-artifact-inventory",
+  "command": "python tests/benches/cr047_inventory.py",
+  "inference_executed": false,
+  "input_shapes": [
+    [
+      1,
+      3,
+      32,
+      32
+    ]
+  ],
+  "output_shapes": [
+    [
+      1,
+      128
+    ]
+  ],
+  "operators": {
+    "Conv": 3,
+    "Flatten": 1,
+    "Gemm": 1,
+    "GlobalAveragePool": 1,
+    "MaxPool": 3,
+    "Relu": 3
+  },
+  "opsets": [
+    {
+      "2": 13
+    }
+  ],
+  "labels": 128,
+  "initializer_raw_bytes": 127616,
+  "initializers": [
+    {
+      "name": "classifier.weight",
+      "element_type": 1,
+      "raw_bytes": 32768
+    },
+    {
+      "name": "classifier.bias",
+      "element_type": 1,
+      "raw_bytes": 512
+    },
+    {
+      "name": "onnx::Conv_40",
+      "element_type": 1,
+      "raw_bytes": 1728
+    },
+    {
+      "name": "onnx::Conv_41",
+      "element_type": 1,
+      "raw_bytes": 64
+    },
+    {
+      "name": "onnx::Conv_43",
+      "element_type": 1,
+      "raw_bytes": 18432
+    },
+    {
+      "name": "onnx::Conv_44",
+      "element_type": 1,
+      "raw_bytes": 128
+    },
+    {
+      "name": "onnx::Conv_46",
+      "element_type": 1,
+      "raw_bytes": 73728
+    },
+    {
+      "name": "onnx::Conv_47",
+      "element_type": 1,
+      "raw_bytes": 256
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "models/minimap-detector.onnx",
+      "bytes": 129932,
+      "sha256": "706bd9d5edad0242bc24dbb2289e0c3a8609a48a1c5faf222f847a19641e4121"
+    },
+    {
+      "path": "models/labels.json",
+      "bytes": 2042,
+      "sha256": "df83d7adb85d36e278a3cfe622102781a6e921f11d60a64b5b3d7e7d9100e0ca"
+    },
+    {
+      "path": "src-tauri/src/capture.rs",
+      "bytes": 91918,
+      "sha256": "413b1bdcc6f4e399db69d3f3c60d8e1c0b37bb807fffe67ba4c621530ed54dff"
+    },
+    {
+      "path": "src-tauri/src/cv/prefilter.rs",
+      "bytes": 8274,
+      "sha256": "1fd17bb8b3d0b1e1fadcd950e5b201938d9d4f3c9fe1c2ddba1cc72074fa96ff"
+    },
+    {
+      "path": "src-tauri/src/cv/patch_cache.rs",
+      "bytes": 3966,
+      "sha256": "0b73b972648c09176b34b99115bf4d1876b6d9261d6b1fc00d9248c43ce97064"
+    },
+    {
+      "path": "assets/minimap-icons/axe.png",
+      "bytes": 3937,
+      "sha256": "797f7fee904ce7dbf805700986237232b8752cf0eaa0188658b03fd15f0eedd2"
+    },
+    {
+      "path": "assets/minimap-icons/crystal_maiden.png",
+      "bytes": 5380,
+      "sha256": "94803d5967bb4a90d3fd526d23a7ab6d09a9b86b163a5f7ace5eae7d24ee29f2"
+    },
+    {
+      "path": "assets/minimap-icons/pudge.png",
+      "bytes": 5380,
+      "sha256": "3fbe689de4e8d70bc4b0a4bb200801c5c7510310c636a3f5477982b7957f2599"
+    },
+    {
+      "path": "assets/minimap-icons/lina.png",
+      "bytes": 4893,
+      "sha256": "8ee8b8d7f9a369f7051f7cd9f53a8b5f34f22081f1c54cdf57a35a0f249c342c"
+    },
+    {
+      "path": "assets/minimap-icons/juggernaut.png",
+      "bytes": 4157,
+      "sha256": "02b4b81f3a4d1e150fd06b3a7b417aa1b9480a4789a8ef7c04a94fadb4aa5a76"
+    }
+  ]
+}

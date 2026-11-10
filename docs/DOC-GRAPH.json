@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-07T21:04:58.477Z",
+  "generatedAt": "2026-11-08T03:24:48.651Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -659,6 +659,13 @@
       "path": "docs/change request/CR-046-demo-mvp-announcer-gank-slice.md",
       "title": "CR-046 — First demo slice: Announcer Pack + Gank Meter + missing-hero alert",
       "status": "accepted"
+    },
+    {
+      "id": "docs/change request/CR-047-gpu-minimap-cv.md",
+      "type": "doc",
+      "path": "docs/change request/CR-047-gpu-minimap-cv.md",
+      "title": "CR-047 — GPU minimap CV: measurement and architecture options",
+      "status": "draft"
     },
     {
       "id": "docs/change request/DXGI-task-assignment.md",
@@ -5532,6 +5539,18 @@
       "line": 172
     },
     {
+      "from": "docs/change request/CR-047-gpu-minimap-cv.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 22
+    },
+    {
+      "from": "docs/change request/CR-047-gpu-minimap-cv.md",
+      "to": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
+      "type": "wikilink",
+      "line": 22
+    },
+    {
       "from": "docs/change request/IMPL-PLAN-DXGI-migration.md",
       "to": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "type": "wikilink",
@@ -10065,7 +10084,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-07T21:05:02.863Z",
+    "generatedAt": "2026-11-08T03:24:51.705Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,

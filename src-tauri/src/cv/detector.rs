@@ -393,3 +393,8 @@ mod tests {
         assert_eq!(cached.last_inference_work(), (2, 1));
     }
 }
+
+// CR-047 offline measurement only; excluded from production builds.
+#[cfg(test)]
+#[path = "../../../tests/benches/cr047_cv_spike.rs"]
+mod cr047_spike;

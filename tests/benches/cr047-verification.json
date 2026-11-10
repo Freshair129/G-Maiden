@@ -1,0 +1,37 @@
+{
+  "date": "2026-11-08",
+  "source_head": "6a26d628992f0267ef4d848d92f2050bdbfa3c0f",
+  "branch": "docs/cr047-gpu-minimap-cv",
+  "writer": "Codex",
+  "reviewer": "Claude (independent rerun pending)",
+  "status": "draft-prepared-measurement-and-commit-blocked",
+  "production_behavior_changed": false,
+  "new_dependencies": false,
+  "native_inference_benchmark_executed": false,
+  "native_inference_blocker": "No qualified per-volume floor, peak writes, concurrent growth or resolved physical-path build admission for the assigned release Cargo command. Assigned lane absent at inspection. No Cargo invocation attempted.",
+  "native_command_from_src_tauri": "cargo test --release --lib --offline --locked cv::detector::cr047_spike::cr047_cpu_profile -- --ignored --exact --nocapture --test-threads=1",
+  "native_command_requires": [
+    "Assigned process-scoped CARGO_TARGET_DIR, VCPKG_ROOT and x64-windows-static-md triplet",
+    "Qualified resource preflight refreshed after exclusive lane lock",
+    "Lock retained through children; externally enforced 900-second timeout",
+    "Cached toolchain/dependencies only; no downloads",
+    "Complete raw stdout/stderr and environment/source/model/fixture receipt"
+  ],
+  "checks": [
+    {"command": "python tests/benches/cr047_inventory.py", "exit_code": 0, "kind": "artifact-inventory-not-inference", "output": "cr047-inventory.json"},
+    {"command": "rustfmt --edition 2021 --check tests/benches/cr047_cv_spike.rs", "toolchain": "1.96.0-x86_64-pc-windows-msvc", "exit_code": 0, "kind": "syntax-format-not-typecheck"},
+    {"command": "git diff --check", "exit_code": 0},
+    {"command": "node tools/doc-graph/ci-gate.mjs", "exit_code": 1, "reason": "Node spawnSync child process EPERM; full gate not passed"},
+    {"command": "node --test --test-isolation=none <all tools/doc-graph/*.test.mjs files>", "exit_code": 1, "tests": 221, "passed": 202, "failed": 19, "cancelled": 0, "skipped": 0, "kind": "diagnostic-only-not-required-gate"},
+    {"command": "node tools/doc-graph/encoding-check.mjs", "exit_code": 0},
+    {"command": "node tools/doc-graph/scan.mjs --strict", "exit_code": 0, "nodes": 293, "edges": 1353, "violations": 26, "blocking": 0},
+    {"command": "node tools/doc-graph/ledger.mjs --quiet", "exit_code": 0},
+    {"command": "node tools/doc-graph/orphan-report.mjs", "exit_code": 0, "rows": 18, "orphan_candidates": 0},
+    {"command": "node tools/doc-graph/artifact-freshness.mjs", "exit_code": 1, "reason": "Child git show cannot execute; MISSING messages do not mean working-tree files are absent; committed freshness unverified"},
+    {"command": "git add -- <explicit CR, spike, inventory and six generated artifact paths>", "exit_code": 1, "reason": "Permission denied creating linked-worktree index.lock; no commit created"}
+  ],
+  "unmeasured": ["candidate counts in native harness", "inference calls in native harness", "preprocessing milliseconds", "model milliseconds per call", "native prefilter/cache savings", "whole-app CPU", "aggregate Working Set", "GPU duration", "Dota FPS delta", "audible G-Signal latency"],
+  "generated_artifacts": ["docs/DOC-GRAPH.json", "docs/DOC-GRAPH-REPORT.md", "docs/FEATURE-LEDGER.md", "docs/FEATURE-ORPHAN-REPORT.json", "docs/FEATURE-ORPHAN-REPORT.md", "docs/atomic_index.jsonl"],
+  "commit": null,
+  "approval": null
+}
