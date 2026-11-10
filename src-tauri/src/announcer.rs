@@ -58,6 +58,11 @@ struct SessionDetector {
     detector: State,
 }
 
+#[cfg(debug_assertions)]
+#[derive(Default)]
+pub(crate) struct IsolatedSessionDetector {
+    detector: SessionDetector,
+}
 fn session_state() -> &'static Mutex<SessionDetector> {
     static S: OnceLock<Mutex<SessionDetector>> = OnceLock::new();
     S.get_or_init(|| Mutex::new(SessionDetector::default()))
@@ -132,6 +137,27 @@ pub fn observe_for_session(tick: &GameTick, session: &MatchSessionSnapshot) -> V
     }
 }
 
+#[cfg(debug_assertions)]
+pub(crate) fn observe_isolated_for_session(
+    current: &mut IsolatedSessionDetector,
+    tick: &GameTick,
+    session: &MatchSessionSnapshot,
+) -> Vec<String> {
+    let Some(lifecycle) = session.session_lifecycle else {
+        return Vec::new();
+    };
+    if session.session_epoch == 0
+        || !matches!(lifecycle, MatchLifecycle::Draft | MatchLifecycle::Live)
+    {
+        return Vec::new();
+    }
+    observe_session_state(
+        &mut current.detector,
+        tick,
+        session.session_epoch,
+        lifecycle,
+    )
+}
 fn observe_session_state(
     current: &mut SessionDetector,
     tick: &GameTick,

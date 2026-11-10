@@ -30,6 +30,8 @@ mod gann_webm;
 mod gann_native;
 mod governor;
 pub mod gsi;
+#[cfg(debug_assertions)]
+mod gsi_replay_test;
 mod identity;
 mod items;
 mod local_endpoint;
@@ -1438,10 +1440,40 @@ fn delete_all_match_logs() -> Result<u32, String> {
     log::delete_all()
 }
 
+fn replay_test_arguments_present(args: &[std::ffi::OsString]) -> bool {
+    const REPLAY_ARGUMENTS: [&str; 4] = [
+        "--gsi-replay-test",
+        "--expected-binary-sha256",
+        "--first-sequence",
+        "--expected-record-count",
+    ];
+
+    args.iter().any(|arg| {
+        let argument = arg.to_string_lossy();
+        let argument = argument.as_ref();
+        argument.starts_with("--gsi-replay-")
+            || REPLAY_ARGUMENTS.iter().any(|flag| {
+                argument == *flag
+                    || argument
+                        .strip_prefix(flag)
+                        .is_some_and(|suffix| suffix.starts_with('='))
+            })
+    })
+}
+
 /// Runs the Tauri application. Called from the thin `main.rs` bin shim — kept
 /// as a plain function (not `fn main`) so external tools (e.g. `tests/perf`)
 /// can depend on this crate as a library without linking the app entry point.
 pub fn run() {
+    #[cfg(debug_assertions)]
+    if let Some(code) = gsi_replay_test::run_if_requested() {
+        std::process::exit(code);
+    }
+    #[cfg(not(debug_assertions))]
+    if replay_test_arguments_present(&std::env::args_os().skip(1).collect::<Vec<_>>()) {
+        eprintln!("GSI replay test host is debug-build-only");
+        std::process::exit(2);
+    }
     if let Some(code) = minimap_preview_process::run_if_requested() {
         std::process::exit(code);
     }
@@ -1727,4 +1759,40 @@ pub fn run() {
                 }
             }
         });
+}
+
+#[cfg(test)]
+mod replay_test_argument_guard_tests {
+    use super::replay_test_arguments_present;
+    use std::ffi::OsString;
+
+    #[test]
+    fn replay_host_arguments_are_recognized_for_fail_closed_startup() {
+        assert!(replay_test_arguments_present(&[OsString::from(
+            "--gsi-replay-test"
+        )]));
+        assert!(replay_test_arguments_present(&[
+            OsString::from("--expected-binary-sha256"),
+            OsString::from("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"),
+        ]));
+        assert!(!replay_test_arguments_present(&[]));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn unpaired_utf16_after_replay_option_prefix_fails_closed() {
+        use std::os::windows::ffi::OsStringExt;
+
+        fn with_unpaired_surrogate(prefix: &str) -> OsString {
+            let mut wide: Vec<u16> = prefix.encode_utf16().collect();
+            wide.push(0xD800);
+            OsString::from_wide(&wide)
+        }
+
+        for prefix in ["--gsi-replay-test", "--expected-record-count="] {
+            assert!(replay_test_arguments_present(&[with_unpaired_surrogate(
+                prefix
+            )]));
+        }
+    }
 }

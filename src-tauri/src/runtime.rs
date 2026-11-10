@@ -79,6 +79,58 @@ struct MatchSessionState {
     next_local_id: u64,
 }
 
+#[cfg(debug_assertions)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum IsolatedMatchSessionObservationStatus {
+    Applied,
+    IgnoredTerminal,
+    NotApplicable,
+}
+
+#[cfg(debug_assertions)]
+pub(crate) struct IsolatedMatchSessionObservation {
+    pub(crate) snapshot: MatchSessionSnapshot,
+    pub(crate) status: IsolatedMatchSessionObservationStatus,
+}
+
+#[cfg(debug_assertions)]
+#[derive(Default)]
+pub(crate) struct IsolatedMatchSessionObserver {
+    state: MatchSessionState,
+}
+
+#[cfg(debug_assertions)]
+impl IsolatedMatchSessionObserver {
+    pub(crate) fn snapshot(&self) -> MatchSessionSnapshot {
+        snapshot_of(&self.state)
+    }
+
+    pub(crate) fn has_post_game_lifecycle(&self) -> bool {
+        self.state
+            .current
+            .as_ref()
+            .is_some_and(|current| current.lifecycle == MatchLifecycle::End)
+    }
+
+    pub(crate) fn observe(
+        &mut self,
+        lifecycle: MatchLifecycle,
+        match_id: Option<String>,
+        clock_time: i64,
+    ) -> IsolatedMatchSessionObservation {
+        let (snapshot, _, applied) =
+            observe_session_state_with_status(&mut self.state, lifecycle, match_id, clock_time);
+        IsolatedMatchSessionObservation {
+            snapshot,
+            status: if applied {
+                IsolatedMatchSessionObservationStatus::Applied
+            } else {
+                IsolatedMatchSessionObservationStatus::IgnoredTerminal
+            },
+        }
+    }
+}
 static MATCH_SESSION: Mutex<MatchSessionState> = Mutex::new(MatchSessionState {
     current: None,
     next_epoch: 0,
@@ -375,6 +427,17 @@ fn observe_session_state(
     match_id: Option<String>,
     clock_time: i64,
 ) -> (MatchSessionSnapshot, bool) {
+    let (snapshot, boundary, _) =
+        observe_session_state_with_status(state, lifecycle, match_id, clock_time);
+    (snapshot, boundary)
+}
+
+fn observe_session_state_with_status(
+    state: &mut MatchSessionState,
+    lifecycle: MatchLifecycle,
+    match_id: Option<String>,
+    clock_time: i64,
+) -> (MatchSessionSnapshot, bool, bool) {
     let usable_match_id = match_id;
     // POST_GAME is terminal. A delayed tick with the same or missing ID must
     // not move the detector back to Live; a new trusted ID, a fresh draft, or
@@ -395,7 +458,7 @@ fn observe_session_state(
                     && current.last_clock_time > 5
                     && clock_time <= 5));
         if !distinct_id && !new_without_id {
-            return (snapshot_of(state), false);
+            return (snapshot_of(state), false, false);
         }
     }
     let start_new = state.current.as_ref().is_none_or(|current| {
@@ -426,7 +489,7 @@ fn observe_session_state(
         boundary = !was_terminal && lifecycle_is_terminal(lifecycle);
     }
 
-    (snapshot_of(state), boundary)
+    (snapshot_of(state), boundary, true)
 }
 
 /// Apply one validated GSI lifecycle observation. A trusted match id enriches
@@ -1797,6 +1860,47 @@ mod tests {
         assert_eq!(late_without_id.session_epoch, first.session_epoch);
         assert_eq!(late_without_id.session_lifecycle, Some(MatchLifecycle::End));
         assert!(!boundary);
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    fn isolated_observer_reports_a_late_live_tick_after_end_as_ignored() {
+        let mut observer = IsolatedMatchSessionObserver::default();
+        let first = observer.observe(MatchLifecycle::Live, Some("123".into()), 900);
+        let ended = observer.observe(MatchLifecycle::End, Some("123".into()), 1200);
+        let repeated_end = observer.observe(MatchLifecycle::End, Some("123".into()), 1200);
+        let late = observer.observe(MatchLifecycle::Live, Some("123".into()), 1200);
+        let next_match = observer.observe(MatchLifecycle::Live, Some("456".into()), 0);
+
+        assert_eq!(first.status, IsolatedMatchSessionObservationStatus::Applied);
+        assert_eq!(ended.status, IsolatedMatchSessionObservationStatus::Applied);
+        assert_eq!(
+            repeated_end.status,
+            IsolatedMatchSessionObservationStatus::IgnoredTerminal
+        );
+        assert_eq!(
+            late.status,
+            IsolatedMatchSessionObservationStatus::IgnoredTerminal
+        );
+        assert_eq!(late.snapshot.session_epoch, first.snapshot.session_epoch);
+        assert_eq!(late.snapshot.session_lifecycle, Some(MatchLifecycle::End));
+        assert_eq!(
+            repeated_end.snapshot, late.snapshot,
+            "ignored terminal observations preserve the terminal session snapshot"
+        );
+        assert_eq!(
+            next_match.status,
+            IsolatedMatchSessionObservationStatus::Applied
+        );
+        assert_eq!(
+            next_match.snapshot.session_epoch,
+            first.snapshot.session_epoch + 1
+        );
+        assert_eq!(next_match.snapshot.match_id.as_deref(), Some("456"));
+        assert_eq!(
+            next_match.snapshot.session_lifecycle,
+            Some(MatchLifecycle::Live)
+        );
     }
 
     #[test]

@@ -1,6 +1,6 @@
 //! G-Signal HP eligibility stays native even when no announcer package is equipped.
 #[path = "safety_events_core.rs"]
-mod core;
+pub(crate) mod core;
 pub(crate) use core::Settings;
 use std::sync::{Mutex, OnceLock};
 use std::time::Instant;

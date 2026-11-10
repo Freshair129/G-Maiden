@@ -13,7 +13,14 @@ use axum::{
     Router,
 };
 use serde::Serialize;
+#[cfg(debug_assertions)]
+use serde::{
+    de::{self, DeserializeSeed, MapAccess, SeqAccess, Visitor},
+    Deserializer,
+};
 use serde_json::Value;
+#[cfg(debug_assertions)]
+use std::collections::HashSet;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use tauri::{AppHandle, Emitter};
 
@@ -41,6 +48,8 @@ const OVERLAY_MODULE_IDS: [&str; 19] = [
 const SETTINGS_EVENT: &str = "settings";
 const OVERLAY_LAYOUT_SYNC_EVENT: &str = "overlay-layout-sync";
 const GSI_STATUS_INTERVAL_MS: u64 = 500;
+#[cfg(debug_assertions)]
+pub(crate) const SYNTHETIC_REPLAY_PLAYER_ID: &str = "gtrace-synthetic-player";
 
 /// Clean, UI-facing snapshot of the current game state.
 #[derive(Serialize, serde::Deserialize, Clone, Default)]
@@ -200,7 +209,7 @@ fn is_in_draft(game_state: &str) -> bool {
     )
 }
 
-fn lifecycle_for_tick(tick: &GameTick) -> crate::runtime::MatchLifecycle {
+pub(crate) fn lifecycle_for_tick(tick: &GameTick) -> crate::runtime::MatchLifecycle {
     use crate::runtime::MatchLifecycle;
     match tick.game_state.as_str() {
         "DOTA_GAMERULES_STATE_DISCONNECT" => MatchLifecycle::Disconnected,
@@ -211,6 +220,28 @@ fn lifecycle_for_tick(tick: &GameTick) -> crate::runtime::MatchLifecycle {
 }
 
 fn parse_tick_from_value(v: &Value) -> GameTick {
+    parse_tick_from_value_with_identity(v, || {
+        let steamid = s(v, &["player", "steamid"]);
+        let local_player_verified =
+            local_player_verified(v, crate::local_player::active_steam_id().as_deref());
+        (steamid, local_player_verified)
+    })
+}
+
+#[cfg(debug_assertions)]
+fn parse_tick_from_value_for_replay(v: &Value) -> GameTick {
+    parse_tick_from_value_with_identity(v, || {
+        (
+            SYNTHETIC_REPLAY_PLAYER_ID.to_string(),
+            synthetic_player_verified(v),
+        )
+    })
+}
+
+fn parse_tick_from_value_with_identity(
+    v: &Value,
+    resolve_identity: impl FnOnce() -> (String, bool),
+) -> GameTick {
     let game_state = s(v, &["map", "game_state"]);
     let gold = i(v, &["player", "gold"]);
     let raw_nw = i(v, &["player", "net_worth"]);
@@ -220,6 +251,7 @@ fn parse_tick_from_value(v: &Value) -> GameTick {
         crate::items::net_worth_from(&v["items"], gold)
     };
     let (kl_len, last_victim) = parse_kill_list(v);
+    let (steamid, local_player_verified) = resolve_identity();
     GameTick {
         in_game: is_in_game(&game_state),
         clock_time: i(v, &["map", "clock_time"]),
@@ -244,11 +276,8 @@ fn parse_tick_from_value(v: &Value) -> GameTick {
         mana_percent: i(v, &["hero", "mana_percent"]),
         hp: i(v, &["hero", "health"]),
         max_hp: i(v, &["hero", "max_health"]),
-        steamid: s(v, &["player", "steamid"]),
-        local_player_verified: local_player_verified(
-            v,
-            crate::local_player::active_steam_id().as_deref(),
-        ),
+        steamid,
+        local_player_verified,
         buyback_cost: i(v, &["hero", "buyback_cost"]),
         respawn_seconds: i(v, &["hero", "respawn_seconds"]),
         kill_list_len: kl_len,
@@ -262,6 +291,13 @@ fn local_player_verified(v: &Value, active_steam_id: Option<&str>) -> bool {
     let player = s(v, &["player", "steamid"]);
     active_steam_id.is_some_and(|active| active.len() == 17 && active == player)
         && matches!(s(v, &["player", "team_name"]).as_str(), "radiant" | "dire")
+        && value_at(v, &["player", "activity"])
+            .is_none_or(|activity| activity.as_str() == Some("playing"))
+}
+
+#[cfg(debug_assertions)]
+fn synthetic_player_verified(v: &Value) -> bool {
+    matches!(s(v, &["player", "team_name"]).as_str(), "radiant" | "dire")
         && value_at(v, &["player", "activity"])
             .is_none_or(|activity| activity.as_str() == Some("playing"))
 }
@@ -599,6 +635,317 @@ enum GsiPayloadError {
 #[cfg_attr(not(test), allow(dead_code))]
 fn parse_gsi_payload(body: &str) -> Result<GameTick, GsiPayloadError> {
     parse_gsi_payload_with_identity(body).map(|parsed| parsed.tick)
+}
+
+#[cfg(debug_assertions)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum ReplayNonMatchLifecycle {
+    Menu,
+    TerminalEmptyPlayerEnvelope,
+}
+
+#[cfg(debug_assertions)]
+pub(crate) enum ReplayGsiPayload {
+    MatchState {
+        tick: GameTick,
+        match_id: Option<String>,
+    },
+    NonMatchLifecycle(ReplayNonMatchLifecycle),
+}
+
+#[cfg(debug_assertions)]
+fn replay_non_match_lifecycle(v: &Value) -> Option<ReplayNonMatchLifecycle> {
+    let root = v.as_object()?;
+    if replay_terminal_envelope_is_valid(root) {
+        return Some(ReplayNonMatchLifecycle::TerminalEmptyPlayerEnvelope);
+    }
+    if !replay_object_has_only_keys(root, &["provider", "player"]) {
+        return None;
+    }
+    let player = root.get("player")?.as_object()?;
+    if !replay_menu_player_is_valid(player) || !replay_menu_provider_is_valid(root) {
+        return None;
+    }
+    Some(ReplayNonMatchLifecycle::Menu)
+}
+
+#[cfg(debug_assertions)]
+fn replay_object_has_only_keys(
+    object: &serde_json::Map<String, Value>,
+    allowed_keys: &[&str],
+) -> bool {
+    object
+        .keys()
+        .all(|key| allowed_keys.contains(&key.as_str()))
+}
+
+#[cfg(debug_assertions)]
+fn replay_optional_string_field(
+    object: &serde_json::Map<String, Value>,
+    key: &str,
+    max_len: usize,
+) -> bool {
+    match object.get(key) {
+        None => true,
+        Some(Value::String(value)) => value.len() <= max_len,
+        Some(_) => false,
+    }
+}
+
+#[cfg(debug_assertions)]
+fn replay_optional_integer_field(
+    object: &serde_json::Map<String, Value>,
+    key: &str,
+    min: i64,
+    max: i64,
+) -> bool {
+    match object.get(key) {
+        None => true,
+        Some(Value::Number(value)) => value
+            .as_i64()
+            .is_some_and(|value| (min..=max).contains(&value)),
+        Some(_) => false,
+    }
+}
+
+#[cfg(debug_assertions)]
+fn replay_menu_player_is_valid(player: &serde_json::Map<String, Value>) -> bool {
+    const PLAYER_KEYS: &[&str] = &[
+        "activity",
+        "team_name",
+        "steamid",
+        "gold",
+        "net_worth",
+        "gpm",
+        "xpm",
+        "kills",
+        "deaths",
+        "assists",
+        "last_hits",
+        "denies",
+    ];
+    if !replay_object_has_only_keys(player, PLAYER_KEYS)
+        || player.get("activity").and_then(Value::as_str) != Some("menu")
+        || !replay_optional_string_field(player, "team_name", 32)
+        || !replay_optional_string_field(player, "steamid", 32)
+    {
+        return false;
+    }
+    for (field, max) in [
+        ("gold", 1_000_000),
+        ("net_worth", 10_000_000),
+        ("gpm", 100_000),
+        ("xpm", 100_000),
+        ("kills", 100_000),
+        ("deaths", 100_000),
+        ("assists", 100_000),
+        ("last_hits", 100_000),
+        ("denies", 100_000),
+    ] {
+        if !replay_optional_integer_field(player, field, 0, max) {
+            return false;
+        }
+    }
+    true
+}
+
+#[cfg(debug_assertions)]
+fn replay_menu_provider_is_valid(root: &serde_json::Map<String, Value>) -> bool {
+    let Some(provider) = root.get("provider") else {
+        return true;
+    };
+    let Some(provider) = provider.as_object() else {
+        return false;
+    };
+    if !replay_object_has_only_keys(
+        provider,
+        &["appid", "name", "version", "timestamp", "steamid"],
+    ) || !replay_optional_string_field(provider, "name", 128)
+        || !replay_optional_string_field(provider, "steamid", 32)
+        || !replay_optional_integer_field(provider, "appid", 0, i64::MAX)
+        || !replay_optional_integer_field(provider, "version", 0, i64::MAX)
+        || !replay_optional_integer_field(provider, "timestamp", 0, i64::MAX)
+    {
+        return false;
+    }
+    provider
+        .get("appid")
+        .is_none_or(|appid| appid.as_i64() == Some(570))
+}
+
+#[cfg(debug_assertions)]
+fn replay_terminal_envelope_is_valid(root: &serde_json::Map<String, Value>) -> bool {
+    if root.len() != 2 || !replay_object_has_only_keys(root, &["player", "provider"]) {
+        return false;
+    }
+    if !root
+        .get("player")
+        .and_then(Value::as_object)
+        .is_some_and(|player| player.is_empty())
+    {
+        return false;
+    }
+    let Some(provider) = root.get("provider").and_then(Value::as_object) else {
+        return false;
+    };
+    if provider.len() != 4
+        || !replay_object_has_only_keys(provider, &["appid", "name", "timestamp", "version"])
+        || provider.get("appid").and_then(Value::as_i64) != Some(570)
+    {
+        return false;
+    }
+    let Some(name) = provider.get("name").and_then(Value::as_str) else {
+        return false;
+    };
+    !name.is_empty()
+        && name.len() <= 128
+        && replay_optional_integer_field(provider, "timestamp", 0, i64::MAX)
+        && replay_optional_integer_field(provider, "version", 0, i64::MAX)
+}
+
+#[cfg(debug_assertions)]
+struct ReplayJsonDuplicateKeyCheck;
+
+#[cfg(debug_assertions)]
+impl<'de> DeserializeSeed<'de> for ReplayJsonDuplicateKeyCheck {
+    type Value = ();
+
+    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_any(ReplayJsonDuplicateKeyVisitor)
+    }
+}
+
+#[cfg(debug_assertions)]
+struct ReplayJsonDuplicateKeyVisitor;
+
+#[cfg(debug_assertions)]
+impl<'de> Visitor<'de> for ReplayJsonDuplicateKeyVisitor {
+    type Value = ();
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str("JSON without duplicate object member names")
+    }
+
+    fn visit_bool<E>(self, _: bool) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(())
+    }
+
+    fn visit_i64<E>(self, _: i64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(())
+    }
+
+    fn visit_u64<E>(self, _: u64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(())
+    }
+
+    fn visit_f64<E>(self, _: f64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(())
+    }
+
+    fn visit_str<E>(self, _: &str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(())
+    }
+
+    fn visit_string<E>(self, _: String) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(())
+    }
+
+    fn visit_none<E>(self) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(())
+    }
+
+    fn visit_unit<E>(self) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(())
+    }
+
+    fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        ReplayJsonDuplicateKeyCheck.deserialize(deserializer)
+    }
+
+    fn visit_seq<A>(self, mut sequence: A) -> Result<Self::Value, A::Error>
+    where
+        A: SeqAccess<'de>,
+    {
+        while sequence
+            .next_element_seed(ReplayJsonDuplicateKeyCheck)?
+            .is_some()
+        {}
+        Ok(())
+    }
+
+    fn visit_map<A>(self, mut object: A) -> Result<Self::Value, A::Error>
+    where
+        A: MapAccess<'de>,
+    {
+        let mut seen = HashSet::new();
+        while let Some(key) = object.next_key::<String>()? {
+            if !seen.insert(key) {
+                return Err(de::Error::custom("duplicate object member name"));
+            }
+            object.next_value_seed(ReplayJsonDuplicateKeyCheck)?;
+        }
+        Ok(())
+    }
+}
+
+#[cfg(debug_assertions)]
+fn replay_json_has_unique_object_members(body: &str) -> Result<(), ()> {
+    let mut deserializer = serde_json::Deserializer::from_str(body);
+    ReplayJsonDuplicateKeyCheck
+        .deserialize(&mut deserializer)
+        .map_err(|_| ())?;
+    deserializer.end().map_err(|_| ())
+}
+
+#[cfg(debug_assertions)]
+pub(crate) fn parse_gsi_payload_for_replay_with_match_id(
+    body: &str,
+) -> Result<ReplayGsiPayload, ()> {
+    replay_json_has_unique_object_members(body)?;
+    let value: Value = serde_json::from_str(body).map_err(|_| ())?;
+    if let Some(lifecycle) = replay_non_match_lifecycle(&value) {
+        return Ok(ReplayGsiPayload::NonMatchLifecycle(lifecycle));
+    }
+    validate_gsi_payload(&value).map_err(|_| ())?;
+    let tick = parse_tick_from_value_for_replay(&value);
+    if tick.local_player_verified && tick.steamid == SYNTHETIC_REPLAY_PLAYER_ID {
+        Ok(ReplayGsiPayload::MatchState {
+            tick,
+            match_id: parse_match_id(&value),
+        })
+    } else {
+        Err(())
+    }
 }
 
 async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'static str) {
@@ -1286,6 +1633,42 @@ mod tests {
         assert!(!super::local_player_verified(&v, active));
     }
     use super::*;
+
+    #[cfg(debug_assertions)]
+    #[test]
+    fn replay_synthetic_identity_matches_exact_team_and_activity_rules() {
+        let active_steam_id = "76561198115363193";
+        for (team_name, activity, expected) in [
+            ("radiant", Some("playing"), true),
+            ("dire", Some("playing"), true),
+            ("Radiant", Some("playing"), false),
+            ("Dire", Some("playing"), false),
+            ("radiant", None, true),
+            ("dire", Some("menu"), false),
+            ("radiant", Some("Playing"), false),
+        ] {
+            let mut payload = serde_json::json!({
+                "player": {
+                    "steamid": active_steam_id,
+                    "team_name": team_name
+                }
+            });
+            if let Some(activity) = activity {
+                payload["player"]["activity"] = activity.into();
+            }
+
+            assert_eq!(
+                synthetic_player_verified(&payload),
+                expected,
+                "replay verification for team={team_name:?}, activity={activity:?}"
+            );
+            assert_eq!(
+                local_player_verified(&payload, Some(active_steam_id)),
+                expected,
+                "production verification for team={team_name:?}, activity={activity:?}"
+            );
+        }
+    }
 
     #[test]
     fn classifies_port_conflicts_separately_from_other_bind_errors() {
