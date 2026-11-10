@@ -1,14 +1,14 @@
 {
   "_generated": "GENERATED — do not hand-edit; re-run tools/doc-graph/orphan-report.mjs",
-  "generatedAt": "2026-11-09T19:40:03.977Z",
+  "generatedAt": "2026-11-10T01:13:09.630Z",
   "baselineOrphanCandidates": 0,
   "rowCount": 21,
   "summary": {
-    "anchored": 6,
+    "anchored": 5,
     "planned": 9,
     "weakly-anchored": 1,
     "superseded": 0,
-    "archived": 5,
+    "archived": 6,
     "orphan-candidate": 0,
     "confirmed-orphan": 0
   },
@@ -49,7 +49,7 @@
       "slug": "FEAT-G-ANNOUNCER",
       "path": "docs/features/FEAT-G-ANNOUNCER.md",
       "lifecycle": "active",
-      "classification": "anchored",
+      "classification": "archived",
       "strongAnchors": [
         "feature-ledger",
         "code-evidence"
@@ -59,7 +59,7 @@
       ],
       "supersededBy": null,
       "supersededByExists": true,
-      "reason": "At least one strong anchor exists (registry and/or code evidence)."
+      "reason": "Lifecycle explicitly marks the document as retained history."
     },
     {
       "id": "FEAT-G-ARENA",
