@@ -68,14 +68,12 @@ JSON presentation status is explicit and is not derived from `deprecated`.
 Regeneration checks history before writing, so it cannot hide an unversioned id edit.
 
 All existing ids are recorded as present since the baseline 1.1. Taxonomy 1.2 adds
-`enemy_missing` with `detector = "pending"`, `since = "1.2"`, and rank 0. The
-Studio entry retains v1.2 `priority = "low"` and `status = "new"`; runtime pending
-state is expressed only by the detector, never by changing JSON status. The
-Rust-owned `RUNTIME_DETECTS_VERSION` remains 1.1 until the separate detector work
-lands. Pending is permitted only above that detected version, never above the
-taxonomy version, and appears in generated `NON_FIRING_EVENTS`. It is registered
-metadata with no automatic runtime detector. This PR does not implement pack
-`taxonomy_version` or the PR2 compatibility/admission matrix.
+`enemy_missing` (`since = "1.2"`, rank 0). The Studio entry keeps v1.2
+`priority = "low"` and `status = "new"`. Since CR-046 D1 (#162) it is detected by
+`sentry.enemy_missing`, so the Rust-owned `RUNTIME_DETECTS_VERSION` is 1.2.
+`pending` stays available for a future id that is registered before its detector
+lands: it is permitted only above `RUNTIME_DETECTS_VERSION`, never above the taxonomy
+version, must have rank 0, and appears in generated `NON_FIRING_EVENTS`.
 
 ## Detectors
 
@@ -90,7 +88,8 @@ metadata with no automatic runtime detector. This PR does not implement pack
 | `safety.hp` | danger | `safety_events.rs` / `safety_events_core.rs` via GSI |
 | `maiden.advice` | advice | Existing request_advice / speak_advice route; no new announcer detector |
 | `none` | unused | Authoring-only; excluded from EventDef |
-| `pending` | enemy_missing | Registered, not detected in this runtime |
+| `sentry.enemy_missing` | enemy_missing | Capture-owned `EnemyMissingVoiceGate` in `announcer.rs` (CR-046 D1); not ranked by `most_important()` |
+| `pending` | (none today) | Registered, not detected in this runtime |
 
 The allowlist is in `schema.rs`; neither that list nor the TOML is a rule engine.
 

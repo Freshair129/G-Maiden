@@ -3,7 +3,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use std::collections::BTreeSet;
 
-pub const RUNTIME_DETECTS_VERSION: &str = "1.1";
+pub const RUNTIME_DETECTS_VERSION: &str = "1.2";
 pub const DETECTORS: &[&str] = &[
     "announcer.multikill",
     "announcer.streak",
@@ -16,6 +16,7 @@ pub const DETECTORS: &[&str] = &[
     "announcer.mana_edge",
     "announcer.match_start",
     "signal.cv",
+    "sentry.enemy_missing",
     "safety.hp",
     "maiden.advice",
     "none",
